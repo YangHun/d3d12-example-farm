@@ -1,18 +1,24 @@
+#include "stdafx.h"
 #include "DirectXApp.h"
 
 DirectXApp::DirectXApp(UINT width, UINT height, std::wstring name) :
-	mWidth(width),
-	mHeight(height),
-	mWinTitle(name)
+	m_width(width),
+	m_height(height),
+	m_title(name),
+	m_useWarpDevice(false)
 {
-	mAspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	
+	WCHAR assetsPath[512];
+	GetAssetsPath(assetsPath, _countof(assetsPath));
+	m_assetsPath = assetsPath;
 }
 
 DirectXApp::~DirectXApp() 
 {
 }
 
-void DirectXApp::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter)
+void DirectXApp::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL* pFeature)
 {
 	ComPtr<IDXGIAdapter1> adapter;
 	*ppAdapter = nullptr;
@@ -35,8 +41,29 @@ void DirectXApp::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppA
 		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
 		{
 			*ppAdapter = adapter.Detach();
+			*pFeature = D3D_FEATURE_LEVEL_11_0;
 			return;
 		}
 	}
 }
 
+// Helper function for parsing any supplied command line args.
+_Use_decl_annotations_
+void DirectXApp::ParseCommandLineArgs(WCHAR* argv[], int argc)
+{
+	for (int i = 1; i < argc; ++i)
+	{
+		if (_wcsnicmp(argv[i], L"-warp", wcslen(argv[i])) == 0 ||
+			_wcsnicmp(argv[i], L"/warp", wcslen(argv[i])) == 0)
+		{
+			m_useWarpDevice = true;
+			m_title = m_title + L" (WARP)";
+		}
+	}
+}
+
+// Helper function for resolving the full path of assets.
+std::wstring DirectXApp::GetAssetFullPath(LPCWSTR assetName)
+{
+	return m_assetsPath + assetName;
+}
