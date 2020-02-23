@@ -19,11 +19,13 @@ private:
 	void LoadPipeline();
 	void LoadAssets();
 	void WaitForPreviousFrame();
+	void PopulateCommandList();
 
 	static const UINT FrameCount = 2;
 
 	// pipeline objects
-
+	CD3DX12_VIEWPORT m_viewport;
+	CD3DX12_RECT m_scissorRect;
 	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12CommandQueue> m_commandQueue;
 	ComPtr<IDXGISwapChain3> m_swapChain;
@@ -32,7 +34,9 @@ private:
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
+	ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
 	UINT m_rtvDescriptorSize;
+	UINT m_dsvDescriptorSize;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 
 

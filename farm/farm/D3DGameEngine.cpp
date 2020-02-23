@@ -2,13 +2,20 @@
 #include "D3DGameEngine.h"
 
 D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
-	DirectXApp(width, height, name)
+	DirectXApp(width, height, name),
+	m_frameIndex(0),
+	m_viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)),
+	m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
+	m_fenceValue(0),
+	m_rtvDescriptorSize(0),
+	m_dsvDescriptorSize(0)
 {
 }
 
 void D3DGameEngine::Initialize()
 {
 	LoadPipeline();
+	LoadAssets();
 }
 
 void D3DGameEngine::LoadPipeline()
@@ -90,13 +97,33 @@ void D3DGameEngine::LoadPipeline()
 	
 	// Create descriptor heaps.
 	{
+		// Describe and create a render target view (RTV) descriptor heap.
 		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 		rtvHeapDesc.NumDescriptors = FrameCount;
 		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
 
+
+		// Describe and create a depth / stencil buffer view (DSV) descriptor heap.
+		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+		dsvHeapDesc.NumDescriptors = 1;
+		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		dsvHeapDesc.NodeMask = 0;
+		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+		
+		/*
+		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
+		cbvHeapDesc.NumDescriptors = TextureCount;
+		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFailed(m_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+		NAME_D3D12_OBJECT(m_srvHeap);
+		*/
+
 		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	}
 
 	// Create frame resources.
@@ -138,9 +165,9 @@ void D3DGameEngine::LoadAssets()
 #else
 		UINT compileFlags = 0;
 #endif
-
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"Shaders/shaders.hlsl").c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"Shaders/shaders.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+		
+		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -174,8 +201,6 @@ void D3DGameEngine::LoadAssets()
 	// 초기화 단계에서 Command를 추가하지 않으므로 Close 호출
 	ThrowIfFailed(m_commandList->Close());
 
-
-
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
 	{
 		ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
@@ -203,12 +228,24 @@ void D3DGameEngine::Update()
 
 void D3DGameEngine::Render()
 {
+	// 다음 frame에 실행할 command를 command list에 등록
+	PopulateCommandList();
 
+	// command list가 갖고 있는 command를 GPU의 command queue에 등록
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// 현재 frame의 back buffer와 frame buffer를 swap.
+	ThrowIfFailed(m_swapChain->Present(1, 0));
+
+	WaitForPreviousFrame();
 }
 
 void D3DGameEngine::Destroy()
 {
-
+	// GPU 작업이 모두 끝나서 더이상 참조하는 resource가 없을 때까지 기다린다
+	WaitForPreviousFrame();
+	CloseHandle(m_fenceEvent);
 }
 
 void D3DGameEngine::WaitForPreviousFrame()
@@ -226,4 +263,32 @@ void D3DGameEngine::WaitForPreviousFrame()
 	}
 
 	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void D3DGameEngine::PopulateCommandList()
+{
+	ThrowIfFailed(m_commandAllocator->Reset());
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
+
+	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+	m_commandList->RSSetViewports(1, &m_viewport);
+	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+
+	// back buffer texture의 state를 render target 상태로 변경.
+	// GPU가 해당 resource 에 write 작업을 할 것임을 명시한다.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// back buffer texture의 state를 present 상태로 변경.
+	// 위 command가 실행된 후 back buffer에 더이상 write 작업이 없음을 명시.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+
+	// command 추가가 완료되었으므로 queue에 넘기기 전 list를 close.
+	ThrowIfFailed(m_commandList->Close());
 }
