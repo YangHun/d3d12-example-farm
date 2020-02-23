@@ -198,8 +198,42 @@ void D3DGameEngine::LoadAssets()
 	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 	
-	// 초기화 단계에서 Command를 추가하지 않으므로 Close 호출
+
+	// Create the vertex buffer. 
+	{
+		// Define the geometry for a triangle.
+		Vertex triangleVertices[] =
+		{
+			{ { 0.0f, 0.25f * m_aspectRatio, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+			{ { 0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { -0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
+		};
+
+		uint16_t triangleIndices[] =
+		{
+			0, 1, 2
+		};
+		
+
+		UINT verticeSize = sizeof(triangleVertices);
+		UINT indiceSize = sizeof(triangleIndices);
+
+		// create the vertex buffer using triangle data and copy to upload buffer.
+		CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_vertexBuffer, m_vertexUploadBuffer);
+
+		// create the index buffer using triangle data and copy to upload buffer.
+		//CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_indexBuffer, m_indexUploadBuffer);
+
+		// initialize the vertex buffer view.
+		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+		m_vertexBufferView.SizeInBytes = verticeSize;
+	}
+
+	// 초기화 단계에서 더이상 Command를 추가하지 않으므로 Close하고, 초기화 관련 command 실행
 	ThrowIfFailed(m_commandList->Close());
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
 	{
@@ -218,7 +252,6 @@ void D3DGameEngine::LoadAssets()
 		// complete before continuing.
 		WaitForPreviousFrame();
 	}
-
 }
 
 void D3DGameEngine::Update()
@@ -283,6 +316,10 @@ void D3DGameEngine::PopulateCommandList()
 
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	m_commandList->DrawInstanced(3, 1, 0, 0);
+
 
 	// back buffer texture의 state를 present 상태로 변경.
 	// 위 command가 실행된 후 back buffer에 더이상 write 작업이 없음을 명시.

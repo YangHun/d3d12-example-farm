@@ -47,6 +47,53 @@ void DirectXApp::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppA
 	}
 }
 
+// default buffer 및 upload buffer 관련 helper function.
+void DirectXApp::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pCommandList, const void* pInitData, UINT64 byteSize, ComPtr<ID3D12Resource>& defaultBuffer, ComPtr<ID3D12Resource>& uploadBuffer)
+{
+
+	// default buffer resource 생성
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&defaultBuffer)
+	));
+
+	// cpu 메모리 데이터를 복사해서 default buffer에 넣기 위해, upload heap 생성 
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&uploadBuffer)
+	));
+
+	D3D12_SUBRESOURCE_DATA subResourceData = {
+		pInitData,
+		byteSize,
+		byteSize
+	};
+
+	// data를 복사하기 위한 resource state 관리
+	pCommandList->ResourceBarrier(
+		1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+			D3D12_RESOURCE_STATE_COMMON,
+			D3D12_RESOURCE_STATE_COPY_DEST));
+	// default buffer data를 upload buffer에 복사
+	UpdateSubresources<1>(pCommandList, defaultBuffer.Get(), uploadBuffer.Get(), 0, 0, 1, &subResourceData);
+	// 복사 후 resource state를 generic read로 바꿈
+	pCommandList->ResourceBarrier(
+		1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_GENERIC_READ));
+
+}
+
 // Helper function for parsing any supplied command line args.
 _Use_decl_annotations_
 void DirectXApp::ParseCommandLineArgs(WCHAR* argv[], int argc)

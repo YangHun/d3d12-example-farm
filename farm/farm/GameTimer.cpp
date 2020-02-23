@@ -1,6 +1,5 @@
-#include "GameTimer.h"
 #include "stdafx.h"
-
+#include "GameTimer.h"
 
 GameTimer::GameTimer() :
 	m_secondsPerCount(0.0),
@@ -8,6 +7,7 @@ GameTimer::GameTimer() :
 	m_baseTime(0),
 	m_pausedTime(0),
 	m_stopTime(0),
+	m_prevTime(0),
 	m_currentTime(0),
 	m_stopped(false)
 {

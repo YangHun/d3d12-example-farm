@@ -5,6 +5,12 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
+struct Vertex
+{
+	XMFLOAT3 position;
+	XMFLOAT4 color;
+};
+
 class D3DGameEngine : public DirectXApp
 {
 public:
@@ -39,6 +45,14 @@ private:
 	UINT m_dsvDescriptorSize;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 
+
+	// App resources.
+	ComPtr<ID3D12Resource> m_vertexBuffer;
+	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+	//ComPtr<ID3D12Resource> m_indexBuffer;
+	//ComPtr<ID3D12Resource> m_indexUploadBuffer;
+	//D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
 
 	// synchronization objects
 	UINT m_frameIndex;
