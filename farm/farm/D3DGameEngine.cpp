@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "D3DGameEngine.h"
+#include "scenes.h"
 
 D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	DirectXApp(width, height, name),
@@ -10,6 +11,7 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	m_rtvDescriptorSize(0),
 	m_dsvDescriptorSize(0)
 {
+	m_game = DirectXGame();
 }
 
 void D3DGameEngine::Initialize()
@@ -198,8 +200,29 @@ void D3DGameEngine::LoadAssets()
 	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 	
+	// Initialize the game.
+	m_game.Initialize();
 
-	// Create the vertex buffer. 
+	// Create the vertex buffer for each scenes in game.
+	{
+		for (UINT i = 0; i < m_game.SceneCount(); ++i)
+		{
+			auto s = m_game.GetScene(i);
+
+			UINT verticeSize = sizeof(Vertex) * (UINT)(s->m_data.size());
+			UINT indiceSize = sizeof(s->m_data);			
+			
+			// create the vertex buffer using triangle data and copy to upload buffer.
+			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), s->m_data.data(), verticeSize, s->m_vertexBuffer, s->m_vertexUploadBuffer);
+
+			s->m_vertexBufferView.BufferLocation = s->m_vertexBuffer->GetGPUVirtualAddress();
+			s->m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+			s->m_vertexBufferView.SizeInBytes = verticeSize;
+
+		}
+	}
+
+	// Create the vertex buffer.
 	{
 		// Define the geometry for a triangle.
 		Vertex triangleVertices[] =
@@ -213,7 +236,7 @@ void D3DGameEngine::LoadAssets()
 		{
 			0, 1, 2
 		};
-		
+
 
 		UINT verticeSize = sizeof(triangleVertices);
 		UINT indiceSize = sizeof(triangleIndices);
@@ -229,6 +252,7 @@ void D3DGameEngine::LoadAssets()
 		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
 		m_vertexBufferView.SizeInBytes = verticeSize;
 	}
+	
 
 	// 초기화 단계에서 더이상 Command를 추가하지 않으므로 Close하고, 초기화 관련 command 실행
 	ThrowIfFailed(m_commandList->Close());
@@ -256,7 +280,11 @@ void D3DGameEngine::LoadAssets()
 
 void D3DGameEngine::Update()
 {
-
+	if (m_game.IsSceneChanged())
+	{
+		m_game.GetCurrentSceneBufferView(m_vertexBufferView, m_indexBufferView);
+		m_game.SetUpdated();
+	}
 }
 
 void D3DGameEngine::Render()

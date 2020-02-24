@@ -11,6 +11,53 @@ struct Vertex
 	XMFLOAT4 color;
 };
 
+class DirectXGame
+{
+
+public:
+	class Scene
+	{
+	public:
+		Scene(UINT id);
+
+		void Initialize();
+
+	private:
+		void LoadAssets();
+
+	public:
+		UINT m_id;
+
+		std::vector<Vertex> m_data;
+
+		// current scene resources.
+		ComPtr<ID3D12Resource> m_vertexBuffer;
+		ComPtr<ID3D12Resource> m_indexBuffer;
+		ComPtr<ID3D12Resource> m_vertexUploadBuffer;
+		ComPtr<ID3D12Resource> m_indexUploadBuffer;
+		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+	};
+
+	DirectXGame();
+
+	void Initialize();
+	void BuildScenes();
+
+	UINT SceneCount() const { return m_allScenes.size(); }
+	Scene* GetScene(UINT index) const { return m_allScenes[index].get();  }
+	bool IsSceneChanged() const { return m_dirtyScene; }
+	void SetUpdated() { m_dirtyScene = true; }
+
+	void GetCurrentSceneBufferView(D3D12_VERTEX_BUFFER_VIEW& vertexBufferView, D3D12_INDEX_BUFFER_VIEW& indexBufferView);
+
+private:	
+	Scene* m_currentScene = nullptr;
+	std::vector<std::unique_ptr<Scene>> m_allScenes;
+
+	bool m_dirtyScene = true;
+};
+
 class D3DGameEngine : public DirectXApp
 {
 public:
@@ -28,6 +75,10 @@ private:
 	void PopulateCommandList();
 
 	static const UINT FrameCount = 2;
+
+	// game framework
+	DirectXGame m_game;
+
 
 	// pipeline objects
 	CD3DX12_VIEWPORT m_viewport;
@@ -50,9 +101,9 @@ private:
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-	//ComPtr<ID3D12Resource> m_indexBuffer;
-	//ComPtr<ID3D12Resource> m_indexUploadBuffer;
-	//D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+	ComPtr<ID3D12Resource> m_indexBuffer;
+	ComPtr<ID3D12Resource> m_indexUploadBuffer;
+	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
 
 	// synchronization objects
 	UINT m_frameIndex;
