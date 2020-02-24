@@ -12,10 +12,12 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	m_dsvDescriptorSize(0)
 {
 	m_game = DirectXGame();
+	m_timer.Reset();
 }
 
 void D3DGameEngine::Initialize()
 {
+	m_timer.Start();
 	LoadPipeline();
 	LoadAssets();
 }
@@ -203,22 +205,27 @@ void D3DGameEngine::LoadAssets()
 	// Initialize the game.
 	m_game.Initialize();
 
-	// Create the vertex buffer for each scenes in game.
+	// Create the vertex buffer and index buffer for each scenes in game.
 	{
 		for (UINT i = 0; i < m_game.SceneCount(); ++i)
 		{
 			auto s = m_game.GetScene(i);
 
-			UINT verticeSize = sizeof(Vertex) * (UINT)(s->m_data.size());
-			UINT indiceSize = sizeof(s->m_data);			
+			UINT verticeSize = sizeof(Vertex) * (UINT)(s->m_vertice.size());
+			UINT indiceSize = sizeof(uint16_t) * (UINT)(s->m_indices.size());
 			
 			// create the vertex buffer using triangle data and copy to upload buffer.
-			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), s->m_data.data(), verticeSize, s->m_vertexBuffer, s->m_vertexUploadBuffer);
+			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), s->m_vertice.data(), verticeSize, s->m_vertexBuffer, s->m_vertexUploadBuffer);
+			// create the index buffer using triangle data and copy to upload buffer.
+			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), s->m_indices.data(), indiceSize, s->m_indexBuffer, s->m_indexUploadBuffer);
 
 			s->m_vertexBufferView.BufferLocation = s->m_vertexBuffer->GetGPUVirtualAddress();
 			s->m_vertexBufferView.StrideInBytes = sizeof(Vertex);
 			s->m_vertexBufferView.SizeInBytes = verticeSize;
 
+			s->m_indexBufferView.BufferLocation = s->m_indexBuffer->GetGPUVirtualAddress();
+			s->m_indexBufferView.Format = DXGI_FORMAT_R16_UINT;
+			s->m_indexBufferView.SizeInBytes = indiceSize;
 		}
 	}
 
@@ -280,6 +287,7 @@ void D3DGameEngine::LoadAssets()
 
 void D3DGameEngine::Update()
 {
+	m_timer.Tick();
 	if (m_game.IsSceneChanged())
 	{
 		m_game.GetCurrentSceneBufferView(m_vertexBufferView, m_indexBufferView);
@@ -345,9 +353,16 @@ void D3DGameEngine::PopulateCommandList()
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_commandList->IASetIndexBuffer(&m_indexBufferView);
 	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	m_commandList->DrawInstanced(3, 1, 0, 0);
-
+	
+	// indexed instance 를 그린다.
+	// 모든 triangle이 하나의 index buffer에서 indexing 되었으므로 base vertex location 은 항상 0
+	for (UINT i = 0; i < 3; ++i)
+	{
+		m_commandList->DrawIndexedInstanced(3, 1, i * 3, 0, 0);
+	}
+	
 
 	// back buffer texture의 state를 present 상태로 변경.
 	// 위 command가 실행된 후 back buffer에 더이상 write 작업이 없음을 명시.

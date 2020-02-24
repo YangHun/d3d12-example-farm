@@ -36,25 +36,37 @@ void DirectXGame::GetCurrentSceneBufferView(D3D12_VERTEX_BUFFER_VIEW& vertexBuff
 }
 
 
-
-DirectXGame::Scene::Scene(UINT id) :
+Scene::Scene(UINT id) :
 	m_id(id),
 	m_vertexBuffer(nullptr),
 	m_indexBuffer(nullptr),
 	m_vertexUploadBuffer(nullptr),
 	m_indexUploadBuffer(nullptr)
 {
-	m_data = std::vector<Vertex>();
 }
 
-void DirectXGame::Scene::Initialize()
+void Scene::Initialize()
 {
 	// init scene here.
 	LoadAssets();
 }
 
-void DirectXGame::Scene::LoadAssets()
+void Scene::LoadAssets()
 {
+	
+	for (int i = 0; i < 3; ++i)
+	{
+		float delta = (float) (i + 1) / 3.0f;
+		m_vertice.push_back(Vertex({ { 0.0f + 0.3f * delta, 0.5f, 0.0f }, { 1.0f * delta, 0.0f, 0.0f, 1.0f } }));
+		m_vertice.push_back(Vertex({ { 0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 1.0f * delta, 0.0f, 1.0f } }));
+		m_vertice.push_back(Vertex({ { -0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f * delta, 1.0f } }));
+
+		for (int j = 0; j < 3; ++j) {
+			m_indices.push_back((uint16_t)(i * 3 + j));
+		}
+	}
+
 	// load assets
-	m_data.assign(Assets::triangleVertices[m_id].begin(), Assets::triangleVertices[m_id].end());
+	//m_vertice.assign(Assets::triangleVertices[m_id].begin(), Assets::triangleVertices[m_id].end());
 }
+

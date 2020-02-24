@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DirectXApp.h"
+#include "GameTimer.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -11,34 +12,34 @@ struct Vertex
 	XMFLOAT4 color;
 };
 
+class Scene
+{
+public:
+	Scene(UINT id);
+
+	void Initialize();
+
+private:
+	void LoadAssets();
+
+public:
+	UINT m_id;
+	std::vector<Vertex> m_vertice;
+	std::vector<uint16_t> m_indices;
+
+	// current scene resources.
+	ComPtr<ID3D12Resource> m_vertexBuffer;
+	ComPtr<ID3D12Resource> m_indexBuffer;
+	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
+	ComPtr<ID3D12Resource> m_indexUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+};
+
 class DirectXGame
 {
 
 public:
-	class Scene
-	{
-	public:
-		Scene(UINT id);
-
-		void Initialize();
-
-	private:
-		void LoadAssets();
-
-	public:
-		UINT m_id;
-
-		std::vector<Vertex> m_data;
-
-		// current scene resources.
-		ComPtr<ID3D12Resource> m_vertexBuffer;
-		ComPtr<ID3D12Resource> m_indexBuffer;
-		ComPtr<ID3D12Resource> m_vertexUploadBuffer;
-		ComPtr<ID3D12Resource> m_indexUploadBuffer;
-		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
-	};
-
 	DirectXGame();
 
 	void Initialize();
@@ -104,6 +105,7 @@ private:
 	ComPtr<ID3D12Resource> m_indexBuffer;
 	ComPtr<ID3D12Resource> m_indexUploadBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+	GameTimer m_timer;
 
 	// synchronization objects
 	UINT m_frameIndex;
