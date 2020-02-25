@@ -1,63 +1,12 @@
 #pragma once
 
 #include "DirectXApp.h"
+#include "DirectXGame.h"
 #include "GameTimer.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
-struct Vertex
-{
-	XMFLOAT3 position;
-	XMFLOAT4 color;
-};
-
-class Scene
-{
-public:
-	Scene(UINT id);
-
-	void Initialize();
-
-private:
-	void LoadAssets();
-
-public:
-	UINT m_id;
-	std::vector<Vertex> m_vertice;
-	std::vector<uint16_t> m_indices;
-
-	// current scene resources.
-	ComPtr<ID3D12Resource> m_vertexBuffer;
-	ComPtr<ID3D12Resource> m_indexBuffer;
-	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
-	ComPtr<ID3D12Resource> m_indexUploadBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
-};
-
-class DirectXGame
-{
-
-public:
-	DirectXGame();
-
-	void Initialize();
-	void BuildScenes();
-
-	UINT SceneCount() const { return m_allScenes.size(); }
-	Scene* GetScene(UINT index) const { return m_allScenes[index].get();  }
-	bool IsSceneChanged() const { return m_dirtyScene; }
-	void SetUpdated() { m_dirtyScene = true; }
-
-	void GetCurrentSceneBufferView(D3D12_VERTEX_BUFFER_VIEW& vertexBufferView, D3D12_INDEX_BUFFER_VIEW& indexBufferView);
-
-private:	
-	Scene* m_currentScene = nullptr;
-	std::vector<std::unique_ptr<Scene>> m_allScenes;
-
-	bool m_dirtyScene = true;
-};
 
 class D3DGameEngine : public DirectXApp
 {
@@ -74,6 +23,7 @@ private:
 	void LoadAssets();
 	void WaitForPreviousFrame();
 	void PopulateCommandList();
+	void DrawCurrentScene();
 
 	static const UINT FrameCount = 2;
 

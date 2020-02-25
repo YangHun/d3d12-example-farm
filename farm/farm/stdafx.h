@@ -11,8 +11,14 @@
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
 #include "d3dx12.h"
+#include <fbxsdk.h>
 
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
+#include <unordered_map>
+
+#include "FrameResource.h"
+
+
 

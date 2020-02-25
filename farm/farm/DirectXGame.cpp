@@ -1,5 +1,6 @@
 #include "stdafx.h"
-#include "D3DGameEngine.h"
+#include "DirectXGame.h"
+#include "FbxLoader.h"
 #include "Scenes.h"
 
 DirectXGame::DirectXGame() 
@@ -9,7 +10,35 @@ DirectXGame::DirectXGame()
 
 void DirectXGame::Initialize()
 {
+	LoadAssets();
 	BuildScenes();
+}
+
+void DirectXGame::LoadAssets()
+{
+	// Game에서 쓸 모든 resource (fbx model, textures, ..) 를 load 한다
+
+	std::vector<std::string> fbxName = {
+		//"Assets/deer.fbx",
+		"Assets/tree.fbx"
+	};
+
+	FbxLoader loader = FbxLoader();
+
+	for (auto a : fbxName)
+	{
+		if (m_models.find(a) == m_models.end()) {
+			Mesh mesh;
+			loader.Load(a.c_str(), &mesh);
+			m_models[a] = mesh;
+
+			auto meshDesc = std::make_unique<MeshDesc>();
+			meshDesc->mesh = &m_models[a];
+			meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+			m_meshes[a] = std::move(meshDesc);
+		}
+	}
 }
 
 void DirectXGame::BuildScenes()
@@ -20,6 +49,7 @@ void DirectXGame::BuildScenes()
 		auto s = std::make_unique<Scene>(_id);
 
 		s->Initialize();
+		BuildSceneRenderObjects(s.get());
 
 		m_allScenes.push_back(std::move(s));
 	}
@@ -27,46 +57,46 @@ void DirectXGame::BuildScenes()
 	m_currentScene = m_allScenes[0].get();
 }
 
-void DirectXGame::GetCurrentSceneBufferView(D3D12_VERTEX_BUFFER_VIEW& vertexBufferView, D3D12_INDEX_BUFFER_VIEW& indexBufferView)
+void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 {
-	if (!m_currentScene) return;
 
-	vertexBufferView = m_currentScene->m_vertexBufferView;
-	indexBufferView = m_currentScene->m_indexBufferView;
+
+	//for (int i = 0; i < 3; ++i)
+	//{
+	//	float delta = (float)(i + 1) / 3.0f;
+	//	scene->m_vertices.push_back(Vertex({ { 0.0f + 0.3f * delta, 0.5f, 0.0f }, { 1.0f * delta, 0.0f, 0.0f, 1.0f } }));
+	//	scene->m_vertices.push_back(Vertex({ { 0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 1.0f * delta, 0.0f, 1.0f } }));
+	//	scene->m_vertices.push_back(Vertex({ { -0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f * delta, 1.0f } }));
+
+	//}
+
+	std::vector<MeshDesc*> objs = {
+		m_meshes["Assets/tree.fbx"].get(),
+	};
+
+
+	for (auto obj : objs)
+	{
+		scene->m_objects.push_back(obj);
+	}
 }
 
 
+
 Scene::Scene(UINT id) :
-	m_id(id),
-	m_vertexBuffer(nullptr),
-	m_indexBuffer(nullptr),
-	m_vertexUploadBuffer(nullptr),
-	m_indexUploadBuffer(nullptr)
+	m_id(id)
 {
 }
 
 void Scene::Initialize()
 {
 	// init scene here.
-	LoadAssets();
+	BuildObject();
 }
 
-void Scene::LoadAssets()
+void Scene::BuildObject()
 {
-	
-	for (int i = 0; i < 3; ++i)
-	{
-		float delta = (float) (i + 1) / 3.0f;
-		m_vertice.push_back(Vertex({ { 0.0f + 0.3f * delta, 0.5f, 0.0f }, { 1.0f * delta, 0.0f, 0.0f, 1.0f } }));
-		m_vertice.push_back(Vertex({ { 0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 1.0f * delta, 0.0f, 1.0f } }));
-		m_vertice.push_back(Vertex({ { -0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f * delta, 1.0f } }));
-
-		for (int j = 0; j < 3; ++j) {
-			m_indices.push_back((uint16_t)(i * 3 + j));
-		}
-	}
-
 	// load assets
-	//m_vertice.assign(Assets::triangleVertices[m_id].begin(), Assets::triangleVertices[m_id].end());
+	//m_vertice.assign();
 }
 
