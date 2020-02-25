@@ -77,6 +77,8 @@ void D3DGameEngine::LoadPipeline()
 	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 
 	// Describe and create the swap chain.
+	// IDXGISwapChain1 은 MSAA 를 지원하지 않는다. MSAA를 지원하는 다른 buffer를 만들어야 함.
+	// https://stackoverflow.com/questions/40110699/creating-a-swap-chain-with-msaa-fails
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.BufferCount = FrameCount;
 	swapChainDesc.Width = m_width;
@@ -131,7 +133,14 @@ void D3DGameEngine::LoadPipeline()
 	}
 
 	// Create frame resources.
+	// Constant buffer는 GPU가 해당 buffer를 참조하는 작업이 끝나기 전엔 update 될 수 없다.
+	// GPU가 n번째 프레임을 다 그릴 때까지 CPU가 idle 상태가 되지 않게 하기 위하여,
+	// 매 프레임마다 update 해야 하는 resource들의 circular array 를 만들어
+	// CPU가 다음 몇 개 프레임의 Resource 값을 미리 계산해 둘 수 있게 한다.
 	{
+
+		// 정의할 constant buffer가 없으므로 frame resource 대신 rtv를 만든다.
+
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 
 		for (UINT n = 0; n < FrameCount; ++n)
@@ -142,6 +151,9 @@ void D3DGameEngine::LoadPipeline()
 		}
 
 	}
+
+	// Create the command list allocator and main command list.
+	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 
 }
 
@@ -198,8 +210,7 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
 	}
 
-	// Create the command list allocator and main command list.
-	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+	// Create the main command list.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 	
 	// Initialize the game.
@@ -352,6 +363,7 @@ void D3DGameEngine::PopulateCommandList()
 
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->IASetIndexBuffer(&m_indexBufferView);
 	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
