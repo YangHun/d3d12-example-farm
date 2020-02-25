@@ -16,9 +16,9 @@ private:
 	void GetGlobalTransform(FbxNode* node);
 	void ProcessControlPoints(FbxMesh* mesh);
 	void GetPosition(FbxMesh* mesh, int pIndex, XMFLOAT3& vertexData);
-	//void TryGetNormal();
-	//void TryGetUV();
-	//void TryGetTangent();
+	void TryGetNormal(FbxMesh* mesh, int pCount, int vCount, XMFLOAT3& vertexData);
+	void TryGetUV(FbxMesh* mesh, int pCount, int vCount, XMFLOAT2& vertexData);
+	void TryGetTangent(FbxMesh* mesh, int pIndex, int vIndex, XMFLOAT3& vertexData);
 	void AssignIndexedVertex(Vertex v);
 
 private:
@@ -51,6 +51,15 @@ inline XMFLOAT4 Fbx4ToXM4(FbxVector4 fbx)
 		static_cast<float>(fbx.mData[1]),
 		static_cast<float>(fbx.mData[2]),
 		static_cast<float>(fbx.mData[3])
+	);
+}
+
+
+inline XMFLOAT2 Fbx2ToXM2(FbxVector2 fbx)
+{
+	return XMFLOAT2(
+		static_cast<float>(fbx.mData[0]),
+		static_cast<float>(fbx.mData[1])
 	);
 }
 

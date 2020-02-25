@@ -38,15 +38,18 @@ struct Vertex
 {
 public:
 	XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-//	XMFLOAT3 normal;
-//	XMFLOAT2 uv;
-//	XMFLOAT3 tangent;
-	XMFLOAT4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	XMFLOAT3 normal = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT2 uv = { 0.0f, 0.0f };
+	XMFLOAT3 tangent = { 0.0f, 0.0f, 0.0f };
+//	XMFLOAT4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 public:
 	bool operator==(const Vertex& rhs) const
 	{
-		return FVector3(position) == FVector3(rhs.position);
+		return FVector3(position) == FVector3(rhs.position)
+			&& FVector3(normal) == FVector3(rhs.normal)
+			&& FVector2(uv) == FVector2(rhs.uv)
+			&& FVector3(tangent) == FVector3(rhs.tangent);
 	}
 
 };
@@ -62,21 +65,20 @@ struct Mesh {
 namespace std
 {
 	template<>
+	struct hash<XMFLOAT2>
+	{
+	public:
+		size_t operator()(const XMFLOAT2& t) const
+		{
+			return (std::hash<float>()(t.x)
+				^ (std::hash<float>()(t.y) << 1));
+		}
+	};
+	template<>
 	struct hash<XMFLOAT3>
 	{
 	public:
 		size_t operator()(const XMFLOAT3& t) const
-		{
-			return ((std::hash<float>()(t.x)
-				^ (std::hash<float>()(t.y) << 1)) >> 1)
-				^ (std::hash<float>()(t.z) << 1);
-		}
-	};
-	template<>
-	struct hash<XMFLOAT4>
-	{
-	public:
-		size_t operator()(const XMFLOAT4& t) const
 		{
 			return ((std::hash<float>()(t.x)
 				^ (std::hash<float>()(t.y) << 1)) >> 1)
@@ -89,8 +91,9 @@ namespace std
 	public:
 		size_t operator()(const Vertex& t) const
 		{
-			return (std::hash<XMFLOAT3>()(t.position)
-				^ (std::hash<XMFLOAT4>()(t.color) << 1));
+			return ((std::hash<XMFLOAT3>()(t.position)
+				^ (std::hash<XMFLOAT3>()(t.normal) << 1)) >> 1)
+				^ (std::hash<XMFLOAT2>()(t.uv) << 1);;
 		}
 	};
 }

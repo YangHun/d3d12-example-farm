@@ -92,10 +92,91 @@ void FbxLoader::ProcessControlPoints(FbxMesh* mesh)
 			int polygonIndex = mesh->GetPolygonVertex(i, j);
 
 			GetPosition(mesh, polygonIndex, vertex.position);
-			
+			TryGetNormal(mesh, i, j, vertex.normal);
+			TryGetUV(mesh, i, j, vertex.uv);
+			TryGetTangent(mesh, i, j, vertex.tangent);
+
 			AssignIndexedVertex(vertex);
 		}
 	}
+}
+
+void FbxLoader::GetPosition(FbxMesh* mesh, int pIndex, XMFLOAT3& vertexData)
+{
+	FbxVector4 fbxData = mesh->GetControlPointAt(pIndex);
+
+	fbxData = m_globalTransform.MultT(fbxData);
+
+	vertexData = Fbx4ToXM3(fbxData);
+}
+
+void FbxLoader::TryGetNormal(FbxMesh* mesh, int pCount, int vCount, XMFLOAT3& vertexData)
+{
+	FbxVector4 normal;
+	bool bResult = mesh->GetPolygonVertexNormal(pCount, vCount, normal);
+
+	normal.Normalize();
+
+	vertexData = (bResult) ? Fbx4ToXM3(normal) : XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+}
+
+
+void FbxLoader::TryGetUV(FbxMesh* mesh, int pCount, int vCount, XMFLOAT2& vertexData)
+{
+	FbxStringList uvNames;
+	mesh->GetUVSetNames(uvNames);
+
+	if (uvNames.GetCount() < 1) {
+		vertexData = XMFLOAT2(0.0f, 0.0f);
+		return;
+	}
+
+	FbxVector2 uv;
+	bool bUnmapped;
+	bool bResult = mesh->GetPolygonVertexUV(pCount, vCount, uvNames[0], uv, bUnmapped);
+
+	vertexData = (bResult) ? Fbx2ToXM2(uv) : XMFLOAT2(0.0f, 0.0f);
+}
+
+
+void FbxLoader::TryGetTangent(FbxMesh* mesh, int pIndex, int vIndex, XMFLOAT3& vertexData)
+{
+	if (mesh->GetElementTangentCount() < 1)
+	{
+		// re-calculate tangent for uv layer
+		mesh->GenerateTangentsDataForAllUVSets(true, false);
+	}
+
+	int count = mesh->GetElementTangentCount();
+
+	if (count < 1)
+	{
+		vertexData = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		return;
+	}
+
+	const FbxGeometryElementTangent* elementTangent = mesh->GetElementTangent(0);
+
+	FbxVector4 tangent;
+
+	if (elementTangent->GetMappingMode() == FbxGeometryElement::eByControlPoint)
+	{
+		tangent = (elementTangent->GetReferenceMode() == FbxGeometryElement::eDirect)
+			? elementTangent->GetDirectArray().GetAt(pIndex)
+			: elementTangent->GetDirectArray().GetAt(elementTangent->GetIndexArray().GetAt(pIndex));
+
+	}
+	else if (elementTangent->GetMappingMode() == FbxGeometryElement::eByPolygonVertex)
+	{
+		tangent = (elementTangent->GetReferenceMode() == FbxGeometryElement::eDirect)
+			? elementTangent->GetDirectArray().GetAt(vIndex)
+			: elementTangent->GetDirectArray().GetAt(elementTangent->GetIndexArray().GetAt(vIndex));
+	}
+
+	tangent.Normalize();
+
+	vertexData = Fbx4ToXM3(tangent);
 }
 
 void FbxLoader::AssignIndexedVertex(Vertex vertex)
@@ -105,22 +186,4 @@ void FbxLoader::AssignIndexedVertex(Vertex vertex)
 		m_dstData->vertices.push_back(vertex);
 	}
 	m_dstData->indices.push_back(m_indexMap[vertex]);
-}
-
-void FbxLoader::GetPosition(FbxMesh* mesh, int pIndex, XMFLOAT3& vertexData)
-{
-	FbxVector4 fbxData = mesh->GetControlPointAt(pIndex);
-
-	fbxData = m_globalTransform.MultT(fbxData);
-	
-	
-	FbxAMatrix scale;
-	scale.SetIdentity();
-	scale.SetS(FbxVector4{ 0.001f, 0.001f, 0.001f, 1.0f });
-	fbxData = scale.MultT(fbxData);
-	
-
-	vertexData = Fbx4ToXM3(fbxData);
-
-
 }

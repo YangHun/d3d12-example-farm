@@ -112,11 +112,10 @@ void D3DGameEngine::LoadPipeline()
 
 
 		// Describe and create a depth / stencil buffer view (DSV) descriptor heap.
-		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 		dsvHeapDesc.NumDescriptors = 1;
 		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		dsvHeapDesc.NodeMask = 0;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
 		
 		/*
@@ -159,7 +158,7 @@ void D3DGameEngine::LoadPipeline()
 
 void D3DGameEngine::LoadAssets()
 {
-	// Create an empty root signature.
+	// Create the root signature.
 	{
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
 		rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
@@ -182,15 +181,20 @@ void D3DGameEngine::LoadAssets()
 		UINT compileFlags = 0;
 #endif
 		
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		};
+
+		CD3DX12_RASTERIZER_DESC rasterizerStateDesc(D3D12_DEFAULT);
+		rasterizerStateDesc.CullMode = D3D12_CULL_MODE_BACK;
 
 		// Describe and create the graphics pipeline state object (PSO).
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -198,14 +202,14 @@ void D3DGameEngine::LoadAssets()
 		psoDesc.pRootSignature = m_rootSignature.Get();
 		psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
 		psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
-		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		psoDesc.RasterizerState = rasterizerStateDesc;
 		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		psoDesc.DepthStencilState.DepthEnable = FALSE;
-		psoDesc.DepthStencilState.StencilEnable = FALSE;
+		psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		psoDesc.SampleMask = UINT_MAX;
 		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		psoDesc.NumRenderTargets = 1;
 		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		psoDesc.SampleDesc.Count = 1;
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
 	}
@@ -242,35 +246,35 @@ void D3DGameEngine::LoadAssets()
 
 
 	// Create the vertex buffer.
-	{
-		// Define the geometry for a triangle.
-		Vertex triangleVertices[] =
-		{
-			{ { 0.0f, 0.25f * m_aspectRatio, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-			{ { 0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			{ { -0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
-		};
+	//{
+	//	// Define the geometry for a triangle.
+	//	Vertex triangleVertices[] =
+	//	{
+	//		{ { 0.0f, 0.25f * m_aspectRatio, 0.0f }, },
+	//		{ { 0.25f, -0.25f * m_aspectRatio, 0.0f },  },
+	//		{ { -0.25f, -0.25f * m_aspectRatio, 0.0f },  }
+	//	};
 
-		uint16_t triangleIndices[] =
-		{
-			0, 1, 2
-		};
+	//	uint16_t triangleIndices[] =
+	//	{
+	//		0, 1, 2
+	//	};
 
 
-		UINT verticeSize = sizeof(triangleVertices);
-		UINT indiceSize = sizeof(triangleIndices);
+	//	UINT verticeSize = sizeof(triangleVertices);
+	//	UINT indiceSize = sizeof(triangleIndices);
 
-		// create the vertex buffer using triangle data and copy to upload buffer.
-		CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_vertexBuffer, m_vertexUploadBuffer);
+	//	// create the vertex buffer using triangle data and copy to upload buffer.
+	//	CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_vertexBuffer, m_vertexUploadBuffer);
 
-		// create the index buffer using triangle data and copy to upload buffer.
-		//CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_indexBuffer, m_indexUploadBuffer);
+	//	// create the index buffer using triangle data and copy to upload buffer.
+	//	//CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_indexBuffer, m_indexUploadBuffer);
 
-		// initialize the vertex buffer view.
-		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-		m_vertexBufferView.SizeInBytes = verticeSize;
-	}
+	//	// initialize the vertex buffer view.
+	//	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+	//	m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+	//	m_vertexBufferView.SizeInBytes = verticeSize;
+	//}
 
 	// 초기화 단계에서 더이상 Command를 추가하지 않으므로 Close하고, 초기화 관련 command 실행
 	ThrowIfFailed(m_commandList->Close());
