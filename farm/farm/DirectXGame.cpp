@@ -59,17 +59,6 @@ void DirectXGame::BuildScenes()
 
 void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 {
-
-
-	//for (int i = 0; i < 3; ++i)
-	//{
-	//	float delta = (float)(i + 1) / 3.0f;
-	//	scene->m_vertices.push_back(Vertex({ { 0.0f + 0.3f * delta, 0.5f, 0.0f }, { 1.0f * delta, 0.0f, 0.0f, 1.0f } }));
-	//	scene->m_vertices.push_back(Vertex({ { 0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 1.0f * delta, 0.0f, 1.0f } }));
-	//	scene->m_vertices.push_back(Vertex({ { -0.25f + 0.3f * delta, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f * delta, 1.0f } }));
-
-	//}
-
 	std::vector<MeshDesc*> objs = {
 		m_meshes["Assets/tree.fbx"].get(),
 	};
@@ -80,8 +69,6 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 		scene->m_objects.push_back(obj);
 	}
 }
-
-
 
 Scene::Scene(UINT id) :
 	m_id(id)
@@ -96,7 +83,6 @@ void Scene::Initialize()
 
 void Scene::BuildObject()
 {
-	// load assets
-	//m_vertice.assign();
+	// create game objects.
 }
 

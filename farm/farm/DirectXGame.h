@@ -1,26 +1,8 @@
 #pragma once
 #include "DirectXApp.h"
-#include "FrameResource.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
-
-// ComPtr을 사용하기 위해, MeshDesc를 클래스로 바꾸는 등의 작업이 필요하다. todo.
-
-struct MeshDesc {
-	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	Mesh* mesh = nullptr;
-	UINT indexCount;
-	UINT startIndexLocation = 0;
-	int baseVertexLocation = 0;
-
-	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
-	ComPtr<ID3D12Resource> indexBuffer = nullptr;
-	ComPtr<ID3D12Resource> vertexUploadBuffer = nullptr;
-	ComPtr<ID3D12Resource> indexUploadBuffer = nullptr;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView;
-};
 
 class Scene
 {

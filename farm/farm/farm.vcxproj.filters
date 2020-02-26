@@ -45,6 +45,9 @@
     <ClCompile Include="FbxLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DirectXApp.h">
@@ -78,6 +81,9 @@
       <Filter>헤더 파일\Data</Filter>
     </ClInclude>
     <ClInclude Include="FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Meshes.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
