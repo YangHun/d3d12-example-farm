@@ -125,7 +125,6 @@ void Scene::UpdateObjectConstantBuffers()
 		if (obj->dirty)
 		{
 			auto t = obj->transform;
-			//XMMATRIX world = XMMatrixScaling(t.scale[0], t.scale[1], t.scale[2]) * XMMatrixTranslation(t.position[0], t.position[1], t.position[2]);
 			
 			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale[0], t.scale[1], t.scale[2])
 				* XMMatrixRotationRollPitchYaw(t.rotation[0], t.rotation[1], t.rotation[2])

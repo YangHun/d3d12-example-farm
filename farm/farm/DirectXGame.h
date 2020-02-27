@@ -12,6 +12,7 @@ public:
 
 	void Initialize();
 
+	void UpdateObjectConstantBuffers();
 private:
 	void BuildObject();
 

@@ -267,37 +267,6 @@ void D3DGameEngine::LoadAssets()
 		}
 	}
 
-	// Create the vertex buffer.
-	//{
-	//	// Define the geometry for a triangle.
-	//	Vertex triangleVertices[] =
-	//	{
-	//		{ { 0.0f, 0.25f * m_aspectRatio, 0.0f }, },
-	//		{ { 0.25f, -0.25f * m_aspectRatio, 0.0f },  },
-	//		{ { -0.25f, -0.25f * m_aspectRatio, 0.0f },  }
-	//	};
-
-	//	uint16_t triangleIndices[] =
-	//	{
-	//		0, 1, 2
-	//	};
-
-
-	//	UINT verticeSize = sizeof(triangleVertices);
-	//	UINT indiceSize = sizeof(triangleIndices);
-
-	//	// create the vertex buffer using triangle data and copy to upload buffer.
-	//	CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_vertexBuffer, m_vertexUploadBuffer);
-
-	//	// create the index buffer using triangle data and copy to upload buffer.
-	//	//CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), triangleVertices, verticeSize, m_indexBuffer, m_indexUploadBuffer);
-
-	//	// initialize the vertex buffer view.
-	//	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-	//	m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-	//	m_vertexBufferView.SizeInBytes = verticeSize;
-	//}
-
 	// 초기화 단계에서 더이상 Command를 추가하지 않으므로 Close하고, 초기화 관련 command 실행
 	ThrowIfFailed(m_commandList->Close());
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
@@ -336,41 +305,21 @@ void D3DGameEngine::Update()
 	// update constant buffer data
 	{
 		XMMATRIX view = XMMatrixLookAtLH(
-			XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f), 
+			XMVectorSet(0.0f, 1.0f, -10.0f, 1.0f), 
 			XMVectorZero(), 
 			XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-
-		//XMMATRIX view = XMMatrixIdentity();
 
 		XMMATRIX proj = XMMatrixPerspectiveFovLH(XM_PI * 0.25f, m_aspectRatio, 1.0f, 1000.0f);
 
 		
 		XMFLOAT4X4 mvp;
-		//XMStoreFloat4x4(&mvp, XMMatrixTranspose(proj));
 		XMStoreFloat4x4(&mvp, XMMatrixTranspose(view * proj));
 		memcpy(m_pConstantBuffer, &mvp, sizeof(mvp));
 	}
 
-	// update object buffers
-	{
-		auto s = m_game.GetCurrentScene();
-
-		for (auto i : s->m_objects)
-		{
-			if (i->dirty) {
-				XMMATRIX world = XMLoadFloat4x4(&i->world);
-				//world = XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-
-				ObjectConstantBuffer objConstants;
-				XMStoreFloat4x4(&objConstants.model, XMMatrixTranspose(world));
-				UINT bufferSize = sizeof(ObjectConstantBuffer);
-				memcpy(&s->m_objConstantBuffer[i->constantBufferId * bufferSize], &world, sizeof(world));
-				//memcpy(&i->m_pConstantBuffer, &mvp, sizeof(mvp));
-
-				i->dirty = false;
-			}
-		}
-	}
+	// update object buffers of active scene
+	m_game.GetCurrentScene()->UpdateObjectConstantBuffers();
+	
 }
 
 void D3DGameEngine::Render()

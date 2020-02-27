@@ -105,13 +105,7 @@ void FbxLoader::GetPosition(FbxMesh* mesh, int pIndex, XMFLOAT3& vertexData)
 {
 	FbxVector4 fbxData = mesh->GetControlPointAt(pIndex);
 	fbxData = m_globalTransform.MultT(fbxData);
-
-	FbxAMatrix scale;
-	scale.SetIdentity();
-	scale.SetT(FbxVector4(0.0f, -0.5f, 0.5f, 1.0f));
-	scale.SetS(FbxVector4(0.001f, 0.001f, 0.001f, 1.0f));
-	fbxData = scale.MultT(fbxData);
-
+	
 	vertexData = Fbx4ToXM3(fbxData);
 }
 
