@@ -88,7 +88,7 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 	};
 
 	std::vector<Transform> transform = {
-		Transform { {0.0f, 0.5f, 0.0f}, {0.0f, XM_PI * 0.25f, 0.0f}, {0.002f, 0.002f, 0.002f} },
+		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.25f, 0.0f}, {0.002f, 0.002f, 0.002f} },
 	};
 
 	UINT cbIndex = 0;
@@ -105,6 +105,8 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 Scene::Scene(UINT id) :
 	m_id(id)
 {
+	m_camera.SetPosition(XMFLOAT3(0.0f, 2.5f, -3.0f));
+	m_camera.SetFrustum(XM_PI * 0.25f);
 }
 
 void Scene::Initialize()

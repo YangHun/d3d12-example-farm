@@ -12,8 +12,6 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	m_dsvDescriptorSize(0)
 {
 	m_game = DirectXGame();
-	m_camera.SetPosition(XMFLOAT3(0.0f, 5.0f, -10.0f));
-	m_camera.SetFrustum(XM_PI * 0.25f);
 	m_timer.Reset();
 }
 
@@ -306,17 +304,18 @@ void D3DGameEngine::Update()
 
 	// update constant buffer data
 	{
-		XMMATRIX view = m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
-		XMMATRIX proj = m_camera.GetProjectionMatrix(m_aspectRatio);
+		auto scene = m_game.GetCurrentScene();
+
+		XMMATRIX view = scene->m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
+		XMMATRIX proj = scene->m_camera.GetProjectionMatrix(m_aspectRatio);
 				
 		XMFLOAT4X4 mvp;
 		XMStoreFloat4x4(&mvp, XMMatrixTranspose(view * proj));
 		memcpy(m_pConstantBuffer, &mvp, sizeof(mvp));
-	}
-
-	// update object buffers of active scene
-	m_game.GetCurrentScene()->UpdateObjectConstantBuffers();
 	
+	
+		scene->UpdateObjectConstantBuffers();
+	}	
 }
 
 void D3DGameEngine::Render()
