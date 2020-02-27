@@ -62,6 +62,13 @@ struct Mesh {
 	std::vector<uint16_t> indices;
 };
 
+struct Transform
+{
+	float position[3] = { 0.0f, 0.0f, 0.0f };
+	float rotation[3] = { 0.0f, 0.0f, 0.0f };
+	float scale[3] = { 1.0f, 1.0f, 1.0f };
+};
+
 struct MeshDesc {
 	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	Mesh* mesh = nullptr;
@@ -71,7 +78,8 @@ struct MeshDesc {
 
 	UINT constantBufferId = -1;
 
-	XMFLOAT4X4 world;
+	Transform transform;
+	//XMFLOAT4X4 world;
 
 	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
 	ComPtr<ID3D12Resource> indexBuffer = nullptr;

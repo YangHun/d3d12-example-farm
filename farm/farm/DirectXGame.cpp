@@ -87,15 +87,15 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 		//m_meshes["triangle"].get(),
 	};
 
+	std::vector<Transform> transform = {
+		Transform { {0.0f, 0.5f, 0.0f}, {0.0f, XM_PI * 0.25f, 0.0f}, {0.002f, 0.002f, 0.002f} },
+	};
+
 	UINT cbIndex = 0;
 	for (auto obj : objs)
 	{
-		XMMATRIX w = XMMatrixScaling(3.0f, 3.0f, 3.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-
-		XMStoreFloat4x4(&obj->world, w);
-		
+		obj->transform = transform[cbIndex];
 		obj->constantBufferId = cbIndex;
-		
 		scene->m_objects.push_back(obj);
 	
 		++cbIndex;
@@ -118,3 +118,25 @@ void Scene::BuildObject()
 	// create game objects.
 }
 
+void Scene::UpdateObjectConstantBuffers()
+{
+	for (auto obj : m_objects)
+	{
+		if (obj->dirty)
+		{
+			auto t = obj->transform;
+			//XMMATRIX world = XMMatrixScaling(t.scale[0], t.scale[1], t.scale[2]) * XMMatrixTranslation(t.position[0], t.position[1], t.position[2]);
+			
+			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale[0], t.scale[1], t.scale[2])
+				* XMMatrixRotationRollPitchYaw(t.rotation[0], t.rotation[1], t.rotation[2])
+				* XMMatrixTranslation(t.position[0], t.position[1], t.position[2]));
+
+			ObjectConstantBuffer objConstants;
+			XMStoreFloat4x4(&objConstants.model, XMMatrixTranspose(world));
+			UINT bufferSize = sizeof(ObjectConstantBuffer);
+			memcpy(&m_objConstantBuffer[obj->constantBufferId * bufferSize], &world, sizeof(world));
+
+			obj->dirty = false;
+		}
+	}
+}
