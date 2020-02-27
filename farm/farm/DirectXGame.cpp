@@ -88,7 +88,7 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 	};
 
 	std::vector<Transform> transform = {
-		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.25f, 0.0f}, {0.002f, 0.002f, 0.002f} },
+		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.002f, 0.002f, 0.002f} },
 	};
 
 	UINT cbIndex = 0;

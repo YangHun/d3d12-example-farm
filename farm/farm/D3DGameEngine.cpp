@@ -332,13 +332,18 @@ void D3DGameEngine::Update()
 	{
 		auto scene = m_game.GetCurrentScene();
 
+		SceneConstantBuffer cBuffer;
+
 		XMMATRIX view = scene->m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
 		XMMATRIX proj = scene->m_camera.GetProjectionMatrix(m_aspectRatio);
-				
-		XMFLOAT4X4 mvp;
-		XMStoreFloat4x4(&mvp, XMMatrixTranspose(view * proj));
-		memcpy(m_pConstantBuffer, &mvp, sizeof(mvp));
-	
+
+		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
+
+		cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
+		cBuffer.directionalLight.direction = { 0.57735f, -0.57735f, 0.57735f };
+		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
+		
+		memcpy(m_pConstantBuffer, &cBuffer, sizeof(cBuffer));
 	
 		scene->UpdateObjectConstantBuffers();
 	}	

@@ -36,7 +36,7 @@ PSInput VSMain(VSInput input)
     worldpos = mul(worldpos, gViewProj);
         
     result.position = worldpos;
-    result.normal = input.normal;
+    result.normal = mul(input.normal, (float3x3) gWorld);
     result.uv = input.uv;
     result.tangent = input.tangent;
 
@@ -45,9 +45,13 @@ PSInput VSMain(VSInput input)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    float4 normal = float4(input.normal, 1.0f);
-    normal = normalize(normal);
-    normal = (normal + 1.0f) / 2.0f;
+    float4 color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    input.normal = normalize(input.normal);
+    float3 light = normalize(-gLight.direction);    // directional light
+    float3 diffuse = saturate(dot(light, input.normal)) * gLight.strength * color.xyz;
     
-    return normal;
+    float4 ambient = gAmbient * color;
+    
+    return ambient + float4(diffuse, 0.0f);
+  
 }

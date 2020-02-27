@@ -5,11 +5,19 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
+struct Light
+{
+	XMFLOAT3 strength = { 0.5f, 0.5f, 0.5f };
+	XMFLOAT3 direction = { 0.0f, -1.0f, 0.0f };
+};
+
 // Constant buffer size는 256의 배수가 되도록 padding 해준다.
 // minimum hardware allocation size가 256이기 때문.
 struct SceneConstantBuffer
 {
 	XMFLOAT4X4 viewproj;	// View Proj matrix
+	XMFLOAT4 ambientLight;
+	Light directionalLight;
 };
 
 
