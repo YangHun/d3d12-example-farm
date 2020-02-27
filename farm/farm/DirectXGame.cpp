@@ -19,7 +19,7 @@ void DirectXGame::LoadAssets()
 	// Game에서 쓸 모든 resource (fbx model, textures, ..) 를 load 한다
 
 	std::vector<std::string> fbxName = {
-		//"Assets/deer.fbx",
+		"Assets/deer.fbx",
 		"Assets/tree.fbx"
 	};
 
@@ -38,6 +38,29 @@ void DirectXGame::LoadAssets()
 
 			m_meshes[a] = std::move(meshDesc);
 		}
+	}
+
+	// create default triangle
+
+	{
+		Mesh mesh;
+		mesh.vertices = {
+			Vertex {{ 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+			Vertex {{0.25f, -0.25f , 0.0f }, { 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+			Vertex {{ -0.25f, -0.25f , 0.0f }, { 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}
+		};
+
+		mesh.indices = {
+			0, 1, 2
+		};
+
+		m_models["triangle"] = mesh;
+
+		auto meshDesc = std::make_unique<MeshDesc>();
+		meshDesc->mesh = &m_models["triangle"];
+		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+		m_meshes["triangle"] = std::move(meshDesc);
 	}
 }
 
@@ -60,13 +83,22 @@ void DirectXGame::BuildScenes()
 void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 {
 	std::vector<MeshDesc*> objs = {
-		m_meshes["Assets/tree.fbx"].get(),
+		m_meshes["Assets/deer.fbx"].get(),
+		//m_meshes["triangle"].get(),
 	};
 
-
+	UINT cbIndex = 0;
 	for (auto obj : objs)
 	{
+		XMMATRIX w = XMMatrixScaling(3.0f, 3.0f, 3.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+
+		XMStoreFloat4x4(&obj->world, w);
+		
+		obj->constantBufferId = cbIndex;
+		
 		scene->m_objects.push_back(obj);
+	
+		++cbIndex;
 	}
 }
 

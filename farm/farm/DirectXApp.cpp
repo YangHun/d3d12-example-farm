@@ -47,6 +47,21 @@ void DirectXApp::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppA
 	}
 }
 
+void DirectXApp::CreateConstantBuffer(ID3D12Device* pDevice, UINT64 byteSize, UINT64 elementCount, ComPtr<ID3D12Resource>& uploadBuffer)
+{
+
+	UINT bufferSize = (byteSize + 255) & ~255;
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(bufferSize * elementCount),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&uploadBuffer)
+	));
+}
+
 // default buffer นื upload buffer ฐüทร helper function.
 void DirectXApp::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pCommandList, const void* pInitData, UINT64 byteSize, ComPtr<ID3D12Resource>& defaultBuffer, ComPtr<ID3D12Resource>& uploadBuffer)
 {

@@ -62,6 +62,29 @@ struct Mesh {
 	std::vector<uint16_t> indices;
 };
 
+struct MeshDesc {
+	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	Mesh* mesh = nullptr;
+	UINT indexCount;
+	UINT startIndexLocation = 0;
+	int baseVertexLocation = 0;
+
+	UINT constantBufferId = -1;
+
+	XMFLOAT4X4 world;
+
+	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
+	ComPtr<ID3D12Resource> indexBuffer = nullptr;
+	ComPtr<ID3D12Resource> vertexUploadBuffer = nullptr;
+	ComPtr<ID3D12Resource> indexUploadBuffer = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+	bool dirty = true;
+};
+
+
+
+
 // hash function
 
 namespace std
@@ -100,19 +123,4 @@ namespace std
 	};
 }
 
-
-struct MeshDesc {
-	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	Mesh* mesh = nullptr;
-	UINT indexCount;
-	UINT startIndexLocation = 0;
-	int baseVertexLocation = 0;
-
-	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
-	ComPtr<ID3D12Resource> indexBuffer = nullptr;
-	ComPtr<ID3D12Resource> vertexUploadBuffer = nullptr;
-	ComPtr<ID3D12Resource> indexUploadBuffer = nullptr;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView;
-};
 #endif

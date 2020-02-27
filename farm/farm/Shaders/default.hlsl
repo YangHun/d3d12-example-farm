@@ -9,6 +9,8 @@
 //
 //*********************************************************
 
+#include "Common.hlsl"
+
 struct VSInput
 {
     float3 position : POSITION;
@@ -29,7 +31,32 @@ PSInput VSMain(VSInput input)
 {
     PSInput result;
 
-    result.position = float4(input.position, 1.0f);
+    
+    /*
+    float4 worldPosition = (float4(input.position, 1.0f));
+    worldPosition.y += 0.2f;
+    
+    //result.position = float4(input.position, 1.0f);
+    result.position = worldPosition;
+    */
+    
+    float4x4 i = float4x4(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+    //result.position = mul(float4(input.position, 1.0f), i);
+    
+    //float4 worldpos = mul(float4(input.position, 1.0f), gWorld);
+    float4 worldpos = float4(input.position, 1.0f);
+    //result.position = mul(worldpos, gViewProj);
+    
+    worldpos = mul(worldpos, gWorld);
+    worldpos = mul(worldpos, gViewProj);
+    
+    
+    result.position = worldpos;
     result.normal = input.normal;
     result.uv = input.uv;
     result.tangent = input.tangent;

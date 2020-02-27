@@ -158,10 +158,22 @@ void D3DGameEngine::LoadPipeline()
 
 void D3DGameEngine::LoadAssets()
 {
+
+	// Create the main constant buffer.
+	CreateConstantBuffer(m_device.Get(), sizeof(SceneConstantBuffer), 1, m_cbUploadBuffer);
+	ThrowIfFailed(m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pConstantBuffer)));
+
+
 	// Create the root signature.
 	{
+		CD3DX12_ROOT_PARAMETER rootParameters[2];
+
+		
+		rootParameters[0].InitAsConstantBufferView(0);
+		rootParameters[1].InitAsConstantBufferView(1);
+
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSignatureDesc.Init(2, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -181,8 +193,8 @@ void D3DGameEngine::LoadAssets()
 		UINT compileFlags = 0;
 #endif
 		
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, nullptr));
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -241,9 +253,19 @@ void D3DGameEngine::LoadAssets()
 			desc->indexBufferView.BufferLocation = desc->indexBuffer->GetGPUVirtualAddress();
 			desc->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 			desc->indexBufferView.SizeInBytes = indiceSize;
+
 		}
 	}
 
+	// Create object constant buffers.
+	{
+		for (UINT i = 0; i < m_game.SceneCount(); ++i)
+		{
+			auto s = m_game.GetScene(i);
+			CreateConstantBuffer(m_device.Get(),sizeof(ObjectConstantBuffer), (UINT)s->m_objects.size(), s->m_cbUploadBuffer);
+			ThrowIfFailed(s->m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&s->m_objConstantBuffer)));
+		}
+	}
 
 	// Create the vertex buffer.
 	//{
@@ -308,6 +330,47 @@ void D3DGameEngine::Update()
 		// do sth
 		m_game.SetUpdated();
 	}
+
+	WaitForPreviousFrame();
+
+	// update constant buffer data
+	{
+		XMMATRIX view = XMMatrixLookAtLH(
+			XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f), 
+			XMVectorZero(), 
+			XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+		//XMMATRIX view = XMMatrixIdentity();
+
+		XMMATRIX proj = XMMatrixPerspectiveFovLH(XM_PI * 0.25f, m_aspectRatio, 1.0f, 1000.0f);
+
+		
+		XMFLOAT4X4 mvp;
+		//XMStoreFloat4x4(&mvp, XMMatrixTranspose(proj));
+		XMStoreFloat4x4(&mvp, XMMatrixTranspose(view * proj));
+		memcpy(m_pConstantBuffer, &mvp, sizeof(mvp));
+	}
+
+	// update object buffers
+	{
+		auto s = m_game.GetCurrentScene();
+
+		for (auto i : s->m_objects)
+		{
+			if (i->dirty) {
+				XMMATRIX world = XMLoadFloat4x4(&i->world);
+				//world = XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+
+				ObjectConstantBuffer objConstants;
+				XMStoreFloat4x4(&objConstants.model, XMMatrixTranspose(world));
+				UINT bufferSize = sizeof(ObjectConstantBuffer);
+				memcpy(&s->m_objConstantBuffer[i->constantBufferId * bufferSize], &world, sizeof(world));
+				//memcpy(&i->m_pConstantBuffer, &mvp, sizeof(mvp));
+
+				i->dirty = false;
+			}
+		}
+	}
 }
 
 void D3DGameEngine::Render()
@@ -368,6 +431,8 @@ void D3DGameEngine::PopulateCommandList()
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	
+	m_commandList->SetGraphicsRootConstantBufferView(1, m_cbUploadBuffer.Get()->GetGPUVirtualAddress());
+
 	// 현재 scene의 index instance를 그린다.
 	DrawCurrentScene();
 
@@ -389,6 +454,11 @@ void D3DGameEngine::DrawCurrentScene()
 		m_commandList->IASetVertexBuffers(0, 1, &obj->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&obj->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(obj->primitiveType);
+
+		D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * sizeof(ObjectConstantBuffer);
+
+		//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
+		m_commandList->SetGraphicsRootConstantBufferView(0, address);
 
 		m_commandList->DrawIndexedInstanced(obj->indexCount, 1, obj->startIndexLocation, obj->baseVertexLocation, obj->startIndexLocation);
 	}

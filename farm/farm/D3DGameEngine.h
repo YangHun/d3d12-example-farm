@@ -3,6 +3,7 @@
 #include "DirectXApp.h"
 #include "DirectXGame.h"
 #include "GameTimer.h"
+#include "FrameResource.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -55,6 +56,10 @@ private:
 	ComPtr<ID3D12Resource> m_indexBuffer;
 	ComPtr<ID3D12Resource> m_indexUploadBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+
+	ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
+	SceneConstantBuffer* m_pConstantBuffer;
+
 	GameTimer m_timer;
 
 	// synchronization objects
