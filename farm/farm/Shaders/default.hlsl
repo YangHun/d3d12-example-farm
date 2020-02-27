@@ -45,5 +45,9 @@ PSInput VSMain(VSInput input)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    return float4(input.normal, 1.0f);
+    float4 normal = float4(input.normal, 1.0f);
+    normal = normalize(normal);
+    normal = (normal + 1.0f) / 2.0f;
+    
+    return normal;
 }
