@@ -4,6 +4,7 @@
 #include "DirectXGame.h"
 #include "GameTimer.h"
 #include "FrameResource.h"
+#include "Camera.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -61,6 +62,7 @@ private:
 	SceneConstantBuffer* m_pConstantBuffer;
 
 	GameTimer m_timer;
+	Camera m_camera;
 
 	// synchronization objects
 	UINT m_frameIndex;

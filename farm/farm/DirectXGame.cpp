@@ -126,9 +126,9 @@ void Scene::UpdateObjectConstantBuffers()
 		{
 			auto t = obj->transform;
 			
-			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale[0], t.scale[1], t.scale[2])
-				* XMMatrixRotationRollPitchYaw(t.rotation[0], t.rotation[1], t.rotation[2])
-				* XMMatrixTranslation(t.position[0], t.position[1], t.position[2]));
+			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale.x, t.scale.y, t.scale.z)
+				* XMMatrixRotationRollPitchYaw(t.rotation.x, t.rotation.y, t.rotation.z)
+				* XMMatrixTranslation(t.position.x, t.position.y, t.position.z));
 
 			ObjectConstantBuffer objConstants;
 			XMStoreFloat4x4(&objConstants.model, XMMatrixTranspose(world));
