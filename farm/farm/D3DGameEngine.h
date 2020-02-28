@@ -24,7 +24,9 @@ private:
 	void LoadAssets();
 	void WaitForPreviousFrame();
 	void PopulateCommandList();
+	void RenderUI();
 	void DrawCurrentScene();
+	void DrawCurrentUI();
 
 	static const UINT FrameCount = 2;
 
@@ -48,7 +50,6 @@ private:
 	UINT m_dsvDescriptorSize;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 
-
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
@@ -56,11 +57,23 @@ private:
 	ComPtr<ID3D12Resource> m_indexBuffer;
 	ComPtr<ID3D12Resource> m_indexUploadBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
-
 	ComPtr<ID3D12Resource> m_depthStencil;	// depth stencil buffer
-
 	ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
 	SceneConstantBuffer* m_pConstantBuffer;
+
+	 // 2d pipeline objects
+	ComPtr<ID3D11On12Device> m_d3d11On12Device;
+	ComPtr<ID3D11DeviceContext> m_d3d11DeviceContext;
+	ComPtr<ID2D1Factory3> m_d2dFactory;
+	ComPtr<ID2D1Device2> m_d2dDevice;
+	ComPtr<ID2D1DeviceContext2> m_d2dDeviceContext;
+	ComPtr<ID2D1Bitmap1> m_d2dRenderTargets[FrameCount];
+	ComPtr<IDWriteFactory> m_dWriteFactory;
+	ComPtr<ID3D11Resource> m_wrappedBackBuffers[FrameCount];
+
+	// 2d resouces.
+	ComPtr<ID2D1SolidColorBrush> m_textBrush;
+	ComPtr<IDWriteTextFormat> m_textFormat;
 
 	GameTimer m_timer;
 

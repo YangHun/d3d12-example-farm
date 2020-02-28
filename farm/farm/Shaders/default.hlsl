@@ -47,7 +47,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 {
     float4 color = float4(1.0f, 1.0f, 1.0f, 1.0f);
     input.normal = normalize(input.normal);
-    float3 light = normalize(-gLight.direction);    // directional light
+    float3 light = -gLight.direction;    // directional light
     float3 diffuse = saturate(dot(light, input.normal)) * gLight.strength * color.xyz;
     
     float4 ambient = gAmbient * color;

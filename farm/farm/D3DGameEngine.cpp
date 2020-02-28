@@ -70,37 +70,38 @@ void D3DGameEngine::LoadPipeline()
 	}
 
 	// Describe and create the command queue.
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	{
+		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+		ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 
-	// Describe and create the swap chain.
-	// IDXGISwapChain1 은 MSAA 를 지원하지 않는다. MSAA를 지원하는 다른 buffer를 만들어야 함.
-	// https://stackoverflow.com/questions/40110699/creating-a-swap-chain-with-msaa-fails
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameCount;
-	swapChainDesc.Width = m_width;
-	swapChainDesc.Height = m_height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.SampleDesc.Count = 1;
+		// Describe and create the swap chain.
+		// IDXGISwapChain1 은 MSAA 를 지원하지 않는다. MSAA를 지원하는 다른 buffer를 만들어야 함.
+		// https://stackoverflow.com/questions/40110699/creating-a-swap-chain-with-msaa-fails
+		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+		swapChainDesc.BufferCount = FrameCount;
+		swapChainDesc.Width = m_width;
+		swapChainDesc.Height = m_height;
+		swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		swapChainDesc.SampleDesc.Count = 1;
 
-	ComPtr<IDXGISwapChain1> swapChain;
-	ThrowIfFailed(factory->CreateSwapChainForHwnd(
-		m_commandQueue.Get(),
-		Win32Application::GetHwnd(),
-		&swapChainDesc,
-		nullptr,
-		nullptr,
-		&swapChain));
+		ComPtr<IDXGISwapChain1> swapChain;
+		ThrowIfFailed(factory->CreateSwapChainForHwnd(
+			m_commandQueue.Get(),
+			Win32Application::GetHwnd(),
+			&swapChainDesc,
+			nullptr,
+			nullptr,
+			&swapChain));
 
-	ThrowIfFailed(swapChain.As(&m_swapChain));
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+		ThrowIfFailed(swapChain.As(&m_swapChain));
+		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+	}
 
-	
 	// Create descriptor heaps.
 	{
 		// Describe and create a render target view (RTV) descriptor heap.
@@ -131,6 +132,49 @@ void D3DGameEngine::LoadPipeline()
 		m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	}
 
+	// Create an 11 device wrapped aroud the 12 device and share
+	// 12's command queue to use D2D11.
+	{
+		ComPtr<ID3D11Device> d3d11Device;
+		ThrowIfFailed(D3D11On12CreateDevice(
+			m_device.Get(),
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+			nullptr,
+			0,
+			reinterpret_cast<IUnknown**>(m_commandQueue.GetAddressOf()),
+			1,
+			0,
+			&d3d11Device,
+			&m_d3d11DeviceContext,
+			nullptr
+		));
+		ThrowIfFailed(d3d11Device.As(&m_d3d11On12Device));
+	}
+
+	// Create D2D/DWrite components.
+	{
+		D2D1_FACTORY_OPTIONS d2dFactoryOptions = {};
+
+		D2D1_DEVICE_CONTEXT_OPTIONS deviceOptions = D2D1_DEVICE_CONTEXT_OPTIONS_NONE;
+		ThrowIfFailed(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory3), &d2dFactoryOptions, &m_d2dFactory));
+		ComPtr<IDXGIDevice> dxgiDevice;
+		ThrowIfFailed(m_d3d11On12Device.As(&dxgiDevice));
+		ThrowIfFailed(m_d2dFactory->CreateDevice(dxgiDevice.Get(), &m_d2dDevice));
+		ThrowIfFailed(m_d2dDevice->CreateDeviceContext(deviceOptions, &m_d2dDeviceContext));
+		ThrowIfFailed(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), &m_dWriteFactory));
+	}
+
+	// Query the desktop's dpi settings, which will be used to create
+	// D2D's render targets.
+	UINT dpi = GetDpiForWindow(Win32Application::GetHwnd());	//compatible with Windows 10
+	D2D1_BITMAP_PROPERTIES1 bitmapProperties = D2D1::BitmapProperties1(
+		D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+		D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED),
+		(float)dpi,
+		(float)dpi
+	);
+
+
 	// Create frame resources.
 	// Constant buffer는 GPU가 해당 buffer를 참조하는 작업이 끝나기 전엔 update 될 수 없다.
 	// GPU가 n번째 프레임을 다 그릴 때까지 CPU가 idle 상태가 되지 않게 하기 위하여,
@@ -146,6 +190,31 @@ void D3DGameEngine::LoadPipeline()
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+
+			// Create a wrapped 11On12 resource of this back buffer. Since we are 
+			// rendering all D3D12 content first and then all D2D content, we specify 
+			// the In resource state as RENDER_TARGET - because D3D12 will have last 
+			// used it in this state - and the Out resource state as PRESENT. When 
+			// ReleaseWrappedResources() is called on the 11On12 device, the resource 
+			// will be transitioned to the PRESENT state.
+			D3D11_RESOURCE_FLAGS d3d11Flags = { D3D11_BIND_RENDER_TARGET };
+			ThrowIfFailed(m_d3d11On12Device->CreateWrappedResource(
+				m_renderTargets[n].Get(),
+				&d3d11Flags,
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_PRESENT,
+				IID_PPV_ARGS(&m_wrappedBackBuffers[n])
+			));
+			// Create a render target for D2D to draw directly to this back buffer.
+			ComPtr<IDXGISurface> surface;
+			ThrowIfFailed(m_wrappedBackBuffers[n].As(&surface));
+			ThrowIfFailed(m_d2dDeviceContext->CreateBitmapFromDxgiSurface(
+				surface.Get(),
+				&bitmapProperties,
+				&m_d2dRenderTargets[n]
+			));
+
+
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		}
 
@@ -252,6 +321,23 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
 	}
 
+	// Create D2D/DWrite objects for rendering text.
+	{
+		ThrowIfFailed(m_d2dDeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &m_textBrush));
+		ThrowIfFailed(m_dWriteFactory->CreateTextFormat(
+			L"Verdana",
+			NULL,
+			DWRITE_FONT_WEIGHT_NORMAL,
+			DWRITE_FONT_STYLE_NORMAL,
+			DWRITE_FONT_STRETCH_NORMAL,
+			50,
+			L"en-us",
+			&m_textFormat
+		));
+		ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+	}
+
 	// Create the main command list.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 	
@@ -328,6 +414,11 @@ void D3DGameEngine::Update()
 
 	WaitForPreviousFrame();
 
+	// animate light
+	{
+		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
+	}
+
 	// update constant buffer data
 	{
 		auto scene = m_game.GetCurrentScene();
@@ -340,7 +431,14 @@ void D3DGameEngine::Update()
 		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
 
 		cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
-		cBuffer.directionalLight.direction = { 0.57735f, -0.57735f, 0.57735f };
+		
+		
+		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
+		XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
+
+		XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
+		//cBuffer.directionalLight.direction = { 0.57735f, -0.57735f, 0.57735f };
+		
 		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
 		
 		memcpy(m_pConstantBuffer, &cBuffer, sizeof(cBuffer));
@@ -357,6 +455,9 @@ void D3DGameEngine::Render()
 	// command list가 갖고 있는 command를 GPU의 command queue에 등록
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// d3d12 buffer를 먼저 그린 다음, ui를 그린다.
+	RenderUI();
 
 	// 현재 frame의 back buffer와 frame buffer를 swap.
 	ThrowIfFailed(m_swapChain->Present(1, 0));
@@ -418,9 +519,13 @@ void D3DGameEngine::PopulateCommandList()
 	// 현재 scene의 index instance를 그린다.
 	DrawCurrentScene();
 
+
+	// back buffer state 를 여기서 present로 transition하지 않는다.
+	// 이후, wrapped 11on12 target resource가 released될 때 일어남.
+		
 	// back buffer texture의 state를 present 상태로 변경.
 	// 위 command가 실행된 후 back buffer에 더이상 write 작업이 없음을 명시.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	// m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 
 	// command 추가가 완료되었으므로 queue에 넘기기 전 list를 close.
@@ -444,4 +549,55 @@ void D3DGameEngine::DrawCurrentScene()
 
 		m_commandList->DrawIndexedInstanced(obj->indexCount, 1, obj->startIndexLocation, obj->baseVertexLocation, obj->startIndexLocation);
 	}
+}
+
+void D3DGameEngine::RenderUI()
+{
+	// Acquire our wrapped render target resource for the current back buffer.
+	m_d3d11On12Device->AcquireWrappedResources(m_wrappedBackBuffers[m_frameIndex].GetAddressOf(), 1);
+
+	// Render text directly to the back buffer.
+	m_d2dDeviceContext->SetTarget(m_d2dRenderTargets[m_frameIndex].Get());
+	m_d2dDeviceContext->BeginDraw();
+	m_d2dDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
+	
+	DrawCurrentUI();
+	
+	ThrowIfFailed(m_d2dDeviceContext->EndDraw());
+
+	// Release our wrapped render target resource. Releasing 
+	// transitions the back buffer resource to the state specified
+	// as the OutState when the wrapped resource was created.
+	m_d3d11On12Device->ReleaseWrappedResources(m_wrappedBackBuffers[m_frameIndex].GetAddressOf(), 1);
+
+	// Flush to submit the 11 command list to the shared command queue.
+	m_d3d11DeviceContext->Flush();
+}
+
+void D3DGameEngine::DrawCurrentUI()
+{
+	// Render text over D3D12 using D2D via the 11On12 device.
+	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
+	static const WCHAR text[] = L"11On12";
+	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
+
+	m_d2dDeviceContext->DrawTextW(
+		text,
+		_countof(text) - 1,
+		m_textFormat.Get(),
+		&textRect,
+		m_textBrush.Get()
+	);
+
+	// Render text over D3D12 using D2D via the 11On12 device.
+	static const WCHAR text2[] = L"Hello ~ :)";
+	D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
+
+	m_d2dDeviceContext->DrawTextW(
+		text2,
+		_countof(text2) - 1,
+		m_textFormat.Get(),
+		&textRect2,
+		m_textBrush.Get()
+	);
 }
