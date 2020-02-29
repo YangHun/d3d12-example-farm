@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Component.cpp" />
     <ClCompile Include="D3DGameEngine.cpp" />
     <ClCompile Include="DirectXApp.cpp" />
     <ClCompile Include="DirectXGame.cpp" />
@@ -33,10 +34,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="UploadBuffer.cpp" />
     <ClCompile Include="Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Component.h" />
     <ClInclude Include="D3DGameEngine.h" />
     <ClInclude Include="d3dHelper.h" />
     <ClInclude Include="d3dx12.h" />
@@ -48,6 +51,7 @@
     <ClInclude Include="Meshes.h" />
     <ClInclude Include="Scenes.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="Win32Application.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

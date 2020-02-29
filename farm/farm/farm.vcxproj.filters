@@ -19,6 +19,12 @@
     <Filter Include="헤더 파일\Data">
       <UniqueIdentifier>{5f9db638-18f3-49e5-9afa-10da50998995}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Object">
+      <UniqueIdentifier>{9d2e250a-ad22-47fc-8ae4-e7e3a3082a65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Component">
+      <UniqueIdentifier>{7e50401f-5145-4848-bd7f-c26534d00789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DirectXApp.cpp">
@@ -49,6 +55,12 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>소스 파일\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadBuffer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -90,6 +102,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>헤더 파일\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBuffer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

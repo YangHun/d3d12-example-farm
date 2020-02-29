@@ -255,8 +255,10 @@ void D3DGameEngine::LoadAssets()
 {
 
 	// Create the main constant buffer.
-	CreateConstantBuffer(m_device.Get(), sizeof(SceneConstantBuffer), 1, m_cbUploadBuffer);
-	ThrowIfFailed(m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pConstantBuffer)));
+	//CreateConstantBuffer(m_device.Get(), sizeof(SceneConstantBuffer), 1, m_cbUploadBuffer);
+	//ThrowIfFailed(m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pConstantBuffer)));
+	
+	m_constantBuffer = std::make_unique<UploadBuffer<SceneConstantBuffer>>(m_device.Get(), 1, true);
 
 
 	// Create the root signature.
@@ -374,8 +376,9 @@ void D3DGameEngine::LoadAssets()
 		for (UINT i = 0; i < m_game.SceneCount(); ++i)
 		{
 			auto s = m_game.GetScene(i);
-			CreateConstantBuffer(m_device.Get(),sizeof(ObjectConstantBuffer), (UINT)s->m_objects.size(), s->m_cbUploadBuffer);
-			ThrowIfFailed(s->m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&s->m_objConstantBuffer)));
+			//CreateConstantBuffer(m_device.Get(),sizeof(ObjectConstantBuffer), (UINT)s->m_objects.size(), s->m_cbUploadBuffer);
+			//ThrowIfFailed(s->m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&s->m_objConstantBuffer)));
+			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_objects.size()), true);
 		}
 	}
 
@@ -422,6 +425,7 @@ void D3DGameEngine::Update()
 	// update constant buffer data
 	{
 		auto scene = m_game.GetCurrentScene();
+		auto mainbuffer = m_constantBuffer.get();
 
 		SceneConstantBuffer cBuffer;
 
@@ -431,18 +435,17 @@ void D3DGameEngine::Update()
 		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
 
 		cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
-		
-		
+
+
 		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
 		XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
 
 		XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
-		//cBuffer.directionalLight.direction = { 0.57735f, -0.57735f, 0.57735f };
-		
+
 		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
+
+		mainbuffer->CopyData(0, cBuffer);
 		
-		memcpy(m_pConstantBuffer, &cBuffer, sizeof(cBuffer));
-	
 		scene->UpdateObjectConstantBuffers();
 	}	
 }
@@ -513,8 +516,9 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 
+	auto address = m_constantBuffer.get()->Resource()->GetGPUVirtualAddress();
 	
-	m_commandList->SetGraphicsRootConstantBufferView(1, m_cbUploadBuffer.Get()->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(1, address);
 
 	// 현재 scene의 index instance를 그린다.
 	DrawCurrentScene();
@@ -534,7 +538,10 @@ void D3DGameEngine::PopulateCommandList()
 
 void D3DGameEngine::DrawCurrentScene()
 {
+	UINT bufferSize = (sizeof(ObjectConstantBuffer) + 255) & ~255;
+
 	auto scene = m_game.GetCurrentScene();
+	auto buffer = scene->m_objConstantBuffers.get();
 
 	for (auto obj : scene->m_objects)
 	{
@@ -542,7 +549,9 @@ void D3DGameEngine::DrawCurrentScene()
 		m_commandList->IASetIndexBuffer(&obj->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(obj->primitiveType);
 
-		D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * sizeof(ObjectConstantBuffer);
+		//D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
+
+		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
 
 		//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
@@ -576,28 +585,29 @@ void D3DGameEngine::RenderUI()
 
 void D3DGameEngine::DrawCurrentUI()
 {
-	// Render text over D3D12 using D2D via the 11On12 device.
-	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
-	static const WCHAR text[] = L"11On12";
-	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
+	//// Render text over D3D12 using D2D via the 11On12 device.
+	//D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
+	//static const WCHAR text[] = L"11On12";
+	//D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
 
-	m_d2dDeviceContext->DrawTextW(
-		text,
-		_countof(text) - 1,
-		m_textFormat.Get(),
-		&textRect,
-		m_textBrush.Get()
-	);
+	//m_d2dDeviceContext->DrawTextW(
+	//	text,
+	//	_countof(text) - 1,
+	//	m_textFormat.Get(),
+	//	&textRect,
+	//	m_textBrush.Get()
+	//);
 
-	// Render text over D3D12 using D2D via the 11On12 device.
-	static const WCHAR text2[] = L"Hello ~ :)";
-	D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
+	//// Render text over D3D12 using D2D via the 11On12 device.
+	//static const WCHAR text2[] = L"Hello ~ :)";
+	//D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
 
-	m_d2dDeviceContext->DrawTextW(
-		text2,
-		_countof(text2) - 1,
-		m_textFormat.Get(),
-		&textRect2,
-		m_textBrush.Get()
-	);
+	//m_d2dDeviceContext->DrawTextW(
+	//	text2,
+	//	_countof(text2) - 1,
+	//	m_textFormat.Get(),
+	//	&textRect2,
+	//	m_textBrush.Get()
+	//);
+
 }

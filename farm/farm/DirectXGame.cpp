@@ -80,15 +80,24 @@ void DirectXGame::BuildScenes()
 	m_currentScene = m_allScenes[0].get();
 }
 
+// Scene에 그려질 RenderObject 목록을 정의한다.
 void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 {
 	std::vector<MeshDesc*> objs = {
+		m_meshes["triangle"].get(),
+		m_meshes["triangle"].get(),
+		m_meshes["triangle"].get(),
+
 		m_meshes["Assets/deer.fbx"].get(),
-		//m_meshes["triangle"].get(),
+		//m_meshes["Assets/tree.fbx"].get(),
 	};
 
 	std::vector<Transform> transform = {
+		Transform {{-1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
+		Transform {{1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
+		Transform {{-2.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {1.0f, 1.0f, 1.0f}},
 		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.002f, 0.002f, 0.002f} },
+		//Transform { {0.0f, 0.0f, 0.0f}, { XM_PI * 0.3f, 0.0f, 0.0f}, {0.005f, 0.005f, 0.005f} },
 	};
 
 	UINT cbIndex = 0;
@@ -105,7 +114,7 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 Scene::Scene(UINT id) :
 	m_id(id)
 {
-	m_camera.SetPosition(XMFLOAT3(0.0f, 2.5f, -3.0f));
+	m_camera.SetPosition(XMFLOAT3(0.0f, 0.0f, -3.0f));
 	m_camera.SetFrustum(XM_PI * 0.25f);
 }
 
@@ -122,6 +131,9 @@ void Scene::BuildObject()
 
 void Scene::UpdateObjectConstantBuffers()
 {
+	//UINT bufferSize = (sizeof(ObjectConstantBuffer));
+	UINT bufferSize = 256;
+
 	for (auto obj : m_objects)
 	{
 		if (obj->dirty)
@@ -133,11 +145,13 @@ void Scene::UpdateObjectConstantBuffers()
 				* XMMatrixTranslation(t.position.x, t.position.y, t.position.z));
 
 			ObjectConstantBuffer objConstants;
-			XMStoreFloat4x4(&objConstants.model, XMMatrixTranspose(world));
-			UINT bufferSize = sizeof(ObjectConstantBuffer);
-			memcpy(&m_objConstantBuffer[obj->constantBufferId * bufferSize], &world, sizeof(world));
+			XMStoreFloat4x4(&objConstants.model, world);
+			
+			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
+			m_objConstantBuffers.get()->CopyData(obj->constantBufferId, objConstants);
 
 			obj->dirty = false;
 		}
 	}
 }
+

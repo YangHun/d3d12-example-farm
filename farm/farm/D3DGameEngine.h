@@ -4,6 +4,7 @@
 #include "DirectXGame.h"
 #include "GameTimer.h"
 #include "FrameResource.h"
+#include "UploadBuffer.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -58,8 +59,13 @@ private:
 	ComPtr<ID3D12Resource> m_indexUploadBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
 	ComPtr<ID3D12Resource> m_depthStencil;	// depth stencil buffer
-	ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
-	SceneConstantBuffer* m_pConstantBuffer;
+
+
+	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
+
+	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
+	//SceneConstantBuffer* m_pConstantBuffer;
+
 
 	 // 2d pipeline objects
 	ComPtr<ID3D11On12Device> m_d3d11On12Device;

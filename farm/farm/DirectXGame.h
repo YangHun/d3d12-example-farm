@@ -2,6 +2,7 @@
 #include "DirectXApp.h"
 #include "FrameResource.h"
 #include "Camera.h"
+#include "UploadBuffer.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -24,8 +25,11 @@ public:
 	std::vector<uint16_t> m_indices;
 
 	// current scene resources.
-	ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
-	ObjectConstantBuffer* m_objConstantBuffer;
+	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
+
+	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
+	//BYTE* m_cbUploadData;
+	//ObjectConstantBuffer* m_objConstantBuffer;
 
 
 	Camera m_camera;
