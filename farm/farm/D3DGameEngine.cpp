@@ -422,10 +422,10 @@ void D3DGameEngine::Update()
 		scene->Update();
 
 		auto mainbuffer = m_constantBuffer.get();
-
 		SceneConstantBuffer cBuffer;
 
-		XMMATRIX view = scene->m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
+		//XMMATRIX view = scene->m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
+		XMMATRIX view = scene->m_camera.GetViewMatrix();
 		XMMATRIX proj = scene->m_camera.GetProjectionMatrix(m_aspectRatio);
 
 		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));

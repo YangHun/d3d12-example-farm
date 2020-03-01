@@ -29,6 +29,16 @@ void Camera::SetPosition(XMFLOAT3 position)
 	m_dirty = true;
 }
 
+void Camera::SetRotation(XMFLOAT3 euler)
+{
+	m_transform.rotation = XMFLOAT3{
+		euler.x / 180.0f * XM_PI,
+		euler.y / 180.0f * XM_PI,
+		euler.z / 180.0f * XM_PI
+	};
+	m_dirty = true;
+}
+
 void Camera::SetTransform(Transform* transform)
 {
 	m_transform = *transform;
@@ -43,11 +53,26 @@ XMMATRIX Camera::GetProjectionMatrix(float aspectRatio)
 
 XMMATRIX Camera::LookAt(XMFLOAT3 position)
 {
-	XMVECTOR pos = XMVectorSet(m_transform.position.x, m_transform.position.y, m_transform.position.z, 1.0f);
-
 	return XMMatrixLookAtLH(
-		pos,
+		XMLoadFloat3(&m_transform.position),
 		XMLoadFloat3(&position),
 		XMLoadFloat3(&m_up));
 }
 
+// Transform 값을 이용해 view matrix를 얻는다
+XMMATRIX Camera::GetViewMatrix()
+{
+	XMVECTOR eye = XMLoadFloat3(&m_transform.position);
+	XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	XMMATRIX rot = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_transform.rotation));
+	
+	forward = XMVector3TransformNormal(forward, rot);
+	up = XMVector3TransformNormal(up, rot);
+
+	return XMMatrixLookAtLH(
+		eye,
+		eye + forward,
+		up);
+}

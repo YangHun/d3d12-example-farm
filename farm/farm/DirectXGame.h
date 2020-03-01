@@ -60,8 +60,6 @@ public:
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
 
-	//std::unordered_map<std::string, std::unique_ptr<MeshDesc>> m_meshes;
-
 private:
 	void BuildScenes();
 	void BuildSceneRenderObjects(Scene* scene);

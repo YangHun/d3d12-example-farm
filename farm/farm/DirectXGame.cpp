@@ -59,7 +59,7 @@ void Assets::LoadAssets()
 DirectXGame::DirectXGame() 
 {
 	m_allScenes = std::vector<std::unique_ptr<Scene>>();
-	Assets asset = Assets();	// call LoadAssets() in Assets class.
+	Assets asset = Assets();	// call LoadAssets() in Assets class constructor.
 }
 
 void DirectXGame::Initialize()
@@ -124,7 +124,8 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 Scene::Scene(UINT id) :
 	m_id(id)
 {
-	m_camera.SetPosition(XMFLOAT3(0.0f, 0.0f, -3.0f));
+	m_camera.SetPosition(XMFLOAT3(-5.0f, 6.0f, -6.0f));
+	m_camera.SetRotation(XMFLOAT3(30.0f, 45.0f, 0.0f));
 	m_camera.SetFrustum(XM_PI * 0.25f);
 }
 
