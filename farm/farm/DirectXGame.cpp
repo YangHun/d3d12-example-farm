@@ -108,13 +108,9 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 	for (auto obj : objMeshes)
 	{
 		auto deer = std::make_unique<Deer>();
-		//deer.renderer.SetMesh(obj);
-		deer->renderer.mesh = obj;
-		deer->transform = transform[cbIndex];
-		deer->bufferId = cbIndex;
-		//obj->transform = transform[cbIndex];
-		//obj->constantBufferId = cbIndex;
-		//scene->m_objects.push_back(obj);
+		deer->m_renderer.m_mesh = obj;
+		deer->m_transform = transform[cbIndex];
+		deer->m_bufferId = cbIndex;
 		scene->m_allObjects.push_back(std::move(deer));
 		scene->m_renderObjects.push_back(scene->m_allObjects.back().get());
 		++cbIndex;
@@ -139,13 +135,25 @@ void Scene::BuildObject()
 	// create game objects.
 }
 
+void Scene::Update()
+{
+
+	for (auto& i : m_allObjects)
+	{
+		auto obj = i.get();
+		if (obj->m_active) obj->Update();
+	}
+
+	UpdateObjectConstantBuffers();
+}
+
 void Scene::UpdateObjectConstantBuffers()
 {
 	for (auto obj : m_renderObjects)
 	{
 		if (obj->IsDirty())
 		{
-			auto t = obj->transform;
+			auto t = obj->m_transform;
 			
 			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale.x, t.scale.y, t.scale.z)
 				* XMMatrixRotationRollPitchYaw(t.rotation.x, t.rotation.y, t.rotation.z)
@@ -155,7 +163,7 @@ void Scene::UpdateObjectConstantBuffers()
 			XMStoreFloat4x4(&objConstants.model, world);
 			
 			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
-			m_objConstantBuffers.get()->CopyData(obj->bufferId, objConstants);
+			m_objConstantBuffers.get()->CopyData(obj->m_bufferId, objConstants);
 
 			obj->SetDirty(false);
 		}

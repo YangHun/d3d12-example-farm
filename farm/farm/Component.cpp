@@ -41,12 +41,12 @@ void MeshRenderer::Update()
 
 void MeshRenderer::SetMesh(MeshDesc* pMesh)
 {
-	mesh = pMesh;
+	m_mesh = pMesh;
 }
 
 Deer::Deer()
 {
-	renderer = MeshRenderer();
+	m_renderer = MeshRenderer();
 	//components.push_back(&renderer);
 	//renderer.SetMesh("Assets/deer.fbx");
 	
@@ -60,7 +60,7 @@ void Deer::Start() {
 }
 
 void Deer::Update() {
-	angle += 0.001f;
-	transform.rotation.y = XM_PI * 0.3f + angle;
+	m_angle += 0.001f;
+	m_transform.rotation.y = XM_PI * 0.3f + m_angle;
 	m_dirty = true;
 }

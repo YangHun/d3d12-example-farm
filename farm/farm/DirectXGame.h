@@ -15,9 +15,10 @@ public:
 
 	void Initialize();
 
-	void UpdateObjectConstantBuffers();
+	void Update();
 private:
 	void BuildObject();
+	void UpdateObjectConstantBuffers();
 
 public: 
 	UINT m_id;

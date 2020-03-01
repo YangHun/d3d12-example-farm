@@ -25,7 +25,7 @@ public:
 	void Update();
 
 	void SetMesh(MeshDesc* pMesh);
-	MeshDesc* mesh = nullptr;
+	MeshDesc* m_mesh = nullptr;
 
 };
 
@@ -45,12 +45,14 @@ public:
 	void SetDirty(bool value) { m_dirty = value; }
 
 public:
-	Transform transform;
-	UINT bufferId;
+	Transform m_transform;
+	UINT m_bufferId;
 
 	// components
-	MeshRenderer renderer;
+	MeshRenderer m_renderer;
 	//std::unordered_map<std::string, IObject*> components;
+
+	bool m_active = true;
 
 protected:
 	bool m_dirty = true;
@@ -69,5 +71,5 @@ public:
 	void Update();
 
 private:
-	float angle = 0.0f;
+	float m_angle = 0.0f;
 };

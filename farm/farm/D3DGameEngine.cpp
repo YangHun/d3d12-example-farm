@@ -408,11 +408,6 @@ void D3DGameEngine::LoadAssets()
 void D3DGameEngine::Update()
 {
 	m_timer.Tick();
-	if (m_game.IsSceneChanged())
-	{
-		// do sth
-		m_game.SetUpdated();
-	}
 
 	WaitForPreviousFrame();
 
@@ -424,6 +419,8 @@ void D3DGameEngine::Update()
 	// update constant buffer data
 	{
 		auto scene = m_game.GetCurrentScene();
+		scene->Update();
+
 		auto mainbuffer = m_constantBuffer.get();
 
 		SceneConstantBuffer cBuffer;
@@ -445,7 +442,7 @@ void D3DGameEngine::Update()
 
 		mainbuffer->CopyData(0, cBuffer);
 		
-		scene->UpdateObjectConstantBuffers();
+		
 	}	
 }
 
@@ -547,7 +544,7 @@ void D3DGameEngine::DrawCurrentScene()
 
 	for (auto obj : scene->m_renderObjects)
 	{
-		auto mesh = obj->renderer.mesh;
+		auto mesh = obj->m_renderer.m_mesh;
 
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
@@ -555,7 +552,7 @@ void D3DGameEngine::DrawCurrentScene()
 
 		//D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
 
-		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->bufferId * bufferSize;
+		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->m_bufferId * bufferSize;
 
 		//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
