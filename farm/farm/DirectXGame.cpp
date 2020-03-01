@@ -2,21 +2,15 @@
 #include "DirectXGame.h"
 #include "FbxLoader.h"
 
-DirectXGame::DirectXGame() 
-{
-	m_allScenes = std::vector<std::unique_ptr<Scene>>();
-}
-
-void DirectXGame::Initialize()
+std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
+std::unordered_map<std::string, Mesh> Assets::m_models;
+Assets::Assets()
 {
 	LoadAssets();
-	BuildScenes();
 }
 
-void DirectXGame::LoadAssets()
+void Assets::LoadAssets()
 {
-	// Game에서 쓸 모든 resource (fbx model, textures, ..) 를 load 한다
-
 	std::vector<std::string> fbxName = {
 		"Assets/deer.fbx",
 		"Assets/tree.fbx"
@@ -40,7 +34,6 @@ void DirectXGame::LoadAssets()
 	}
 
 	// create default triangle
-
 	{
 		Mesh mesh;
 		mesh.vertices = {
@@ -61,6 +54,17 @@ void DirectXGame::LoadAssets()
 
 		m_meshes["triangle"] = std::move(meshDesc);
 	}
+}
+
+DirectXGame::DirectXGame() 
+{
+	m_allScenes = std::vector<std::unique_ptr<Scene>>();
+	Assets asset = Assets();	// call LoadAssets() in Assets class.
+}
+
+void DirectXGame::Initialize()
+{
+	BuildScenes();
 }
 
 void DirectXGame::BuildScenes()
@@ -87,10 +91,10 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 		//m_meshes["triangle"].get(),
 		//m_meshes["triangle"].get(),
 
-		m_meshes["Assets/deer.fbx"].get(),
-		m_meshes["Assets/deer.fbx"].get(),
-		m_meshes["Assets/deer.fbx"].get(),
-		m_meshes["Assets/tree.fbx"].get(),
+		Assets::m_meshes["Assets/deer.fbx"].get(),
+		Assets::m_meshes["Assets/deer.fbx"].get(),
+		Assets::m_meshes["Assets/deer.fbx"].get(),
+		Assets::m_meshes["Assets/tree.fbx"].get(),
 	};
 
 	std::vector<Transform> transform = {

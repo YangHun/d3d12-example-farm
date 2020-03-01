@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DIRECTX_GAME_H_
+#define DIRECTX_GAME_H_
+
 #include "DirectXApp.h"
 #include "FrameResource.h"
 #include "Camera.h"
@@ -35,6 +38,14 @@ public:
 	Camera m_camera;
 };
 
+static class Assets {
+public:
+	Assets();
+	static void LoadAssets();
+	static std::unordered_map<std::string, std::unique_ptr<MeshDesc>> m_meshes;
+	static std::unordered_map<std::string, Mesh> m_models;
+};
+
 class DirectXGame
 {
 
@@ -49,10 +60,9 @@ public:
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
 
-	std::unordered_map<std::string, std::unique_ptr<MeshDesc>> m_meshes;
+	//std::unordered_map<std::string, std::unique_ptr<MeshDesc>> m_meshes;
 
 private:
-	void LoadAssets();
 	void BuildScenes();
 	void BuildSceneRenderObjects(Scene* scene);
 
@@ -64,3 +74,5 @@ private:
 
 	bool m_dirtyScene = true;
 };
+
+#endif

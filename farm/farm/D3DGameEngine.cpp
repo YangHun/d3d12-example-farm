@@ -349,7 +349,7 @@ void D3DGameEngine::LoadAssets()
 	// Create the vertex buffer and index buffer for all meshes in game.
 	// Scenes would reference mesh descriptions to draw specific meshes.
 	{
-		for (auto& i : m_game.m_meshes) {
+		for (auto& i : Assets::m_meshes) {
 
 			auto desc = i.second.get();
 			UINT verticeSize = sizeof(Vertex) * (UINT)(desc->mesh->vertices.size());
