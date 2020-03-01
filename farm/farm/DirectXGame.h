@@ -3,6 +3,7 @@
 #include "FrameResource.h"
 #include "Camera.h"
 #include "UploadBuffer.h"
+#include "Component.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -20,16 +21,14 @@ private:
 
 public: 
 	UINT m_id;
-	std::vector<MeshDesc*> m_objects;
-	std::vector<Vertex> m_vertices;
-	std::vector<uint16_t> m_indices;
+	//std::vector<MeshDesc*> m_objects;
+
+	std::vector<std::unique_ptr<Object>> m_allObjects;
+
+	std::vector<Object*> m_renderObjects;
 
 	// current scene resources.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
-
-	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
-	//BYTE* m_cbUploadData;
-	//ObjectConstantBuffer* m_objConstantBuffer;
 
 
 	Camera m_camera;

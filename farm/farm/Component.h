@@ -6,6 +6,30 @@ public:
 	virtual void Update() = 0;
 };
 
+class Component : public IObject
+{
+public:
+	Component();
+
+	virtual void Start() {}
+	virtual void Update() {}
+
+protected:
+};
+
+class MeshRenderer : public Component
+{
+public:
+	MeshRenderer();
+	void Start();
+	void Update();
+
+	void SetMesh(MeshDesc* pMesh);
+	MeshDesc* mesh = nullptr;
+
+};
+
+
 class Object : public IObject
 {
 public:
@@ -17,45 +41,30 @@ public:
 	//void AddComponent(Component* component);
 	//void RemoveComponent(Component* component);
 
+	bool IsDirty() const { return m_dirty; }
+	void SetDirty(bool value) { m_dirty = value; }
+
 public:
 	Transform transform;
+	UINT bufferId;
+
+	// components
+	MeshRenderer renderer;
+	//std::unordered_map<std::string, IObject*> components;
+
 protected:
-	std::vector<IObject*> components;
-	bool m_dirty = false;
+	bool m_dirty = true;
 };
 
-class Component : public IObject
-{
-public:
-	Component();
 
-	virtual void Start() {}
-	virtual void Update() {}
-
-	//void Attach(Object* target);
-	//void Detach();
-protected:
-	Object* object = nullptr;
-};
-
-class MeshRenderer : public Component
-{
-public:
-	MeshRenderer();
-	void Start();
-	void Update();
-
-	void SetMesh(std::string name);
-protected:
-	MeshDesc* mesh = nullptr;
-
-};
 
 //------------ Custom Object
 
 class Deer : public Object
 {
 public:
+	Deer();
+
 	void Start();
 	void Update();
 

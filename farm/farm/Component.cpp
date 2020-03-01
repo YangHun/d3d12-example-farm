@@ -8,24 +8,23 @@ Object::Object()
 
 void Object::Start()
 {
-	for (auto& component : components)
+	/*for (auto& component : components)
 	{
-		component->Start();
-	}
+		component.second->Start();
+	}*/
 }
 
 void Object::Update()
 {
-	for (auto& component : components)
+	/*for (auto& component : components)
 	{
-		component->Update();
-	}
+		component.second->Update();
+	}*/
 }
 
 Component::Component()
 {
 }
-
 
 MeshRenderer::MeshRenderer()
 {
@@ -40,21 +39,24 @@ void MeshRenderer::Update()
 
 }
 
-void MeshRenderer::SetMesh(std::string name)
+void MeshRenderer::SetMesh(MeshDesc* pMesh)
 {
-	
+	mesh = pMesh;
 }
 
-
+Deer::Deer()
+{
+	renderer = MeshRenderer();
+	//components.push_back(&renderer);
+	//renderer.SetMesh("Assets/deer.fbx");
+	
+	//transform.position = XMFLOAT3{ 0.0f, -1.0f, 0.0f };
+	//transform.rotation = XMFLOAT3{ 0.0f, XM_PI * 0.3f, 0.0f };
+	//transform.scale = XMFLOAT3{ 0.002f, 0.002f, 0.002f };
+}
 
 void Deer::Start() {
-	MeshRenderer renderer = MeshRenderer();
-	components.push_back(&renderer);
-
-	renderer.SetMesh("Assets/deer.fbx");
-	transform.position = XMFLOAT3{ 0.0f, -1.0f, 0.0f };
-	transform.rotation = XMFLOAT3{ 0.0f, XM_PI * 0.3f, 0.0f };
-	transform.scale = XMFLOAT3{ 0.002f, 0.002f, 0.002f };
+	
 }
 
 void Deer::Update() {

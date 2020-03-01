@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "D3DGameEngine.h"
-#include "scenes.h"
 
 D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	DirectXApp(width, height, name),
@@ -378,7 +377,7 @@ void D3DGameEngine::LoadAssets()
 			auto s = m_game.GetScene(i);
 			//CreateConstantBuffer(m_device.Get(),sizeof(ObjectConstantBuffer), (UINT)s->m_objects.size(), s->m_cbUploadBuffer);
 			//ThrowIfFailed(s->m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&s->m_objConstantBuffer)));
-			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_objects.size()), true);
+			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_renderObjects.size()), true);
 		}
 	}
 
@@ -536,6 +535,9 @@ void D3DGameEngine::PopulateCommandList()
 	ThrowIfFailed(m_commandList->Close());
 }
 
+
+// todo: draw using renderer, object
+
 void D3DGameEngine::DrawCurrentScene()
 {
 	UINT bufferSize = (sizeof(ObjectConstantBuffer) + 255) & ~255;
@@ -543,20 +545,22 @@ void D3DGameEngine::DrawCurrentScene()
 	auto scene = m_game.GetCurrentScene();
 	auto buffer = scene->m_objConstantBuffers.get();
 
-	for (auto obj : scene->m_objects)
+	for (auto obj : scene->m_renderObjects)
 	{
-		m_commandList->IASetVertexBuffers(0, 1, &obj->vertexBufferView);
-		m_commandList->IASetIndexBuffer(&obj->indexBufferView);
-		m_commandList->IASetPrimitiveTopology(obj->primitiveType);
+		auto mesh = obj->renderer.mesh;
+
+		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
+		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
+		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
 
 		//D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
 
-		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
+		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->bufferId * bufferSize;
 
 		//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
 
-		m_commandList->DrawIndexedInstanced(obj->indexCount, 1, obj->startIndexLocation, obj->baseVertexLocation, obj->startIndexLocation);
+		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
 }
 

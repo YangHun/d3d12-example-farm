@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "DirectXGame.h"
 #include "FbxLoader.h"
-#include "Scenes.h"
 
 DirectXGame::DirectXGame() 
 {
@@ -66,7 +65,7 @@ void DirectXGame::LoadAssets()
 
 void DirectXGame::BuildScenes()
 {
-	for (UINT i = 0; i < Assets::numScenes; ++i)
+	for (UINT i = 0; i < 1; ++i)
 	{
 		UINT _id = i;
 		auto s = std::make_unique<Scene>(_id);
@@ -83,30 +82,41 @@ void DirectXGame::BuildScenes()
 // Scene에 그려질 RenderObject 목록을 정의한다.
 void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 {
-	std::vector<MeshDesc*> objs = {
-		m_meshes["triangle"].get(),
-		m_meshes["triangle"].get(),
-		m_meshes["triangle"].get(),
+	std::vector<MeshDesc*> objMeshes = {
+		//m_meshes["triangle"].get(),
+		//m_meshes["triangle"].get(),
+		//m_meshes["triangle"].get(),
 
 		m_meshes["Assets/deer.fbx"].get(),
-		//m_meshes["Assets/tree.fbx"].get(),
+		m_meshes["Assets/deer.fbx"].get(),
+		m_meshes["Assets/deer.fbx"].get(),
+		m_meshes["Assets/tree.fbx"].get(),
 	};
 
 	std::vector<Transform> transform = {
-		Transform {{-1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
-		Transform {{1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
-		Transform {{-2.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {1.0f, 1.0f, 1.0f}},
-		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.002f, 0.002f, 0.002f} },
-		//Transform { {0.0f, 0.0f, 0.0f}, { XM_PI * 0.3f, 0.0f, 0.0f}, {0.005f, 0.005f, 0.005f} },
+		//Transform {{-1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
+		//Transform {{1.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {2.0f, 2.0f, 2.0f}},
+		//Transform {{-2.0f, 0.0f, 0.0f}, {0.0f, 0.0, 0.0f}, {1.0f, 1.0f, 1.0f}},
+		
+		Transform { {0.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.001f, 0.001f, 0.001f} },
+		Transform { {1.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.001f, 0.001f, 0.001f} },
+		Transform { {-1.0f, -1.0f, 0.0f}, {0.0f, XM_PI * 0.3f, 0.0f}, {0.001f, 0.001f, 0.001f} },
+		Transform { {0.5f, 0.0f, 2.0f}, { 0.0f, 0.0f, 0.0f}, {0.005f, 0.005f, 0.005f} },
 	};
 
 	UINT cbIndex = 0;
-	for (auto obj : objs)
+	for (auto obj : objMeshes)
 	{
-		obj->transform = transform[cbIndex];
-		obj->constantBufferId = cbIndex;
-		scene->m_objects.push_back(obj);
-	
+		auto deer = std::make_unique<Deer>();
+		//deer.renderer.SetMesh(obj);
+		deer->renderer.mesh = obj;
+		deer->transform = transform[cbIndex];
+		deer->bufferId = cbIndex;
+		//obj->transform = transform[cbIndex];
+		//obj->constantBufferId = cbIndex;
+		//scene->m_objects.push_back(obj);
+		scene->m_allObjects.push_back(std::move(deer));
+		scene->m_renderObjects.push_back(scene->m_allObjects.back().get());
 		++cbIndex;
 	}
 }
@@ -131,12 +141,9 @@ void Scene::BuildObject()
 
 void Scene::UpdateObjectConstantBuffers()
 {
-	//UINT bufferSize = (sizeof(ObjectConstantBuffer));
-	UINT bufferSize = 256;
-
-	for (auto obj : m_objects)
+	for (auto obj : m_renderObjects)
 	{
-		if (obj->dirty)
+		if (obj->IsDirty())
 		{
 			auto t = obj->transform;
 			
@@ -148,9 +155,9 @@ void Scene::UpdateObjectConstantBuffers()
 			XMStoreFloat4x4(&objConstants.model, world);
 			
 			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
-			m_objConstantBuffers.get()->CopyData(obj->constantBufferId, objConstants);
+			m_objConstantBuffers.get()->CopyData(obj->bufferId, objConstants);
 
-			obj->dirty = false;
+			obj->SetDirty(false);
 		}
 	}
 }

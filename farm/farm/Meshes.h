@@ -78,7 +78,7 @@ struct MeshDesc {
 
 	UINT constantBufferId = -1;
 
-	Transform transform;
+	//Transform transform;
 	//XMFLOAT4X4 world;
 
 	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
