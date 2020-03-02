@@ -24,7 +24,7 @@ public:
 	void Start();
 	void Update();
 
-	void SetMesh(MeshDesc* pMesh);
+	void SetMesh(std::string name);
 	MeshDesc* m_mesh = nullptr;
 
 };
@@ -72,4 +72,13 @@ public:
 
 private:
 	float m_angle = 0.0f;
+};
+
+class Field : public Object
+{
+public:
+	Field();
+	void Start();
+	void Update();
+
 };

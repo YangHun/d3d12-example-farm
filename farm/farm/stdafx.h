@@ -23,6 +23,7 @@
 #include <wrl.h>
 #include <shellapi.h>
 #include <unordered_map>
+#include <functional>
 
 
 

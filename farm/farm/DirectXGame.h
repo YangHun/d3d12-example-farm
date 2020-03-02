@@ -7,9 +7,18 @@
 #include "Camera.h"
 #include "UploadBuffer.h"
 #include "Component.h"
+#include "Events.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
+
+
+class InputEventHandler
+{
+public:
+	Event m_keyDown;
+	Event m_keyUp;
+};
 
 class Scene
 {
@@ -17,8 +26,8 @@ public:
 	Scene(UINT id);
 
 	void Initialize();
-
 	void Update();
+
 private:
 	void BuildObject();
 	void UpdateObjectConstantBuffers();
@@ -33,8 +42,7 @@ public:
 
 	// current scene resources.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
-
-
+	
 	Camera m_camera;
 };
 
@@ -59,6 +67,9 @@ public:
 	Scene* GetCurrentScene() const { return m_currentScene; }
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
+
+	void OnKeyDown(UINT8 key);
+	void OnKeyUp(UINT8 key);
 
 private:
 	void BuildScenes();

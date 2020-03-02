@@ -39,20 +39,18 @@ void MeshRenderer::Update()
 
 }
 
-void MeshRenderer::SetMesh(MeshDesc* pMesh)
+void MeshRenderer::SetMesh(std::string name)
 {
-	m_mesh = pMesh;
+	auto lookup = Assets::m_meshes.find(name);
+
+	if (lookup != Assets::m_meshes.end()) m_mesh = lookup->second.get();
+	else m_mesh = nullptr;
 }
 
 Deer::Deer()
 {
 	m_renderer = MeshRenderer();
-	//components.push_back(&renderer);
-	//renderer.SetMesh("Assets/deer.fbx");
-	
-	//transform.position = XMFLOAT3{ 0.0f, -1.0f, 0.0f };
-	//transform.rotation = XMFLOAT3{ 0.0f, XM_PI * 0.3f, 0.0f };
-	//transform.scale = XMFLOAT3{ 0.002f, 0.002f, 0.002f };
+	m_renderer.SetMesh("Assets/deer.fbx");
 }
 
 void Deer::Start() {
@@ -63,4 +61,20 @@ void Deer::Update() {
 	m_angle += 0.001f;
 	m_transform.rotation.y = XM_PI * 0.3f + m_angle;
 	m_dirty = true;
+}
+
+Field::Field()
+{
+	m_renderer = MeshRenderer();
+	m_renderer.SetMesh("plain");
+}
+
+void Field::Start()
+{
+
+}
+
+void Field::Update()
+{
+
 }

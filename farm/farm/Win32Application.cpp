@@ -75,7 +75,7 @@ int Win32Application::Run(DirectXApp* pSample, HINSTANCE hInstance, int nCmdShow
 // Main message handler for the sample.
 LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	DirectXApp* pSample = reinterpret_cast<DirectXApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	DirectXApp* pApp = reinterpret_cast<DirectXApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (message)
     {
@@ -88,24 +88,24 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
         return 0;
 
     case WM_KEYDOWN:
-        if (pSample)
+        if (pApp)
         {
-            //pSample->OnKeyDown(static_cast<UINT8>(wParam));
+			pApp->OnKeyDown(static_cast<UINT8>(wParam));
         }
         return 0;
 
     case WM_KEYUP:
-        if (pSample)
+        if (pApp)
         {
-            //pSample->OnKeyUp(static_cast<UINT8>(wParam));
+			pApp->OnKeyUp(static_cast<UINT8>(wParam));
         }
         return 0;
 
     case WM_PAINT:
-        if (pSample)
+        if (pApp)
         {
-            pSample->Update();
-            pSample->Render();
+			pApp->Update();
+			pApp->Render();
         }
         return 0;
 

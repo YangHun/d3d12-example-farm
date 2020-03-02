@@ -20,6 +20,9 @@ public:
 	virtual void Render();
 	virtual void Destroy();
 
+	virtual void OnKeyDown(UINT8 key);
+	virtual void OnKeyUp(UINT8 key);
+
 private:
 	void LoadPipeline();
 	void LoadAssets();

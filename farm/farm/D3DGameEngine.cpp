@@ -471,6 +471,16 @@ void D3DGameEngine::Destroy()
 	CloseHandle(m_fenceEvent);
 }
 
+void D3DGameEngine::OnKeyDown(UINT8 key) 
+{
+	m_game.OnKeyDown(key);
+}
+
+void D3DGameEngine::OnKeyUp(UINT8 key)
+{
+	m_game.OnKeyUp(key);
+}
+
 void D3DGameEngine::WaitForPreviousFrame()
 {
 	// Command queue에 fence value increasement command를 추가
