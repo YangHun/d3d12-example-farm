@@ -481,6 +481,21 @@ void D3DGameEngine::OnKeyUp(UINT8 key)
 	m_game.OnKeyUp(key);
 }
 
+void D3DGameEngine::OnMouseDown(UINT8 btnState, int x, int y)
+{
+	m_game.OnMouseDown(btnState, x, y);
+}
+
+void D3DGameEngine::OnMouseUp(UINT8 btnState, int x, int y)
+{
+	m_game.OnMouseUp(btnState, x, y);
+}
+
+void D3DGameEngine::OnMouseMove(UINT8 btnState, int x, int y)
+{
+	m_game.OnMouseMove(btnState, x, y);
+}
+
 void D3DGameEngine::WaitForPreviousFrame()
 {
 	// Command queue에 fence value increasement command를 추가

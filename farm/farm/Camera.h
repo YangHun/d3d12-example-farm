@@ -16,6 +16,7 @@ public:
 	
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
+	void OnMouseMove(WPARAM state, int x, int y);
 	void Update();
 
 private:
@@ -41,4 +42,18 @@ private:
 	bool m_pressedA = false;
 	bool m_pressedS = false;
 	bool m_pressedD = false;
+
+	
+	POINT m_lastMousePos;
+	POINT m_nextMousePos;
+
 };
+
+
+// helper function
+inline float Clamp(float value, float floor, float ceil)
+{
+	if (value > ceil) return ceil;
+	if (value < floor) return floor;
+	return value;
+}

@@ -70,6 +70,9 @@ public:
 
 	void OnKeyDown(UINT8 key);
 	void OnKeyUp(UINT8 key);
+	void OnMouseDown(UINT8 btnState, int x, int y);
+	void OnMouseUp(UINT8 btnState, int x, int y);
+	void OnMouseMove(UINT8 btnState, int x, int y);
 
 private:
 	void BuildScenes();

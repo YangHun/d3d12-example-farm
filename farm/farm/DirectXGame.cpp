@@ -74,6 +74,21 @@ void DirectXGame::OnKeyUp(UINT8 key)
 	m_currentScene->m_camera.OnKeyUp(key);
 }
 
+void DirectXGame::OnMouseDown(UINT8 btnState, int x, int y)
+{
+
+}
+
+void DirectXGame::OnMouseUp(UINT8 btnState, int x, int y)
+{
+
+}
+
+void DirectXGame::OnMouseMove(UINT8 btnState, int x, int y)
+{
+	m_currentScene->m_camera.OnMouseMove(btnState, x, y);
+}
+
 Scene::Scene(UINT id) :
 	m_id(id)
 {

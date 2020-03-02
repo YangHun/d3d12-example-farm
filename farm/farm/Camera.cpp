@@ -2,6 +2,8 @@
 #include "Camera.h"
 
 
+#include <iostream>
+
 Camera::Camera() :
 	m_fov(0.8f),
 	m_near(0.1f),
@@ -11,6 +13,8 @@ Camera::Camera() :
 	m_forward(0, 0, 1),
 	m_transform()
 {
+	m_nextMousePos.x = 0;
+	m_nextMousePos.y = 0;
 }
 
 void Camera::SetFrustum(float fov, float nearz, float farz)
@@ -23,7 +27,8 @@ void Camera::SetFrustum(float fov, float nearz, float farz)
 void Camera::SetPosition(XMFLOAT3 position)
 {
 	m_transform.position = position;
-	CalculateCameraAxis();
+	m_dirty = true;
+	//CalculateCameraAxis();
 }
 
 void Camera::SetRotation(XMFLOAT3 euler)
@@ -33,13 +38,15 @@ void Camera::SetRotation(XMFLOAT3 euler)
 		euler.y / 180.0f * XM_PI,
 		euler.z / 180.0f * XM_PI
 	};
-	CalculateCameraAxis();
+	m_dirty = true;
+	//CalculateCameraAxis();
 }
 
 void Camera::SetTransform(Transform* transform)
 {
 	m_transform = *transform;
-	CalculateCameraAxis();
+	m_dirty = true;
+	//CalculateCameraAxis();
 }
 
 XMMATRIX Camera::GetProjectionMatrix(float aspectRatio) 
@@ -92,12 +99,20 @@ void Camera::Update()
 
 	dir = XMVector3Normalize(dir) * 0.1f;
 		
-	if (XMVector3Equal(dir, XMVectorZero())) return;
+	if (!XMVector3Equal(dir, XMVectorZero())) {
+		XMFLOAT3 pos;
+		XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
 
-	XMFLOAT3 pos;
-	XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
+		SetPosition(pos);
+	}
 
-	SetPosition(pos);
+
+
+	if (m_dirty)
+	{
+		CalculateCameraAxis();
+		m_dirty = false;
+	}
 }
 
 
@@ -156,4 +171,27 @@ void Camera::OnKeyUp(WPARAM key)
 		m_pressedD = false;
 			break;
 	}
+}
+
+void Camera::OnMouseMove(WPARAM state, int x, int y)
+{	
+	m_lastMousePos = m_nextMousePos;
+
+	m_nextMousePos.x = x;
+	m_nextMousePos.y = y;
+
+	if ((state & MK_LBUTTON) != 0) {
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_lastMousePos.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_lastMousePos.y));
+
+		m_transform.rotation.y = m_transform.rotation.y + dx;
+		m_transform.rotation.x = m_transform.rotation.x + dy;
+
+		//m_transform.rotation.y = Clamp(m_transform.rotation.y + dx, 90.0f, -90.0f);
+		//m_transform.rotation.x = Clamp(m_transform.rotation.x + dy, 90.0f, -90.0f);
+
+		m_dirty = true;
+	}
+
+
 }
