@@ -22,6 +22,7 @@ public:
 	virtual void OnMouseDown(UINT8 btnState, int x, int y) {}
 	virtual void OnMouseUp(UINT8 btnState, int x, int y) {}
 	virtual void OnMouseMove(UINT8 btnState, int x, int y) {}
+	virtual void OnMouseLeave(UINT8 btnState, int x, int y) {}
 
 	UINT GetWidth() const { return m_width; }
 	UINT GetHeight() const { return m_height; }

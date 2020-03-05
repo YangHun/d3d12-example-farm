@@ -12,6 +12,8 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 {
 	m_game = DirectXGame();
 	m_timer.Reset();
+
+	
 }
 
 void D3DGameEngine::Initialize()
@@ -19,6 +21,25 @@ void D3DGameEngine::Initialize()
 	m_timer.Start();
 	LoadPipeline();
 	LoadAssets();
+
+	//m_game.GetCurrentScene()->m_camera.SetInitialMousePos(GetWindowCenter());
+
+	RECT window;
+	GetWindowRect(Win32Application::GetHwnd(), &window);
+	SetCursorPos((window.left + window.right) / 2, (window.top + window.bottom) / 2);
+}
+
+POINT D3DGameEngine::GetWindowCenter()
+{
+	RECT window;
+	GetWindowRect(Win32Application::GetHwnd(), &window);
+	//SetCursorPos(m_width / 2 + window.left, m_height / 2 + window.top);
+
+	POINT result;
+	result.x = (window.left + window.right) / 2;
+	result.y = (window.top + window.bottom) / 2;
+
+	return result;
 }
 
 void D3DGameEngine::LoadPipeline()
@@ -331,13 +352,16 @@ void D3DGameEngine::LoadAssets()
 			DWRITE_FONT_WEIGHT_NORMAL,
 			DWRITE_FONT_STYLE_NORMAL,
 			DWRITE_FONT_STRETCH_NORMAL,
-			50,
+			25,
 			L"en-us",
 			&m_textFormat
 		));
-		ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+
+		ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
 		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
 	}
+
+	
 
 	// Create the main command list.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -441,9 +465,9 @@ void D3DGameEngine::Update()
 		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
 
 		mainbuffer->CopyData(0, cBuffer);
-		
-		
+				
 	}	
+
 }
 
 void D3DGameEngine::Render()
@@ -493,7 +517,26 @@ void D3DGameEngine::OnMouseUp(UINT8 btnState, int x, int y)
 
 void D3DGameEngine::OnMouseMove(UINT8 btnState, int x, int y)
 {
+	TRACKMOUSEEVENT mouseEvent;
+	mouseEvent.cbSize = sizeof(mouseEvent);
+	mouseEvent.dwFlags = TME_LEAVE;
+	mouseEvent.hwndTrack = Win32Application::GetHwnd();
+
+	TrackMouseEvent(&mouseEvent);
+
 	m_game.OnMouseMove(btnState, x, y);
+}
+
+
+void D3DGameEngine::OnMouseLeave(UINT8 btnState, int x, int y)
+{
+	// param x, y는 client 창 좌표 기준
+	// SetCursorPos의 param은 window (모니터) 좌표 기준
+	m_game.OnMouseLeave(btnState, x, y);
+
+	RECT window;
+	GetWindowRect(Win32Application::GetHwnd(), &window);
+	SetCursorPos((window.left + window.right) / 2, (window.top + window.bottom) / 2);
 }
 
 void D3DGameEngine::WaitForPreviousFrame()
@@ -611,29 +654,33 @@ void D3DGameEngine::RenderUI()
 
 void D3DGameEngine::DrawCurrentUI()
 {
-	//// Render text over D3D12 using D2D via the 11On12 device.
-	//D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
-	//static const WCHAR text[] = L"11On12";
-	//D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
+	// Render text over D3D12 using D2D via the 11On12 device.
+	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
+	
+	
+	std::wstring info = m_game.GetCurrentScene()->m_camera.PrintTransform();
+	//static const WCHAR text[] = info.c_str();
+	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
 
-	//m_d2dDeviceContext->DrawTextW(
-	//	text,
-	//	_countof(text) - 1,
-	//	m_textFormat.Get(),
-	//	&textRect,
-	//	m_textBrush.Get()
-	//);
+	m_d2dDeviceContext->DrawTextW(
+		info.c_str(),
+		//_countof(text) - 1,
+		info.size(),
+		m_textFormat.Get(),
+		&textRect,
+		m_textBrush.Get()
+	);
 
-	//// Render text over D3D12 using D2D via the 11On12 device.
-	//static const WCHAR text2[] = L"Hello ~ :)";
-	//D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
+	// Render text over D3D12 using D2D via the 11On12 device.
+	static const WCHAR text2[] = L"Hello ~ :)";
+	D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
 
-	//m_d2dDeviceContext->DrawTextW(
-	//	text2,
-	//	_countof(text2) - 1,
-	//	m_textFormat.Get(),
-	//	&textRect2,
-	//	m_textBrush.Get()
-	//);
+	m_d2dDeviceContext->DrawTextW(
+		text2,
+		_countof(text2) - 1,
+		m_textFormat.Get(),
+		&textRect2,
+		m_textBrush.Get()
+	);
 
 }

@@ -46,7 +46,7 @@ public:
 
 public:
 	Transform m_transform;
-	UINT m_bufferId;
+	UINT m_bufferId = -1;
 
 	// components
 	MeshRenderer m_renderer;
@@ -80,5 +80,24 @@ public:
 	Field();
 	void Start();
 	void Update();
+
+};
+
+class Player : public Object
+{
+public:
+	Player();
+	void Start();
+	void Update();
+
+	void OnMouseMove(WPARAM state, int x, int y);
+	void OnKeyDown(WPARAM key);
+	void OnKeyUp(WPARAM key);
+private:
+	
+	bool m_pressedW = false;
+	bool m_pressedA = false;
+	bool m_pressedS = false;
+	bool m_pressedD = false;
 
 };

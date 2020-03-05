@@ -89,6 +89,18 @@ void DirectXGame::OnMouseMove(UINT8 btnState, int x, int y)
 	m_currentScene->m_camera.OnMouseMove(btnState, x, y);
 }
 
+void DirectXGame::OnMouseLeave(UINT8 btnState, int x, int y)
+{
+	RECT window;
+	GetWindowRect(Win32Application::GetHwnd(), &window);
+	
+	POINT center;
+	center.x = (window.left + window.right) / 2;
+	center.y = (window.top + window.bottom) / 2;
+
+	m_currentScene->m_camera.ResetMousePos(center);
+}
+
 Scene::Scene(UINT id) :
 	m_id(id)
 {
@@ -124,13 +136,13 @@ void Scene::BuildObject()
 
 void Scene::Update()
 {
-	m_camera.Update();
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
 		if (obj->m_active) obj->Update();
 	}
 
+	m_camera.Update();
 	UpdateObjectConstantBuffers();
 }
 

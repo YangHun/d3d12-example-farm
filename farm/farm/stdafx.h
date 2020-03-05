@@ -20,6 +20,7 @@
 #include "Meshes.h"
 
 #include <string>
+#include <sstream>
 #include <wrl.h>
 #include <shellapi.h>
 #include <unordered_map>

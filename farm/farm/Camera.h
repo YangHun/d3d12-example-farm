@@ -17,7 +17,12 @@ public:
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 	void OnMouseMove(WPARAM state, int x, int y);
+	//void OnMouseLeave(WPARAM state, int x, int y);
 	void Update();
+
+	void ResetMousePos(POINT point);
+
+	std::wstring PrintTransform();
 
 private:
 	void CalculateCameraAxis();
@@ -42,9 +47,9 @@ private:
 	bool m_pressedA = false;
 	bool m_pressedS = false;
 	bool m_pressedD = false;
-
 	
-	POINT m_lastMousePos;
+	POINT m_initialMousePos;
+	POINT m_prevMousePos;
 	POINT m_nextMousePos;
 
 };
@@ -52,6 +57,13 @@ private:
 
 // helper function
 inline float Clamp(float value, float floor, float ceil)
+{
+	if (value > ceil) return ceil;
+	if (value < floor) return floor;
+	return value;
+}
+
+inline int Clamp(int value, int floor, int ceil)
 {
 	if (value > ceil) return ceil;
 	if (value < floor) return floor;

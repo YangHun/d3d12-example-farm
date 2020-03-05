@@ -107,6 +107,12 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 			pApp->OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		}
 		return 0;
+	case WM_MOUSELEAVE:
+		if (pApp)
+		{
+			pApp->OnMouseLeave(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		}
+		return 0;
     case WM_KEYDOWN:
         if (pApp)
         {

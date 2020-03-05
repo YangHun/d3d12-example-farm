@@ -25,6 +25,7 @@ public:
 	virtual void OnMouseDown(UINT8 btnState, int x, int y);
 	virtual void OnMouseUp(UINT8 btnState, int x, int y);
 	virtual void OnMouseMove(UINT8 btnState, int x, int y);
+	virtual void OnMouseLeave(UINT8 btnState, int x, int y);
 
 private:
 	void LoadPipeline();
@@ -34,6 +35,8 @@ private:
 	void RenderUI();
 	void DrawCurrentScene();
 	void DrawCurrentUI();
+
+	POINT GetWindowCenter();
 
 	static const UINT FrameCount = 2;
 

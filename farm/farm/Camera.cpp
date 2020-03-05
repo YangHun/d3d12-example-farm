@@ -8,13 +8,17 @@ Camera::Camera() :
 	m_fov(0.8f),
 	m_near(0.1f),
 	m_far(1000.0f),
-	m_dirty(false),
+	m_dirty(true),
 	m_up(0, 1, 0),
 	m_forward(0, 0, 1),
 	m_transform()
 {
-	m_nextMousePos.x = 0;
-	m_nextMousePos.y = 0;
+	m_initialMousePos.x = 1000;
+	m_initialMousePos.y = 800;
+	//
+	//m_nextMousePos.x = 1000;
+	//m_nextMousePos.y = 800;
+	m_prevMousePos = m_nextMousePos = m_initialMousePos;
 }
 
 void Camera::SetFrustum(float fov, float nearz, float farz)
@@ -102,14 +106,19 @@ void Camera::Update()
 	if (!XMVector3Equal(dir, XMVectorZero())) {
 		XMFLOAT3 pos;
 		XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
-
 		SetPosition(pos);
 	}
 
-
+	// camera height is always fixed.
+	m_transform.position.y = 2.0f;
 
 	if (m_dirty)
 	{
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_prevMousePos.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_prevMousePos.y));
+		m_transform.rotation.y = m_transform.rotation.y + dx;
+		m_transform.rotation.x = m_transform.rotation.x + dy;
+		
 		CalculateCameraAxis();
 		m_dirty = false;
 	}
@@ -175,23 +184,28 @@ void Camera::OnKeyUp(WPARAM key)
 
 void Camera::OnMouseMove(WPARAM state, int x, int y)
 {	
-	m_lastMousePos = m_nextMousePos;
+	m_prevMousePos = m_nextMousePos;
 
 	m_nextMousePos.x = x;
 	m_nextMousePos.y = y;
 
-	if ((state & MK_LBUTTON) != 0) {
-		float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_lastMousePos.x));
-		float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_lastMousePos.y));
-
-		m_transform.rotation.y = m_transform.rotation.y + dx;
-		m_transform.rotation.x = m_transform.rotation.x + dy;
-
-		//m_transform.rotation.y = Clamp(m_transform.rotation.y + dx, 90.0f, -90.0f);
-		//m_transform.rotation.x = Clamp(m_transform.rotation.x + dy, 90.0f, -90.0f);
-
+	if ((m_nextMousePos.x != m_prevMousePos.x) ||
+		(m_nextMousePos.y != m_prevMousePos.y))
 		m_dirty = true;
-	}
+}
 
 
+std::wstring Camera::PrintTransform()
+{
+	std::wostringstream oss;
+	oss << "position: (" << m_transform.position.x << ", " << m_transform.position.y << ", " << m_transform.position.z << ")\n";
+	oss << "rotation: (" << m_transform.rotation.x << ", " << m_transform.rotation.y << ", " << m_transform.rotation.z << ")\n";
+
+	return oss.str();
+}
+
+void Camera::ResetMousePos(POINT point)
+{
+	m_initialMousePos = point;
+	m_prevMousePos = m_nextMousePos = m_initialMousePos;
 }
