@@ -298,7 +298,7 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 	}
 
-	// Create the pipeline state, which includes compiling and loading shaders.
+	// Create the pipeline states, which includes compiling and loading shaders.
 	{
 		ComPtr<ID3DBlob> vertexShader;
 		ComPtr<ID3DBlob> pixelShader;
@@ -340,7 +340,24 @@ void D3DGameEngine::LoadAssets()
 		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		psoDesc.SampleDesc.Count = 1;
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates["opaque"])));
+
+
+		//// Shaders for sky.
+
+		//ComPtr<ID3DBlob> skyVertexShader;
+		//ComPtr<ID3DBlob> skyPixelShader;
+		//ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &skyVertexShader, nullptr));
+		//ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &skyPixelShader, nullptr));
+
+		//// Pipeline state for Skybox.
+		//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		//psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		//psoDesc.pRootSignature = m_rootSignature.Get();
+		//psoDesc.VS = CD3DX12_SHADER_BYTECODE(skyVertexShader.Get());
+		//psoDesc.PS = CD3DX12_SHADER_BYTECODE(skyPixelShader.Get());
+
+		//ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates["sky"])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
@@ -364,7 +381,8 @@ void D3DGameEngine::LoadAssets()
 	
 
 	// Create the main command list.
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+	// Set initial pipeline state is null.
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
 	
 	
 	// Initialize the game.
@@ -559,7 +577,7 @@ void D3DGameEngine::WaitForPreviousFrame()
 void D3DGameEngine::PopulateCommandList()
 {
 	ThrowIfFailed(m_commandAllocator->Reset());
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineStates["opaque"].Get()));
 
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 	m_commandList->RSSetViewports(1, &m_viewport);
@@ -585,7 +603,15 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetGraphicsRootConstantBufferView(1, address);
 
 	// 현재 scene의 index instance를 그린다.
+	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
 	DrawCurrentScene();
+	
+
+	//// draw sky.
+	//{
+	//	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
+	//	
+	//}
 
 
 	// back buffer state 를 여기서 present로 transition하지 않는다.
@@ -600,8 +626,6 @@ void D3DGameEngine::PopulateCommandList()
 	ThrowIfFailed(m_commandList->Close());
 }
 
-
-// todo: draw using renderer, object
 
 void D3DGameEngine::DrawCurrentScene()
 {
@@ -628,6 +652,7 @@ void D3DGameEngine::DrawCurrentScene()
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
 }
+
 
 void D3DGameEngine::RenderUI()
 {

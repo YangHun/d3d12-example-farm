@@ -92,7 +92,7 @@ void DirectXGame::OnMouseMove(UINT8 btnState, int x, int y)
 void DirectXGame::OnMouseLeave(UINT8 btnState, int x, int y)
 {
 	RECT window;
-	GetWindowRect(Win32Application::GetHwnd(), &window);
+	GetClientRect(Win32Application::GetHwnd(), &window);
 	
 	POINT center;
 	center.x = (window.left + window.right) / 2;
