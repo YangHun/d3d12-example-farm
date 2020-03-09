@@ -20,6 +20,7 @@ private:
 	void TryGetUV(FbxMesh* mesh, int pCount, int vCount, XMFLOAT2& vertexData);
 	void TryGetTangent(FbxMesh* mesh, int pIndex, int vIndex, XMFLOAT3& vertexData);
 	void AssignIndexedVertex(Vertex v);
+	void UpdateBound(XMFLOAT3 position);
 
 private:
 	FbxManager* m_manager = nullptr;

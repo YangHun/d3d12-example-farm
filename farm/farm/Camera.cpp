@@ -4,20 +4,21 @@
 
 #include <iostream>
 
-Camera::Camera() :
+Camera::Camera(CD3DX12_VIEWPORT* viewport) :
 	m_fov(0.8f),
 	m_near(0.1f),
 	m_far(1000.0f),
 	m_dirty(true),
 	m_up(0, 1, 0),
+	m_u(1, 0, 0),
+	m_v(0, 1, 0),
+	m_w(0, 0, 1),
 	m_forward(0, 0, 1),
-	m_transform()
+	m_transform(),
+	m_pViewport(viewport)
 {
 	m_initialMousePos.x = 1000;
 	m_initialMousePos.y = 800;
-	//
-	//m_nextMousePos.x = 1000;
-	//m_nextMousePos.y = 800;
 	m_prevMousePos = m_nextMousePos = m_initialMousePos;
 }
 
@@ -53,8 +54,9 @@ void Camera::SetTransform(Transform* transform)
 	//CalculateCameraAxis();
 }
 
-XMMATRIX Camera::GetProjectionMatrix(float aspectRatio) 
+XMMATRIX Camera::GetProjectionMatrix() 
 {
+	float aspectRatio = m_pViewport->Width / m_pViewport->Height;
 	return XMMatrixPerspectiveFovLH(m_fov, aspectRatio, m_near, m_far);
 }
 
@@ -117,7 +119,7 @@ void Camera::Update()
 		float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_prevMousePos.x));
 		float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_prevMousePos.y));
 		m_transform.rotation.y = m_transform.rotation.y + dx;
-		m_transform.rotation.x = m_transform.rotation.x + dy;
+		m_transform.rotation.x = m_transform.rotation.x - dy;
 		
 		CalculateCameraAxis();
 		m_dirty = false;
@@ -184,22 +186,26 @@ void Camera::OnKeyUp(WPARAM key)
 
 void Camera::OnMouseMove(WPARAM state, int x, int y)
 {	
-	m_prevMousePos = m_nextMousePos;
+	//if ((state & MK_LBUTTON) != 0) 
 
-	m_nextMousePos.x = x;
-	m_nextMousePos.y = y;
+		m_prevMousePos = m_nextMousePos;
 
-	if ((m_nextMousePos.x != m_prevMousePos.x) ||
-		(m_nextMousePos.y != m_prevMousePos.y))
-		m_dirty = true;
+		m_nextMousePos.x = x;
+		m_nextMousePos.y = y;
+
+		if ((m_nextMousePos.x != m_prevMousePos.x) ||
+			(m_nextMousePos.y != m_prevMousePos.y))
+			m_dirty = true;
+	
 }
 
 
-std::wstring Camera::PrintTransform()
+std::wstring Camera::PrintInformation()
 {
 	std::wostringstream oss;
 	oss << "position: (" << m_transform.position.x << ", " << m_transform.position.y << ", " << m_transform.position.z << ")\n";
-	oss << "rotation: (" << m_transform.rotation.x << ", " << m_transform.rotation.y << ", " << m_transform.rotation.z << ")\n";
+	oss << "rotation: (" << m_transform.rotation.x << ", " << m_transform.rotation.y << ", " << m_transform.rotation.z << ")\n";	
+	oss << "picked: " << (picked == nullptr ? "(null)" :picked->name.c_str()) << "\n";
 
 	return oss.str();
 }
@@ -208,4 +214,17 @@ void Camera::ResetMousePos(POINT point)
 {
 	m_initialMousePos = point;
 	m_prevMousePos = m_nextMousePos = m_initialMousePos;
+}
+
+XMFLOAT3 Camera::GetEyePosition()
+{
+	return m_transform.position;
+}
+
+XMFLOAT2 Camera::ScreenToViewport(int x, int y)
+{
+	return XMFLOAT2(
+		((float)x * 2 / m_pViewport->Width) - 1.0f,
+		-(((float)y * 2 / m_pViewport->Height) - 1.0f)	// 좌측 상단이 (0, 0) 이므로 inverse y
+	);
 }

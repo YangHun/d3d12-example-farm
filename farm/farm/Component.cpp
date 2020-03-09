@@ -2,32 +2,29 @@
 #include "Component.h"
 #include "DirectXGame.h"
 
-Object::Object()
+GameObject::GameObject() :
+	m_renderer(this),
+	m_collider(this)
 {
 	
 }
 
-void Object::Start()
+void GameObject::Start()
 {
-	/*for (auto& component : components)
-	{
-		component.second->Start();
-	}*/
+	// Do I really need this method or not?
 }
 
-void Object::Update()
+void GameObject::Update()
 {
-	/*for (auto& component : components)
-	{
-		component.second->Update();
-	}*/
+	m_renderer.Update();
 }
 
-Component::Component()
+Component::Component(Object* object) :
+	m_pObject(object)
 {
 }
 
-MeshRenderer::MeshRenderer()
+MeshRenderer::MeshRenderer(Object* object) : Component(object)
 {
 }
 
@@ -48,9 +45,42 @@ void MeshRenderer::SetMesh(std::string name)
 	else m_mesh = nullptr;
 }
 
+
+Collider::Collider(Object* object) : 
+	Component(object),
+	m_center(object->m_transform.position)
+{
+}
+
+BoxCollider::BoxCollider(Object* object) :
+	Collider(object)
+{
+}
+
+void BoxCollider::SetBound(Mesh* mesh)
+{
+	m_bound.min.x = mesh->minBound.x;
+	m_bound.min.y = mesh->minBound.y;
+	m_bound.min.z = mesh->minBound.z;
+
+	m_bound.max.x = mesh->maxBound.x;
+	m_bound.max.y = mesh->maxBound.y;
+	m_bound.max.z = mesh->maxBound.z;
+
+	/*m_bound.y.x = mesh->yBound.x;
+	m_bound.y.y = mesh->yBound.y;
+
+	m_bound.z.x = mesh->zBound.x;
+	m_bound.z.y = mesh->zBound.y;*/
+
+	//m_bound.x = mesh->xBound;
+	//m_bound.y = mesh->yBound;
+	//m_bound.x = mesh->zBound;
+}
+
 Deer::Deer()
 {
-	m_renderer = MeshRenderer();
+	m_renderer = MeshRenderer(this);
 	m_renderer.SetMesh("Assets/deer.fbx");
 }
 
@@ -66,8 +96,10 @@ void Deer::Update() {
 
 Field::Field()
 {
-	m_renderer = MeshRenderer();
+	m_renderer = MeshRenderer(this);
 	m_renderer.SetMesh("plain");
+	m_collider = BoxCollider(this);
+	m_collider.SetBound(m_renderer.m_mesh->mesh);
 }
 
 void Field::Start()

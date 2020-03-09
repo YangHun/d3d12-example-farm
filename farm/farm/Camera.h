@@ -1,28 +1,32 @@
 #pragma once
 
+#include "Component.h"
+
 class Camera
 {
 public:
-	Camera();
+	Camera(CD3DX12_VIEWPORT* viewport);
 
 	void SetPosition(XMFLOAT3 position);
 	void SetRotation(XMFLOAT3 euler);
 	void SetTransform(Transform* transform);
 	void SetFrustum(float fov, float nearz = 0.1f, float farz = 1000.0f);
 	
-	XMMATRIX GetProjectionMatrix(float aspectRatio);
+	XMMATRIX GetProjectionMatrix();
 	XMMATRIX LookAt(XMFLOAT3 position);
 	XMMATRIX GetViewMatrix();
+	XMFLOAT3 GetEyePosition();
 	
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 	void OnMouseMove(WPARAM state, int x, int y);
-	//void OnMouseLeave(WPARAM state, int x, int y);
 	void Update();
 
 	void ResetMousePos(POINT point);
 
-	std::wstring PrintTransform();
+	XMFLOAT2 ScreenToViewport(int x, int y);
+
+	std::wstring PrintInformation();
 
 private:
 	void CalculateCameraAxis();
@@ -33,9 +37,8 @@ private:
 	XMFLOAT3 m_forward;
 
 	XMFLOAT3 m_u;	// right
-	XMFLOAT3 m_v;	// up (local axis)
+	XMFLOAT3 m_v;	// up (eye space axis)
 	XMFLOAT3 m_w;	// forward
-
 
 	float m_fov;
 	float m_near;
@@ -52,6 +55,11 @@ private:
 	POINT m_prevMousePos;
 	POINT m_nextMousePos;
 
+	// used to calculate screen-to-world coordinate translation
+	CD3DX12_VIEWPORT* m_pViewport;
+
+public:
+	GameObject* picked = nullptr;
 };
 
 

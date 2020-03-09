@@ -7,23 +7,14 @@
 #include "Camera.h"
 #include "UploadBuffer.h"
 #include "Component.h"
-#include "Events.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
-
-class InputEventHandler
-{
-public:
-	Event m_keyDown;
-	Event m_keyUp;
-};
-
 class Scene
 {
 public:
-	Scene(UINT id);
+	Scene(UINT id, CD3DX12_VIEWPORT* viewport);
 
 	void Initialize();
 	void Update();
@@ -36,9 +27,9 @@ public:
 	UINT m_id;
 	//std::vector<MeshDesc*> m_objects;
 
-	std::vector<std::unique_ptr<Object>> m_allObjects;
+	std::vector<std::unique_ptr<GameObject>> m_allObjects;
 
-	std::vector<Object*> m_renderObjects;
+	std::vector<GameObject*> m_renderObjects;
 
 	// current scene resources.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
@@ -58,13 +49,13 @@ class DirectXGame
 {
 
 public:
-	DirectXGame();
+	DirectXGame(CD3DX12_VIEWPORT* viewport);
 
 	void Initialize();
 
 	UINT SceneCount() const { return m_allScenes.size(); }
 	Scene* GetScene(UINT index) const { return m_allScenes[index].get(); }
-	Scene* GetCurrentScene() const { return m_currentScene; }
+	static Scene* GetCurrentScene() { return m_currentScene; }
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
 
@@ -82,8 +73,10 @@ private:
 	// resources.
 	std::unordered_map<std::string, Mesh> m_models;
 
-	Scene* m_currentScene = nullptr;
+	static Scene* m_currentScene;
 	std::vector<std::unique_ptr<Scene>> m_allScenes;
+
+	CD3DX12_VIEWPORT* m_pViewport;
 
 	bool m_dirtyScene = true;
 };

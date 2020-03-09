@@ -8,12 +8,10 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
 	m_fenceValue(0),
 	m_rtvDescriptorSize(0),
-	m_dsvDescriptorSize(0)
+	m_dsvDescriptorSize(0),
+	m_game(&m_viewport)
 {
-	m_game = DirectXGame();
-	m_timer.Reset();
-
-	
+	m_timer.Reset();	
 }
 
 void D3DGameEngine::Initialize()
@@ -466,12 +464,9 @@ void D3DGameEngine::Update()
 		auto mainbuffer = m_constantBuffer.get();
 		SceneConstantBuffer cBuffer;
 
-		//XMMATRIX view = scene->m_camera.LookAt(XMFLOAT3(0.0f, 0.0f, 0.0f));
 		XMMATRIX view = scene->m_camera.GetViewMatrix();
-		XMMATRIX proj = scene->m_camera.GetProjectionMatrix(m_aspectRatio);
-
+		XMMATRIX proj = scene->m_camera.GetProjectionMatrix();
 		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
-
 		cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
 
 
@@ -481,6 +476,7 @@ void D3DGameEngine::Update()
 		XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
 
 		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
+		cBuffer.eye = scene->m_camera.GetEyePosition();
 
 		mainbuffer->CopyData(0, cBuffer);
 				
@@ -683,7 +679,7 @@ void D3DGameEngine::DrawCurrentUI()
 	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
 	
 	
-	std::wstring info = m_game.GetCurrentScene()->m_camera.PrintTransform();
+	std::wstring info = m_game.GetCurrentScene()->m_camera.PrintInformation();
 	//static const WCHAR text[] = info.c_str();
 	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
 

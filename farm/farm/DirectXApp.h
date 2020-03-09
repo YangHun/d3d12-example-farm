@@ -38,7 +38,6 @@ protected:
 protected:
 	UINT m_width;
 	UINT m_height;
-	float m_aspectRatio;
 
 	bool m_useWarpDevice;
 

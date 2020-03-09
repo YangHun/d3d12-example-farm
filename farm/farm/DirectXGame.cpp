@@ -1,11 +1,15 @@
 #include "stdafx.h"
 #include "DirectXGame.h"
 #include "FbxLoader.h"
+#include "Physics.h"
 
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
 std::unordered_map<std::string, Mesh> Assets::m_models;
 
-DirectXGame::DirectXGame() 
+Scene* DirectXGame::m_currentScene = nullptr;
+
+DirectXGame::DirectXGame(CD3DX12_VIEWPORT* viewport) :
+	m_pViewport(viewport)
 {
 	m_allScenes = std::vector<std::unique_ptr<Scene>>();
 	Assets asset = Assets();	// call LoadAssets() in Assets class constructor.
@@ -21,7 +25,7 @@ void DirectXGame::BuildScenes()
 	for (UINT i = 0; i < 1; ++i)
 	{
 		UINT _id = i;
-		auto s = std::make_unique<Scene>(_id);
+		auto s = std::make_unique<Scene>(_id, m_pViewport);
 
 		s->Initialize();
 		BuildSceneRenderObjects(s.get());
@@ -38,11 +42,11 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 
 	// create fields
 	{
-		int activeNum = 3;
+		int activeNum = 5;
 
-		for (size_t i = 0; i < 10; ++i)
+		for (int i = 0; i < 5; ++i)
 		{
-			for (size_t j = 0; j < 10; ++j)
+			for (int j = 0; j < 5; ++j)
 			{
 				auto obj = std::make_unique<Field>();
 				obj->m_transform = Transform{ 
@@ -54,6 +58,8 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 
 				obj->m_active = active;			
 				obj->m_bufferId = id;
+
+				obj->name = "Field_"+ std::to_string(i * 10 + j);
 
 				scene->m_allObjects.push_back(std::move(obj));
 				if (active) scene->m_renderObjects.push_back(scene->m_allObjects[id].get());
@@ -74,9 +80,19 @@ void DirectXGame::OnKeyUp(UINT8 key)
 	m_currentScene->m_camera.OnKeyUp(key);
 }
 
+bool _isCasting = false;
+
 void DirectXGame::OnMouseDown(UINT8 btnState, int x, int y)
 {
+	if (!_isCasting)
+	{
+		_isCasting = true;
+		GameObject* result = Physics::Raycast(m_currentScene->m_camera, x, y);
 
+		m_currentScene->m_camera.picked = result;
+		
+		_isCasting = false;
+	}
 }
 
 void DirectXGame::OnMouseUp(UINT8 btnState, int x, int y)
@@ -101,8 +117,9 @@ void DirectXGame::OnMouseLeave(UINT8 btnState, int x, int y)
 	m_currentScene->m_camera.ResetMousePos(center);
 }
 
-Scene::Scene(UINT id) :
-	m_id(id)
+Scene::Scene(UINT id, CD3DX12_VIEWPORT* viewport) :
+	m_id(id),
+	m_camera(viewport)
 {
 }
 
@@ -152,11 +169,9 @@ void Scene::UpdateObjectConstantBuffers()
 	{
 		if (obj->IsDirty())
 		{
-			auto t = obj->m_transform;
-			
-			XMMATRIX world = XMMatrixTranspose(XMMatrixScaling(t.scale.x, t.scale.y, t.scale.z)
-				* XMMatrixRotationRollPitchYaw(t.rotation.x, t.rotation.y, t.rotation.z)
-				* XMMatrixTranslation(t.position.x, t.position.y, t.position.z));
+			// GPU에서 사용할 것이므로 transpose 해준다. 
+			// CPU 는 (column)(row), GPU는 (row)(column)
+			XMMATRIX world = XMMatrixTranspose(obj->GetWorldMatrix());
 
 			ObjectConstantBuffer objConstants;
 			XMStoreFloat4x4(&objConstants.model, world);
@@ -212,6 +227,14 @@ void Assets::LoadAssets()
 			0, 1, 2
 		};
 
+		mesh.minBound.x = -0.25f;
+		mesh.maxBound.x = 0.25f;
+		mesh.minBound.y = -0.25;
+		mesh.maxBound.y = 0.5f;
+
+		mesh.minBound.z = -0.1f;
+		mesh.maxBound.z = 0.1f;
+
 		m_models["triangle"] = mesh;
 
 		auto meshDesc = std::make_unique<MeshDesc>();
@@ -235,6 +258,14 @@ void Assets::LoadAssets()
 			0, 1, 2,
 			0, 2, 3
 		};
+
+		mesh.minBound.x = -1.0f;
+		mesh.maxBound.x = 1.0f;
+		mesh.minBound.z = -1.0f;
+		mesh.maxBound.z = 1.0f;
+
+		mesh.minBound.y = -0.1f;
+		mesh.maxBound.y = 0.1f;
 
 		m_models["plain"] = mesh;
 

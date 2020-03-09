@@ -185,4 +185,19 @@ void FbxLoader::AssignIndexedVertex(Vertex vertex)
 		m_dstData->vertices.push_back(vertex);
 	}
 	m_dstData->indices.push_back(m_indexMap[vertex]);
+
+	UpdateBound(vertex.position);
+}
+
+void FbxLoader::UpdateBound(XMFLOAT3 position)
+{
+
+	if (position.x < m_dstData->minBound.x)  m_dstData->minBound.x = position.x;
+	else if (position.x > m_dstData->maxBound.x)  m_dstData->maxBound.x = position.x;
+
+	if (position.y < m_dstData->minBound.y)  m_dstData->minBound.y = position.y;
+	else if (position.y > m_dstData->maxBound.y)  m_dstData->maxBound.y = position.y;
+
+	if (position.z < m_dstData->minBound.z)  m_dstData->minBound.z = position.z;
+	else if (position.z > m_dstData->maxBound.z)  m_dstData->maxBound.z = position.z;
 }

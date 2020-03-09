@@ -1,26 +1,46 @@
 #pragma once
-interface IObject
+class Object
 {
 public:
 	virtual void Start() = 0;
 	virtual void Update() = 0;
+
+	XMMATRIX GetWorldMatrix() const
+	{
+		return XMMatrixScaling(m_transform.scale.x, m_transform.scale.y, m_transform.scale.z)
+			* XMMatrixRotationRollPitchYaw(m_transform.rotation.x, m_transform.rotation.y, m_transform.rotation.z)
+			* XMMatrixTranslation(m_transform.position.x, m_transform.position.y, m_transform.position.z);
+	}
+
+	bool IsDirty() const { return m_dirty; }
+	void SetDirty(bool value) { m_dirty = value; }
+
+public:
+	Transform m_transform;
+	bool m_active = true;
+	UINT m_bufferId = -1;
+
+protected:
+
+	bool m_dirty = true;
 };
 
-class Component : public IObject
+class Component 
 {
 public:
-	Component();
+	Component(Object* object);
 
 	virtual void Start() {}
 	virtual void Update() {}
 
 protected:
+	Object* m_pObject;
 };
 
 class MeshRenderer : public Component
 {
 public:
-	MeshRenderer();
+	MeshRenderer(Object* object);
 	void Start();
 	void Update();
 
@@ -29,40 +49,60 @@ public:
 
 };
 
-
-class Object : public IObject
+class Collider : public Component
 {
 public:
-	Object();
+	struct Bound
+	{
+		XMFLOAT3 min = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		XMFLOAT3 max = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	};
+
+	Collider(Object* object);
+	virtual void SetBound(Mesh* mesh) {} ;
+	bool IsZeroBound()
+	{
+		return (m_bound.min.x == 0.0f && m_bound.min.y == 0.0f && m_bound.min.z == 0.0f
+			&& m_bound.max.x == 0.0f && m_bound.max.y == 0.0f && m_bound.max.z == 0.0f);
+	}
+
+public:
+	XMFLOAT3 m_center;
+	Bound m_bound;
+};
+
+class BoxCollider : public Collider
+{
+public:
+	BoxCollider(Object* object);
+	virtual void SetBound(Mesh* mesh) override;
+};
+
+class GameObject : public Object
+{
+public:
+	GameObject();
 
 	virtual void Start();
 	virtual void Update();
 
-	//void AddComponent(Component* component);
-	//void RemoveComponent(Component* component);
-
-	bool IsDirty() const { return m_dirty; }
-	void SetDirty(bool value) { m_dirty = value; }
-
 public:
-	Transform m_transform;
-	UINT m_bufferId = -1;
-
+	
 	// components
 	MeshRenderer m_renderer;
-	//std::unordered_map<std::string, IObject*> components;
+	BoxCollider m_collider;
+	std::string name = "GameObject";
 
-	bool m_active = true;
 
 protected:
-	bool m_dirty = true;
 };
+
 
 
 
 //------------ Custom Object
 
-class Deer : public Object
+class Deer : public GameObject
 {
 public:
 	Deer();
@@ -74,7 +114,7 @@ private:
 	float m_angle = 0.0f;
 };
 
-class Field : public Object
+class Field : public GameObject
 {
 public:
 	Field();
@@ -83,7 +123,7 @@ public:
 
 };
 
-class Player : public Object
+class Player : public GameObject
 {
 public:
 	Player();

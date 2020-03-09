@@ -60,6 +60,10 @@ public:
 struct Mesh {
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
+
+	// bound positions (-, +)
+	XMFLOAT3 minBound = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT3 maxBound = { 0.0f, 0.0f, 0.0f };
 };
 
 struct Transform
