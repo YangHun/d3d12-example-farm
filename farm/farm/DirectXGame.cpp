@@ -3,6 +3,7 @@
 #include "FbxLoader.h"
 #include "Physics.h"
 
+std::unordered_map<std::string, std::unique_ptr<Texture>> Assets::m_textures;
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
 std::unordered_map<std::string, Mesh> Assets::m_models;
 
@@ -65,6 +66,27 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 				if (active) scene->m_renderObjects.push_back(scene->m_allObjects[id].get());
 			}
 		}
+	}
+
+	// a house.
+	{
+		auto obj = std::make_unique<GameObject>();
+		obj->m_transform = Transform
+		{ 
+			{-12.5f, 0.0f, 5.0f},
+			{0.0f, XM_PI / 2.0f, 0.0f}, 
+			{0.2f, 0.2f, 0.2f}
+		};
+
+		obj->m_renderer.SetMesh("Assets/house.fbx");
+		
+		obj->m_active = true;
+		obj->m_bufferId = scene->m_allObjects.size();
+
+		obj->name = "House";
+
+		scene->m_allObjects.push_back(std::move(obj));
+		scene->m_renderObjects.push_back(scene->m_allObjects.back().get());
 	}
 
 }
@@ -187,93 +209,101 @@ void Scene::UpdateObjectConstantBuffers()
 
 Assets::Assets()
 {
-	LoadAssets();
-}
-
-void Assets::LoadAssets()
-{
-	std::vector<std::string> fbxName = {
-		"Assets/deer.fbx",
-		"Assets/tree.fbx"
-	};
-
-	FbxLoader loader = FbxLoader();
-
-	for (auto a : fbxName)
+	// Load meshes.
 	{
-		if (m_models.find(a) == m_models.end()) {
+		std::vector<std::string> fbxName = {
+			"Assets/deer.fbx",
+			"Assets/tree.fbx",
+			"Assets/house.fbx",
+		};
+
+		FbxLoader loader = FbxLoader();
+
+		for (auto a : fbxName)
+		{
+			if (m_models.find(a) == m_models.end()) {
+				Mesh mesh;
+				loader.Load(a.c_str(), &mesh);
+				m_models[a] = mesh;
+
+				auto meshDesc = std::make_unique<MeshDesc>();
+				meshDesc->mesh = &m_models[a];
+				meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+				m_meshes[a] = std::move(meshDesc);
+			}
+		}
+
+		// create default triangle
+		{
 			Mesh mesh;
-			loader.Load(a.c_str(), &mesh);
-			m_models[a] = mesh;
+			mesh.vertices = {
+				Vertex {{ 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+				Vertex {{0.25f, -0.25f , 0.0f }, { 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+				Vertex {{ -0.25f, -0.25f , 0.0f }, { 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}
+			};
+
+			mesh.indices = {
+				0, 1, 2
+			};
+
+			mesh.minBound.x = -0.25f;
+			mesh.maxBound.x = 0.25f;
+			mesh.minBound.y = -0.25;
+			mesh.maxBound.y = 0.5f;
+
+			mesh.minBound.z = -0.1f;
+			mesh.maxBound.z = 0.1f;
+
+			m_models["triangle"] = mesh;
 
 			auto meshDesc = std::make_unique<MeshDesc>();
-			meshDesc->mesh = &m_models[a];
+			meshDesc->mesh = &m_models["triangle"];
 			meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
-			m_meshes[a] = std::move(meshDesc);
+			m_meshes["triangle"] = std::move(meshDesc);
+		}
+
+		// create default plain
+		{
+			Mesh mesh;
+			mesh.vertices = {
+				Vertex {{ -1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+				Vertex {{ -1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+				Vertex {{ 1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+				Vertex {{ 1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			};
+
+			mesh.indices = {
+				0, 1, 2,
+				0, 2, 3
+			};
+
+			mesh.minBound.x = -1.0f;
+			mesh.maxBound.x = 1.0f;
+			mesh.minBound.z = -1.0f;
+			mesh.maxBound.z = 1.0f;
+
+			mesh.minBound.y = -0.1f;
+			mesh.maxBound.y = 0.1f;
+
+			m_models["plain"] = mesh;
+
+			auto meshDesc = std::make_unique<MeshDesc>();
+			meshDesc->mesh = &m_models["plain"];
+			meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+			m_meshes["plain"] = std::move(meshDesc);
 		}
 	}
 
-	// create default triangle
+	// Load textures.
 	{
-		Mesh mesh;
-		mesh.vertices = {
-			Vertex {{ 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			Vertex {{0.25f, -0.25f , 0.0f }, { 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			Vertex {{ -0.25f, -0.25f , 0.0f }, { 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}
-		};
+		// load example
+		auto tex = std::make_unique <Texture>();
+		tex->name = "example";
+		tex->filePath = L"Textures/example.dds";
 
-		mesh.indices = {
-			0, 1, 2
-		};
-
-		mesh.minBound.x = -0.25f;
-		mesh.maxBound.x = 0.25f;
-		mesh.minBound.y = -0.25;
-		mesh.maxBound.y = 0.5f;
-
-		mesh.minBound.z = -0.1f;
-		mesh.maxBound.z = 0.1f;
-
-		m_models["triangle"] = mesh;
-
-		auto meshDesc = std::make_unique<MeshDesc>();
-		meshDesc->mesh = &m_models["triangle"];
-		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
-
-		m_meshes["triangle"] = std::move(meshDesc);
+		m_textures[tex->name.c_str()] = std::move(tex);
 	}
-
-	// create default plain
-	{
-		Mesh mesh;
-		mesh.vertices = {
-			Vertex {{ -1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ -1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ 1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ 1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-		};
-
-		mesh.indices = {
-			0, 1, 2,
-			0, 2, 3
-		};
-
-		mesh.minBound.x = -1.0f;
-		mesh.maxBound.x = 1.0f;
-		mesh.minBound.z = -1.0f;
-		mesh.maxBound.z = 1.0f;
-
-		mesh.minBound.y = -0.1f;
-		mesh.maxBound.y = 0.1f;
-
-		m_models["plain"] = mesh;
-
-		auto meshDesc = std::make_unique<MeshDesc>();
-		meshDesc->mesh = &m_models["plain"];
-		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
-
-		m_meshes["plain"] = std::move(meshDesc);
-	}
-
 }

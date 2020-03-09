@@ -95,6 +95,14 @@ struct MeshDesc {
 };
 
 
+struct Texture
+{
+	std::string name;
+	std::wstring filePath;
+
+	ComPtr<ID3D12Resource> resource = nullptr;
+	ComPtr<ID3D12Resource> uploadHeap = nullptr;
+};
 
 
 // hash function

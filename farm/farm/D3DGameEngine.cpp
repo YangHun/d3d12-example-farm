@@ -137,17 +137,18 @@ void D3DGameEngine::LoadPipeline()
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
 		
-		/*
-		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-		cbvHeapDesc.NumDescriptors = TextureCount;
-		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		ThrowIfFailed(m_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
-		NAME_D3D12_OBJECT(m_srvHeap);
-		*/
+		
+		// Describe and create the shader resource view (SRV) descriptor heap.
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+		srvHeapDesc.NumDescriptors = 64;
+		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+		
 
 		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		m_CbvSrvUavDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
 	// Create an 11 device wrapped aroud the 12 device and share
@@ -199,8 +200,6 @@ void D3DGameEngine::LoadPipeline()
 	// 매 프레임마다 update 해야 하는 resource들의 circular array 를 만들어
 	// CPU가 다음 몇 개 프레임의 Resource 값을 미리 계산해 둘 수 있게 한다.
 	{
-
-		// 정의할 constant buffer가 없으므로 frame resource 대신 rtv를 만든다.
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -273,22 +272,21 @@ void D3DGameEngine::LoadAssets()
 {
 
 	// Create the main constant buffer.
-	//CreateConstantBuffer(m_device.Get(), sizeof(SceneConstantBuffer), 1, m_cbUploadBuffer);
-	//ThrowIfFailed(m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pConstantBuffer)));
-	
 	m_constantBuffer = std::make_unique<UploadBuffer<SceneConstantBuffer>>(m_device.Get(), 1, true);
-
 
 	// Create the root signature.
 	{
-		CD3DX12_ROOT_PARAMETER rootParameters[2];
+		CD3DX12_DESCRIPTOR_RANGE textureTable;
+		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 0, 0);
 
-		
+		CD3DX12_ROOT_PARAMETER rootParameters[3];
+
 		rootParameters[0].InitAsConstantBufferView(0);
 		rootParameters[1].InitAsConstantBufferView(1);
+		rootParameters[2].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(2, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSignatureDesc.Init(3, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -376,8 +374,6 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
 	}
 
-	
-
 	// Create the main command list.
 	// Set initial pipeline state is null.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
@@ -407,6 +403,32 @@ void D3DGameEngine::LoadAssets()
 			desc->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 			desc->indexBufferView.SizeInBytes = indiceSize;
 
+		}
+	}
+
+	// Load textures and fill out the heap with actual descriptors.
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE heapDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+		for (auto& i : Assets::m_textures)
+		{
+			auto t = i.second.get();
+			
+			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(m_device.Get(),
+				m_commandList.Get(), t->filePath.c_str(),
+				t->resource, t->uploadHeap));
+
+			srvDesc.Format = t->resource->GetDesc().Format;
+			srvDesc.Texture2D.MipLevels = t->resource->GetDesc().MipLevels;
+			
+			m_device->CreateShaderResourceView(t->resource.Get(), &srvDesc, heapDescriptor);
+			heapDescriptor.Offset(1, m_CbvSrvUavDescriptorSize);
 		}
 	}
 
@@ -703,5 +725,10 @@ void D3DGameEngine::DrawCurrentUI()
 		&textRect2,
 		m_textBrush.Get()
 	);
+
+}
+
+void D3DGameEngine::LoadDDSTextures(std::string name, std::wstring fileName)
+{
 
 }

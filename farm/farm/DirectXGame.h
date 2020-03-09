@@ -40,9 +40,9 @@ public:
 static class Assets {
 public:
 	Assets();
-	static void LoadAssets();
 	static std::unordered_map<std::string, std::unique_ptr<MeshDesc>> m_meshes;
 	static std::unordered_map<std::string, Mesh> m_models;
+	static std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 };
 
 class DirectXGame

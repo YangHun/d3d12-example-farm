@@ -25,6 +25,9 @@
     <Filter Include="소스 파일\Component">
       <UniqueIdentifier>{7e50401f-5145-4848-bd7f-c26534d00789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Object">
+      <UniqueIdentifier>{3352c443-e877-42db-beb1-612213bf8c35}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DirectXApp.cpp">
@@ -61,6 +64,18 @@
       <Filter>소스 파일\Component</Filter>
     </ClCompile>
     <ClCompile Include="UploadBuffer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Field.cpp">
+      <Filter>소스 파일\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Events.cpp">
+      <Filter>소스 파일\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics.cpp">
+      <Filter>소스 파일\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -105,6 +120,18 @@
       <Filter>헤더 파일\Component</Filter>
     </ClInclude>
     <ClInclude Include="UploadBuffer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Field.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Events.h">
+      <Filter>헤더 파일\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics.h">
+      <Filter>헤더 파일\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

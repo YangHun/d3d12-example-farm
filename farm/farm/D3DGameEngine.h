@@ -5,6 +5,7 @@
 #include "GameTimer.h"
 #include "FrameResource.h"
 #include "UploadBuffer.h"
+#include "DDSTextureLoader.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -36,6 +37,8 @@ private:
 	void DrawCurrentScene();
 	void DrawCurrentUI();
 
+	void LoadDDSTextures(std::string name, std::wstring fileName);
+
 	POINT GetWindowCenter();
 
 	static const UINT FrameCount = 2;
@@ -56,8 +59,10 @@ private:
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
+	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	UINT m_rtvDescriptorSize;
 	UINT m_dsvDescriptorSize;
+	UINT m_CbvSrvUavDescriptorSize;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 
 	// App resources.
