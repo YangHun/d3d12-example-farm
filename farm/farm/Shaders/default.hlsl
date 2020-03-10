@@ -44,8 +44,13 @@ PSInput VSMain(VSInput input)
 }
 
 float4 PSMain(PSInput input) : SV_TARGET
-{
+{     
+    Material mat = gMaterials[gMatIndex];
+    uint diffuseIndex = mat.diffuseMapIndex;
     float4 color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    
+    color *= gTextureMaps[diffuseIndex].Sample(gAnisotropicWrap, input.uv);
+    
     input.normal = normalize(input.normal);
     float3 light = -gLight.direction;    // directional light
     float3 diffuse = saturate(dot(light, input.normal)) * gLight.strength * color.xyz;

@@ -279,14 +279,31 @@ void D3DGameEngine::LoadAssets()
 		CD3DX12_DESCRIPTOR_RANGE textureTable;
 		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 0, 0);
 
-		CD3DX12_ROOT_PARAMETER rootParameters[3];
+		CD3DX12_ROOT_PARAMETER rootParameters[4];
 
-		rootParameters[0].InitAsConstantBufferView(0);
-		rootParameters[1].InitAsConstantBufferView(1);
-		rootParameters[2].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[0].InitAsConstantBufferView(0);	// register b0 (object constant buffer)
+		rootParameters[1].InitAsConstantBufferView(1);	// register b1 (scene constant buffer)
+		rootParameters[2].InitAsShaderResourceView(0, 1); // register t0, space 1 (material map)
+		rootParameters[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t0 (texture table)
+
+
+		const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
+			0,
+			D3D12_FILTER_ANISOTROPIC,
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			0.0f, 8);
+
+
+		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> samplers =
+		{
+			anisotropicWrap	// register s0 (gAnisotropicWrap)
+		};
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(3, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSignatureDesc.Init(4, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		/*rootSignatureDesc.Init(3, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);*/
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -406,6 +423,11 @@ void D3DGameEngine::LoadAssets()
 		}
 	}
 
+	// Create the material buffer for assets.
+	{
+		m_materialBuffer = std::make_unique<UploadBuffer<MaterialBuffer>>(m_device.Get(), (UINT)Assets::m_materials.size(), false);
+	}
+
 	// Load textures and fill out the heap with actual descriptors.
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE heapDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -437,8 +459,6 @@ void D3DGameEngine::LoadAssets()
 		for (UINT i = 0; i < m_game.SceneCount(); ++i)
 		{
 			auto s = m_game.GetScene(i);
-			//CreateConstantBuffer(m_device.Get(),sizeof(ObjectConstantBuffer), (UINT)s->m_objects.size(), s->m_cbUploadBuffer);
-			//ThrowIfFailed(s->m_cbUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&s->m_objConstantBuffer)));
 			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_renderObjects.size()), true);
 		}
 	}
@@ -478,32 +498,49 @@ void D3DGameEngine::Update()
 		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
 	}
 
-	// update constant buffer data
+	// update object constant buffer
+	auto scene = m_game.GetCurrentScene();
+	scene->Update();
+
+	// update material buffer
+
+	auto matbuffer = m_materialBuffer.get();
+
+	for (auto& e : Assets::m_materials)
 	{
-		auto scene = m_game.GetCurrentScene();
-		scene->Update();
+		Material* mat = e.second.get();
+		if (mat->dirty)
+		{
+			MaterialBuffer material;
+			material.diffuseMapIndex = mat->diffuseMapIndex;
 
-		auto mainbuffer = m_constantBuffer.get();
-		SceneConstantBuffer cBuffer;
-
-		XMMATRIX view = scene->m_camera.GetViewMatrix();
-		XMMATRIX proj = scene->m_camera.GetProjectionMatrix();
-		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
-		cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
+			matbuffer->CopyData(mat->bufferId, material);
+			
+			mat->dirty = false;
+		}
+	}
 
 
-		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
-		XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
+	// update scene constant buffer
+	auto mainbuffer = m_constantBuffer.get();
+	SceneConstantBuffer cBuffer;
 
-		XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
+	XMMATRIX view = scene->m_camera.GetViewMatrix();
+	XMMATRIX proj = scene->m_camera.GetProjectionMatrix();
+	XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
+	cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
 
-		cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
-		cBuffer.eye = scene->m_camera.GetEyePosition();
 
-		mainbuffer->CopyData(0, cBuffer);
-				
-	}	
+	XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
+	XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
 
+	XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
+
+	cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
+	cBuffer.eye = scene->m_camera.GetEyePosition();
+
+	mainbuffer->CopyData(0, cBuffer);
+	
 }
 
 void D3DGameEngine::Render()
@@ -597,7 +634,15 @@ void D3DGameEngine::PopulateCommandList()
 	ThrowIfFailed(m_commandAllocator->Reset());
 	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineStates["opaque"].Get()));
 
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_srvHeap.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+	// bind material buffer to command queue
+	m_commandList->SetGraphicsRootShaderResourceView(2, m_materialBuffer->Resource()->GetGPUVirtualAddress());
+	// bind texture heap to command queue
+	m_commandList->SetGraphicsRootDescriptorTable(3, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
@@ -620,17 +665,9 @@ void D3DGameEngine::PopulateCommandList()
 	
 	m_commandList->SetGraphicsRootConstantBufferView(1, address);
 
-	// 현재 scene의 index instance를 그린다.
+	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
 	DrawCurrentScene();
-	
-
-	//// draw sky.
-	//{
-	//	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
-	//	
-	//}
-
 
 	// back buffer state 를 여기서 present로 transition하지 않는다.
 	// 이후, wrapped 11on12 target resource가 released될 때 일어남.
@@ -654,17 +691,15 @@ void D3DGameEngine::DrawCurrentScene()
 
 	for (auto obj : scene->m_renderObjects)
 	{
-		auto mesh = obj->m_renderer.m_mesh;
+		auto mesh = obj->m_renderer.GetMeshDesc();
 
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
 
-		//D3D12_GPU_VIRTUAL_ADDRESS address = scene->m_cbUploadBuffer.Get()->GetGPUVirtualAddress() + obj->constantBufferId * bufferSize;
-
+		// get object constant buffer address.
 		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->m_bufferId * bufferSize;
 
-		//D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);

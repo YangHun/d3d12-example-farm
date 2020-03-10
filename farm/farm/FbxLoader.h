@@ -6,11 +6,26 @@
 class FbxLoader
 {
 public:
-	FbxLoader();
+	FbxLoader(std::unordered_map<std::string, std::unique_ptr<Texture>>* pTextureMap, std::unordered_map<std::string, std::unique_ptr<Material>>* pMaterialMap);
+	~FbxLoader();
 
 	bool Load(const char* filename, Mesh* mesh);
 
+	//std::vector<Texture> GetGlobalTextures() const
+	//{
+	//	return m_textures;
+	//}
+
+	//std::vector<Material> GetGlobalMaterials() const
+	//{
+	//	return m_materials;
+	//}
+
+
 private:
+	void GetTexturesPath(FbxScene* scene, const char* filename);
+	void BuildMaterials(FbxScene* scene);
+
 	void LoadNode(FbxNode* node);
 
 	void GetGlobalTransform(FbxNode* node);
@@ -22,6 +37,8 @@ private:
 	void AssignIndexedVertex(Vertex v);
 	void UpdateBound(XMFLOAT3 position);
 
+	std::wstring ConvertTexturePath(const char* mesh, std::string texture);
+
 private:
 	FbxManager* m_manager = nullptr;
 	FbxIOSettings* m_ios = nullptr;
@@ -31,6 +48,14 @@ private:
 	Mesh* m_dstData = nullptr;
 	FbxAMatrix m_globalTransform;
 	std::unordered_map<Vertex, uint16_t> m_indexMap;
+	std::unordered_map<std::string, uint16_t> m_texMap;
+	
+	std::unordered_map<std::string, std::unique_ptr<Texture>>* m_pTextures = nullptr;
+	//std::vector<Texture> m_textures;
+	
+	std::unordered_map<std::string, uint16_t> m_matMap;
+	std::unordered_map<std::string, std::unique_ptr<Material>>* m_pMaterials = nullptr;
+	//std::vector<Material> m_materials;
 };
 
 

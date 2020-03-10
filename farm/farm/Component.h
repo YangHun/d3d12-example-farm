@@ -45,6 +45,20 @@ public:
 	void Update();
 
 	void SetMesh(std::string name);
+	
+	MeshDesc* GetMeshDesc() const
+	{
+		return m_mesh;
+	}
+
+	UINT GetMaterialIndex() const
+	{
+		if (m_mesh->mesh == nullptr) return 0;
+		if (m_mesh->mesh->matIndex.size() < 1) return 0;
+		return m_mesh->mesh->matIndex[0];
+	}
+
+private:
 	MeshDesc* m_mesh = nullptr;
 
 };

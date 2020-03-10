@@ -2,8 +2,11 @@
 #ifndef _MESHES_H
 #define _MESHES_H
 
+#include <unordered_map>
+
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
+
 
 struct FVector3 {
 public:
@@ -57,9 +60,19 @@ public:
 
 };
 
+struct Material
+{
+	UINT bufferId;
+	std::string name;
+	UINT diffuseMapIndex;
+	bool dirty = true;
+};
+
 struct Mesh {
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
+
+	std::vector<UINT> matIndex;
 
 	// bound positions (-, +)
 	XMFLOAT3 minBound = { 0.0f, 0.0f, 0.0f };
@@ -97,13 +110,13 @@ struct MeshDesc {
 
 struct Texture
 {
+	UINT id;
 	std::string name;
 	std::wstring filePath;
 
 	ComPtr<ID3D12Resource> resource = nullptr;
 	ComPtr<ID3D12Resource> uploadHeap = nullptr;
 };
-
 
 // hash function
 

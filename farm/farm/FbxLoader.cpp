@@ -1,13 +1,40 @@
 #include "stdafx.h"
 #include "FbxLoader.h"
 
-FbxLoader::FbxLoader()
+FbxLoader::FbxLoader(std::unordered_map<std::string, std::unique_ptr<Texture>>* pTextureMap, std::unordered_map<std::string, std::unique_ptr<Material>>* pMaterialMap) :
+	m_pTextures(pTextureMap),
+	m_pMaterials(pMaterialMap)
 {
 	if (!m_manager) m_manager = FbxManager::Create();
 	if (!m_ios) m_ios = FbxIOSettings::Create(m_manager, IOSROOT);
 	m_manager->SetIOSettings(m_ios);
 	if (!m_importer) m_importer = FbxImporter::Create(m_manager, "");
 	m_globalTransform.SetIdentity();
+}
+
+FbxLoader::~FbxLoader()
+{
+	if (m_importer != nullptr)
+	{
+		m_importer->Destroy();
+		m_importer = nullptr;
+	}
+	
+	if (m_ios != nullptr)
+	{
+		m_ios->Destroy();
+		m_ios = nullptr;
+	}
+
+	if (m_manager != nullptr)
+	{
+		m_manager->Destroy();
+		m_manager = nullptr;
+	}
+
+
+	m_indexMap.clear();
+	m_texMap.clear();
 }
 
 bool FbxLoader::Load(const char* filename, Mesh* meshOutput)
@@ -35,12 +62,102 @@ bool FbxLoader::Load(const char* filename, Mesh* meshOutput)
 	geometryConverter->Triangulate(scene, true);
 	delete(geometryConverter);
 
-
 	m_dstData = meshOutput;
+
+	GetTexturesPath(scene, filename);
+	BuildMaterials(scene);
+
 	m_indexMap.clear();
 	LoadNode(rootNode);
 
 	return true;
+}
+
+void FbxLoader::GetTexturesPath(FbxScene* scene, const char* filename)
+{
+	int count = scene->GetTextureCount();
+
+	for (int i = 0; i < count; ++i)
+	{
+		FbxTexture* fbx = scene->GetTexture(i);
+		
+		if (m_pTextures->find(fbx->GetName()) == m_pTextures->end()) {
+
+			auto data = std::make_unique<Texture>();
+
+			data->name = fbx->GetName();
+			data->filePath = ConvertTexturePath(filename, data->name);
+
+			data->id = m_pTextures->size();
+			m_pTextures->insert({ data->name, std::move(data) });
+		}
+	}
+}
+
+std::wstring FbxLoader::ConvertTexturePath(const char* mesh, std::string texture)
+{
+	std::string meshName (mesh);
+	meshName = meshName.substr(7, meshName.size() - (4 + 7));	// exclude 7(Assets/) + 4(.fbx)
+
+	std::string textureName = texture;
+	if (textureName.find("_jpg") != std::string::npos)
+	{
+		auto lookup = textureName.find("_jpg");
+		textureName = textureName.replace(lookup, lookup + 4, ".dds");
+	}
+
+	std::stringstream ss;
+	ss << "Textures/" << meshName << "/" << textureName;
+
+	std::string str = ss.str();
+	std::wstring wstr;
+	wstr.assign(str.begin(), str.end());
+
+	return wstr;
+}
+
+void FbxLoader::BuildMaterials(FbxScene* scene)
+{
+	int count = scene->GetMaterialCount();
+
+	for (int i = 0; i < count; ++i)
+	{
+		FbxSurfaceMaterial* fMat = scene->GetMaterial(i);
+		FbxClassId cid = fMat->GetClassId();
+		auto prop = fMat->FindProperty(FbxSurfaceMaterial::sDiffuse);
+		
+		if (m_pMaterials->find(fMat->GetName()) != m_pMaterials->end()) continue;
+
+		auto mat = std::make_unique<Material>();
+		FbxTexture* tex = prop.GetSrcObject<FbxTexture>(0);
+		
+		std::string n1 = tex->GetInitialName();
+		std::string n2 = tex->GetName();
+
+		if (tex != nullptr)
+		{
+			UINT index = m_pTextures->at(tex->GetName())->id;
+			mat->diffuseMapIndex = index;
+		}
+		else {
+			mat->diffuseMapIndex = 0;	// default texture
+		}
+
+		if (cid.Is(FbxSurfacePhong::ClassId))
+		{
+			FbxSurfacePhong* phong = (FbxSurfacePhong*)(fMat);
+			mat->name = phong->GetName();
+		}
+		else if (cid.Is(FbxSurfaceLambert::ClassId))
+		{
+			FbxSurfaceLambert* lambert = (FbxSurfaceLambert*)(fMat);
+			mat->name = lambert->GetName();
+		}
+
+		mat->bufferId = (UINT)m_pMaterials->size();
+		m_dstData->matIndex.push_back(mat->bufferId);
+		m_pMaterials->insert({ mat->name, std::move(mat) });		
+	}
 }
 
 void FbxLoader::LoadNode(FbxNode* node)
@@ -136,6 +253,10 @@ void FbxLoader::TryGetUV(FbxMesh* mesh, int pCount, int vCount, XMFLOAT2& vertex
 	bool bResult = mesh->GetPolygonVertexUV(pCount, vCount, uvNames[0], uv, bUnmapped);
 
 	vertexData = (bResult) ? Fbx2ToXM2(uv) : XMFLOAT2(0.0f, 0.0f);
+
+	// DirectX 의 UV 기준점은 왼쪽 위, Fbx 의 UV 기준점은 왼쪽 아래
+	// v 값에 -1을 곱해 맞춰준다.
+	vertexData.y *= -1.0f;
 }
 
 

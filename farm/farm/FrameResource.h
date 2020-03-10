@@ -25,8 +25,14 @@ struct SceneConstantBuffer
 struct ObjectConstantBuffer
 {
 	XMFLOAT4X4 model;	// Model matrix
+	UINT matIndex;		// material index
 };
 
+
+struct MaterialBuffer
+{
+	UINT diffuseMapIndex;
+};
 
 class FrameResource
 {

@@ -99,7 +99,7 @@ Field::Field()
 	m_renderer = MeshRenderer(this);
 	m_renderer.SetMesh("plain");
 	m_collider = BoxCollider(this);
-	m_collider.SetBound(m_renderer.m_mesh->mesh);
+	m_collider.SetBound(m_renderer.GetMeshDesc()->mesh);
 }
 
 void Field::Start()

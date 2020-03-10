@@ -76,6 +76,7 @@ private:
 
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
+	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;
 
 	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
 	//SceneConstantBuffer* m_pConstantBuffer;

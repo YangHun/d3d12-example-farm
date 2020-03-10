@@ -6,10 +6,15 @@ struct Light
     float3 direction; // directional light
 };
 
+struct Material
+{
+    uint diffuseMapIndex;
+};
 
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
+    uint gMatIndex;
 };
 
 cbuffer cbScene : register(b1)
@@ -20,9 +25,8 @@ cbuffer cbScene : register(b1)
     Light gLight;
 }
 
-TextureCube gCubeMap : register(t0);
-//Texture2D gTextureMaps[48] : register(t1);
+Texture2D gTextureMaps[48] : register(t0);  // space 0
+StructuredBuffer<Material> gMaterials : register(t0, space1);
 
-//StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
-
-SamplerState gsamLinearWrap : register(s2);
+SamplerState gAnisotropicWrap : register(s0);
+//SamplerState gsamLinearWrap : register(s0);
