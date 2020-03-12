@@ -22,6 +22,7 @@ DirectXGame::DirectXGame(CD3DX12_VIEWPORT* viewport) :
 void DirectXGame::Initialize()
 {
 	BuildScenes();
+	m_player = std::make_unique<Player>();
 }
 
 void DirectXGame::BuildScenes()
@@ -100,6 +101,7 @@ bool _isCasting = false;
 
 void DirectXGame::OnMouseDown(UINT8 btnState, int x, int y)
 {
+	
 	if (!_isCasting)
 	{
 		_isCasting = true;

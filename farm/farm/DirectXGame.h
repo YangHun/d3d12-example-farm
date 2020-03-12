@@ -31,14 +31,18 @@ private:
 
 public: 
 	UINT m_id;
-	//std::vector<MeshDesc*> m_objects;
 
+	// 이번 프레임에 Instantiate 된 오브젝트는 waiting queue에 미리 등록했다가 
+	// 다음 Update()가 호출되는 시점에서 m_allObjects에 등록하여
+	// m_allObjects를 순회하는 도중에는 값이 바뀌지 않게 한다.
 	std::queue<std::unique_ptr<GameObject>> m_objWaitQueue;
-	std::vector<std::unique_ptr<GameObject>> m_allObjects;
 
+	// scene에 존재하는 모든 GameObject 
+	std::vector<std::unique_ptr<GameObject>> m_allObjects;
+	// Engine에서 실제로 그리는 오브젝트
 	std::vector<GameObject*> m_renderObjects;
 
-	// current scene resources.
+	// object constant buffers for objects in current scene.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
 	
 	Camera m_camera;
