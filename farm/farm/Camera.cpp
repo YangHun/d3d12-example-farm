@@ -92,7 +92,7 @@ XMMATRIX Camera::GetViewMatrix()
 		up);
 }
 
-void Camera::Update()
+void Camera::Update(float dt)
 {
 	XMVECTOR dir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	XMVECTOR forward = XMLoadFloat3(&m_w);

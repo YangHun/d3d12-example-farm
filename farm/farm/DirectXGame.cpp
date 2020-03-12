@@ -2,6 +2,8 @@
 #include "DirectXGame.h"
 #include "FbxLoader.h"
 #include "Physics.h"
+#include "Component.h"
+#include "Objects.h"
 
 std::unordered_map<std::string, std::unique_ptr<Texture>> Assets::m_textures;
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
@@ -162,27 +164,18 @@ void Scene::BuildObject()
 		m_camera.SetPosition(XMFLOAT3(-5.0f, 6.0f, -6.0f));
 		m_camera.SetRotation(XMFLOAT3(30.0f, 45.0f, 0.0f));
 		m_camera.SetFrustum(XM_PI * 0.25f);
-
-		/*EventHandler handler = [](WPARAM param) {
-			m_camera.OnKeyDown(param);
-		}
-		m_inputHandler.m_keyDown += EventHandler(&Camera::OnKeyDown);*/
-
-		//std::function<void(WPARAM)> pf = std::bind(&IKeyHandler::OnKeyDown, &m_camera, std::placeholders::_1);
-		//m_inputHandler.Assign(E_InputType::KEY_DOWN, pf);
-		//m_inputHandler.Assign(E_InputType::KEY_UP, m_camera.OnKeyUp);
 	}
 }
 
-void Scene::Update()
+void Scene::Update(float dt)
 {
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
-		if (obj->m_active) obj->Update();
+		if (obj->m_active) obj->Update(dt);
 	}
 
-	m_camera.Update();
+	m_camera.Update(dt);
 	UpdateObjectConstantBuffers();
 }
 
@@ -190,7 +183,7 @@ void Scene::UpdateObjectConstantBuffers()
 {
 	for (auto obj : m_renderObjects)
 	{
-		if (obj->IsDirty())
+		if (obj->IsDirty() && obj->m_active)
 		{
 			// GPU에서 사용할 것이므로 transpose 해준다. 
 			// CPU 는 (column)(row), GPU는 (row)(column)
@@ -232,7 +225,7 @@ Assets::Assets()
 	{
 		std::vector<std::string> fbxName = {
 			//"Assets/deer.fbx",
-			//"Assets/tree.fbx",
+			"Assets/plant.fbx",
 			"Assets/house.fbx",
 		};
 
@@ -283,7 +276,7 @@ Assets::Assets()
 		m_meshes["triangle"] = std::move(meshDesc);
 	}
 
-	// create default plain
+	// create default plane
 	{
 		Mesh mesh;
 		mesh.vertices = {
@@ -303,16 +296,16 @@ Assets::Assets()
 		mesh.minBound.z = -1.0f;
 		mesh.maxBound.z = 1.0f;
 
-		mesh.minBound.y = -0.1f;
-		mesh.maxBound.y = 0.1f;
+		mesh.minBound.y = -0.01f;
+		mesh.maxBound.y = 0.01f;
 
-		m_models["plain"] = mesh;
+		m_models["plane"] = mesh;
 
 		auto meshDesc = std::make_unique<MeshDesc>();
-		meshDesc->mesh = &m_models["plain"];
+		meshDesc->mesh = &m_models["plane"];
 		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
-		m_meshes["plain"] = std::move(meshDesc);
+		m_meshes["plane"] = std::move(meshDesc);
 	}
 
 }

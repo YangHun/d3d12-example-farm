@@ -20,7 +20,7 @@ public:
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 	void OnMouseMove(WPARAM state, int x, int y);
-	void Update();
+	void Update(float dt);
 
 	void ResetMousePos(POINT point);
 

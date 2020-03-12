@@ -14,10 +14,11 @@ void GameObject::Start()
 	// Do I really need this method or not?
 }
 
-void GameObject::Update()
+void GameObject::Update(float dt)
 {
-	m_renderer.Update();
+	m_renderer.Update(dt);
 }
+
 
 Component::Component(Object* object) :
 	m_pObject(object)
@@ -32,9 +33,21 @@ void MeshRenderer::Start()
 {
 }
 
-void MeshRenderer::Update()
+void MeshRenderer::Update(float dt)
 {
 
+}
+
+void MeshRenderer::SetMaterial(std::string name, std::unique_ptr<Material> pMaterial)
+{
+	m_mesh->mesh->matIndex.push_back(pMaterial->bufferId);
+	Assets::m_materials[name] = std::move(pMaterial);
+}
+
+void MeshRenderer::SetMaterial(std::string name)
+{
+	auto lookup = Assets::m_materials.find(name);
+	if (lookup != Assets::m_materials.end()) m_mesh->mesh->matIndex.push_back(lookup->second->bufferId);	
 }
 
 void MeshRenderer::SetMesh(std::string name)
@@ -57,8 +70,11 @@ BoxCollider::BoxCollider(Object* object) :
 {
 }
 
-void BoxCollider::SetBound(Mesh* mesh)
+void BoxCollider::SetBound(MeshDesc* desc)
 {
+	if (desc == nullptr) return;
+	Mesh* mesh = desc->mesh;
+
 	m_bound.min.x = mesh->minBound.x;
 	m_bound.min.y = mesh->minBound.y;
 	m_bound.min.z = mesh->minBound.z;
@@ -66,106 +82,4 @@ void BoxCollider::SetBound(Mesh* mesh)
 	m_bound.max.x = mesh->maxBound.x;
 	m_bound.max.y = mesh->maxBound.y;
 	m_bound.max.z = mesh->maxBound.z;
-
-	/*m_bound.y.x = mesh->yBound.x;
-	m_bound.y.y = mesh->yBound.y;
-
-	m_bound.z.x = mesh->zBound.x;
-	m_bound.z.y = mesh->zBound.y;*/
-
-	//m_bound.x = mesh->xBound;
-	//m_bound.y = mesh->yBound;
-	//m_bound.x = mesh->zBound;
-}
-
-Deer::Deer()
-{
-	m_renderer = MeshRenderer(this);
-	m_renderer.SetMesh("Assets/deer.fbx");
-}
-
-void Deer::Start() {
-	
-}
-
-void Deer::Update() {
-	m_angle += 0.001f;
-	m_transform.rotation.y = XM_PI * 0.3f + m_angle;
-	m_dirty = true;
-}
-
-Field::Field()
-{
-	m_renderer = MeshRenderer(this);
-	m_renderer.SetMesh("plain");
-	m_collider = BoxCollider(this);
-	m_collider.SetBound(m_renderer.GetMeshDesc()->mesh);
-}
-
-void Field::Start()
-{
-
-}
-
-void Field::Update()
-{
-
-}
-
-Player::Player()
-{
-
-}
-
-void Player::Start()
-{
-
-}
-
-void Player::Update()
-{
-	
-}
-
-void Player::OnMouseMove(WPARAM state, int x, int y)
-{
-	// todo: 카메라가 가리키는 대상 레이캐스트로 인식
-}
-
-void Player::OnKeyDown(WPARAM key)
-{
-	switch (key)
-	{
-	case 'W':
-		m_pressedW = true;
-		break;
-	case 'A':
-		m_pressedA = true;
-		break;
-	case 'S':
-		m_pressedS = true;
-		break;
-	case 'D':
-		m_pressedD = true;
-		break;
-	}
-}
-
-void Player::OnKeyUp(WPARAM key)
-{
-	switch (key)
-	{
-	case 'W':
-		m_pressedW = false;
-		break;
-	case 'A':
-		m_pressedA = false;
-		break;
-	case 'S':
-		m_pressedS = false;
-		break;
-	case 'D':
-		m_pressedD = false;
-		break;
-	}
 }

@@ -17,7 +17,10 @@ public:
 	Scene(UINT id, CD3DX12_VIEWPORT* viewport);
 
 	void Initialize();
-	void Update();
+	void Update(float dt);
+
+	template<typename T>
+	GameObject* Instantiate(std::string name, Transform transform, bool active);
 
 private:
 	void BuildObject();
@@ -44,8 +47,6 @@ public:
 	static std::unordered_map<std::string, Mesh> m_models;
 	static std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 	static std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
-
-	static std::string texturePath;
 };
 
 class DirectXGame

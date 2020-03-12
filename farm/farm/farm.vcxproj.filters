@@ -78,6 +78,12 @@
     <ClCompile Include="DDSTextureLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Deer.cpp">
+      <Filter>소스 파일\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>소스 파일\Object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DirectXApp.h">
@@ -122,9 +128,6 @@
     <ClInclude Include="UploadBuffer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Field.h">
-      <Filter>헤더 파일\Object</Filter>
-    </ClInclude>
     <ClInclude Include="Events.h">
       <Filter>헤더 파일\Component</Filter>
     </ClInclude>
@@ -133,6 +136,12 @@
     </ClInclude>
     <ClInclude Include="DDSTextureLoader.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>헤더 파일\Component</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

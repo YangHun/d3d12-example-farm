@@ -23,6 +23,7 @@
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="D3DGameEngine.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="Deer.cpp" />
     <ClCompile Include="DirectXApp.cpp" />
     <ClCompile Include="DirectXGame.cpp" />
     <ClCompile Include="Events.cpp" />
@@ -32,6 +33,7 @@
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Physics.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -52,10 +54,11 @@
     <ClInclude Include="DirectXGame.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="FbxLoader.h" />
-    <ClInclude Include="Field.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Meshes.h" />
+    <ClInclude Include="Objects.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="UploadBuffer.h" />

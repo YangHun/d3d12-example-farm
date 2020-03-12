@@ -493,14 +493,9 @@ void D3DGameEngine::Update()
 
 	WaitForPreviousFrame();
 
-	// animate light
-	{
-		XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
-	}
-
 	// update object constant buffer
 	auto scene = m_game.GetCurrentScene();
-	scene->Update();
+	scene->Update(m_timer.DeltaTime());
 
 	// update material buffer
 
@@ -531,7 +526,8 @@ void D3DGameEngine::Update()
 	cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
 
 
-	XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
+	//XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
+	XMMATRIX r = XMMatrixIdentity();
 	XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
 
 	XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
@@ -656,7 +652,7 @@ void D3DGameEngine::PopulateCommandList()
 
 	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	const float clearColor[] = { 0.7f, 0.7f, 0.7f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
@@ -691,6 +687,7 @@ void D3DGameEngine::DrawCurrentScene()
 
 	for (auto obj : scene->m_renderObjects)
 	{
+		if (!obj->m_active) continue;
 		auto mesh = obj->m_renderer.GetMeshDesc();
 
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
