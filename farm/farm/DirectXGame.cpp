@@ -52,46 +52,44 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 		{
 			for (int j = 0; j < 5; ++j)
 			{
-				auto obj = std::make_unique<Field>();
-				obj->m_transform = Transform{ 
-					{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j}, 
-					{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
-				
-				bool active = (i < activeNum) && (j < activeNum);
-				int id = scene->m_allObjects.size();
-
-				obj->m_active = active;			
-				obj->m_bufferId = id;
-
-				obj->name = "Field_"+ std::to_string(i * 10 + j);
-
-				scene->m_allObjects.push_back(std::move(obj));
-				if (active) scene->m_renderObjects.push_back(scene->m_allObjects[id].get());
+				scene->Instantiate<Field>(
+					"Field_" + std::to_string(i * 10 + j), 
+					Transform{
+						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} 
+					},
+					(i < activeNum) && (j < activeNum));
 			}
 		}
 	}
 
 	// a house.
 	{
-		auto obj = std::make_unique<GameObject>();
-		obj->m_transform = Transform
-		{ 
-			{-12.5f, 0.0f, 5.0f},
-			{0.0f, XM_PI / 2.0f, 0.0f}, 
-			{0.2f, 0.2f, 0.2f}
-		};
+		auto obj = scene->Instantiate<GameObject>(
+			"House",
+			Transform{
+				{-12.5f, 0.0f, 5.0f},
+				{0.0f, XM_PI / 2.0f, 0.0f},
+				{0.2f, 0.2f, 0.2f}
+			},
+			true);
 
 		obj->m_renderer.SetMesh("Assets/house.fbx");
-		
-		obj->m_active = true;
-		obj->m_bufferId = scene->m_allObjects.size();
-
-		obj->name = "House";
-
-		scene->m_allObjects.push_back(std::move(obj));
-		scene->m_renderObjects.push_back(scene->m_allObjects.back().get());
 	}
 
+
+	//// a plant.
+	//{
+	//	auto obj = std::make_unique<Plant>();
+
+	//	obj->m_bufferId = scene->m_allObjects.size();
+
+	//	obj->name = "Plant";
+	//	obj->m_active = true;
+
+	//	scene->m_renderObjects.push_back(obj.get());
+	//	scene->m_allObjects.push_back(std::move(obj));
+	//}
 }
 
 
@@ -152,6 +150,25 @@ void Scene::Initialize()
 {
 	// init scene here.
 	BuildObject();
+}
+
+template<typename T>
+GameObject* Scene::Instantiate(std::string name, Transform transform, bool active)
+{
+	auto obj = std::make_unique<T>();
+
+	obj->m_transform = transform;
+	obj->m_active = active;
+	obj->name = name;
+
+	int id = m_allObjects.size();
+	obj->m_bufferId = id;
+
+	if (active) m_renderObjects.push_back(obj.get());
+
+	m_allObjects.push_back(std::move(obj));	
+
+	return m_allObjects.back().get();
 }
 
 void Scene::BuildObject()

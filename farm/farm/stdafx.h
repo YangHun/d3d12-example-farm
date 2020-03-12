@@ -18,6 +18,7 @@
 
 #include <fbxsdk.h>
 #include "Meshes.h"
+#include "Math.h"
 
 #include <string>
 #include <sstream>

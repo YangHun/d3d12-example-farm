@@ -106,6 +106,11 @@ std::wstring FbxLoader::ConvertTexturePath(const char* mesh, std::string texture
 		textureName = textureName.replace(lookup, lookup + 4, ".dds");
 	}
 
+	if (textureName.find(".dds") == std::string::npos)
+	{
+		textureName.append(".dds");
+	}
+
 	std::stringstream ss;
 	ss << "Textures/" << meshName << "/" << textureName;
 
@@ -131,11 +136,10 @@ void FbxLoader::BuildMaterials(FbxScene* scene)
 		auto mat = std::make_unique<Material>();
 		FbxTexture* tex = prop.GetSrcObject<FbxTexture>(0);
 		
-		std::string n1 = tex->GetInitialName();
-		std::string n2 = tex->GetName();
-
 		if (tex != nullptr)
 		{
+			//std::string n1 = tex->GetInitialName();
+			//std::string n2 = tex->GetName();
 			UINT index = m_pTextures->at(tex->GetName())->id;
 			mat->diffuseMapIndex = index;
 		}
