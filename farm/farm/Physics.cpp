@@ -12,6 +12,7 @@ GameObject* Physics::Raycast(Camera camera, int screenX, int screenY)
 	float distance = 1000.0f;
 
 	GameObject* hit = nullptr;
+	float min_distance = FLT_MAX;
 
 	for (auto& i : scene->m_allObjects)
 	{
@@ -40,17 +41,18 @@ GameObject* Physics::Raycast(Camera camera, int screenX, int screenY)
 			XMStoreFloat3(&_ray.position, _pos);
 		}
 
-		if (PickAABB(_ray, obj->m_collider.m_bound))
+		float distance = PickAABB(_ray, obj->m_collider.m_bound);
+		if (distance < min_distance)
 		{
+			min_distance = distance;
 			hit = obj;
-			break;
 		}
 	}
 
 	return hit;
 }	
 
-bool Physics::PickAABB(Ray ray, Collider::Bound bound)
+float Physics::PickAABB(Ray ray, Collider::Bound bound)
 {
 
 	XMFLOAT3 _dir = ray.direction;
@@ -82,7 +84,7 @@ bool Physics::PickAABB(Ray ray, Collider::Bound bound)
 		(v[4] < FLT_MAX ? 1.0f : -1.0f) * min(v[4], v[5]));
 	_far = Min( max(v[0], v[1]), max(v[2], v[3]), max(v[4], v[5]));
 
-	return (_far >= 0) && (_near <= _far);
+	return ((_far >= 0) && (_near <= _far))? _near : FLT_MAX;
 }
 
 Physics::Ray Physics::GeneratePickingRay(Camera camera, int screenX, int screenY)

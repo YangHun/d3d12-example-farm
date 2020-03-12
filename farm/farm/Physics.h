@@ -17,7 +17,7 @@ public:
 
 private:
 	static Ray GeneratePickingRay(Camera camera, int screenX, int screenY);
-	static bool PickAABB(Ray ray, Collider::Bound bound);
+	static float PickAABB(Ray ray, Collider::Bound bound);
 };
 
 
