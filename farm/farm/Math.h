@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 class Math
 {
 public:
@@ -33,5 +35,38 @@ public:
 		return (value > ceil) ? ceil 
 			: (value < floor) ? floor 
 			: value;
+	}
+};
+
+class Random
+{
+public:
+	static bool Boolean()
+	{
+		std::random_device rn;
+		std::mt19937_64 rnd(rn());
+
+		std::uniform_int_distribution<int> range(0, 1);
+
+		return static_cast<bool>(range(rnd));
+	}
+
+	static int Range(int floor, int ceil)
+	{
+		std::random_device rn;
+		std::mt19937_64 rnd(rn());
+
+		std::uniform_int_distribution<int> range(floor, ceil);
+
+		return range(rnd);
+	}
+	static float Range(float floor, float ceil)
+	{
+		std::random_device rn;
+		std::mt19937_64 rnd(rn());
+
+		std::uniform_real_distribution<float> range(floor, ceil);
+
+		return range(rnd);
 	}
 };

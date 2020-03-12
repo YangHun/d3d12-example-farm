@@ -459,7 +459,11 @@ void D3DGameEngine::LoadAssets()
 		for (UINT i = 0; i < m_game.SceneCount(); ++i)
 		{
 			auto s = m_game.GetScene(i);
-			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_renderObjects.size()), true);
+			//s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(s->m_renderObjects.size()), true);
+			
+			// 동적으로 object가 추가될 수 있으므로, Scene에 존재할 수 있는 최대 오브젝트 개수로 초기화한다.
+			// 만약 이보다 많은 수의 object가 buffer에 담겨야 한다면, UploadBuffer를 release 후 다시 초기화한다.
+			s->m_objConstantBuffers = std::make_unique<UploadBuffer<ObjectConstantBuffer>>(m_device.Get(), (UINT)(200), true);
 		}
 	}
 

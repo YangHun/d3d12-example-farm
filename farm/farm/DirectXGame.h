@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "UploadBuffer.h"
 #include "Component.h"
+#include <queue>
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -21,6 +22,8 @@ public:
 
 	template<typename T>
 	GameObject* Instantiate(std::string name, Transform transform, bool active);
+	template<typename T>
+	GameObject* Instantiate();
 
 private:
 	void BuildObject();
@@ -30,6 +33,7 @@ public:
 	UINT m_id;
 	//std::vector<MeshDesc*> m_objects;
 
+	std::queue<std::unique_ptr<GameObject>> m_objWaitQueue;
 	std::vector<std::unique_ptr<GameObject>> m_allObjects;
 
 	std::vector<GameObject*> m_renderObjects;

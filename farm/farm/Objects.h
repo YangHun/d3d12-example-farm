@@ -10,11 +10,19 @@ public:
 	void Update(float dt);
 
 private:
+	void ReplicateSelf();
+
+public:
+	int m_id;
+	bool m_replicatable;
+
+private:
 	float m_lifeTime;
 	float m_timer;
 
-	Transform m_initialTransform;
-	Transform m_finalTransform;
+	float m_initScale;
+	float m_finalScale;
+
 };
 
 class Field : public GameObject

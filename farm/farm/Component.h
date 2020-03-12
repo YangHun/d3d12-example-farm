@@ -105,11 +105,10 @@ public:
 
 
 public:
-	
 	// components
 	MeshRenderer m_renderer;
 	BoxCollider m_collider;
-	std::string name = "GameObject";
+	std::string m_name = "GameObject";
 
 
 protected:

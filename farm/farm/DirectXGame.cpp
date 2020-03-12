@@ -78,18 +78,11 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 	}
 
 
-	//// a plant.
-	//{
-	//	auto obj = std::make_unique<Plant>();
-
-	//	obj->m_bufferId = scene->m_allObjects.size();
-
-	//	obj->name = "Plant";
-	//	obj->m_active = true;
-
-	//	scene->m_renderObjects.push_back(obj.get());
-	//	scene->m_allObjects.push_back(std::move(obj));
-	//}
+	// a plant.
+	{
+		auto obj = scene->Instantiate<Plant>();
+		obj->m_name = "Plant_1";
+	}
 }
 
 
@@ -155,20 +148,34 @@ void Scene::Initialize()
 template<typename T>
 GameObject* Scene::Instantiate(std::string name, Transform transform, bool active)
 {
-	auto obj = std::make_unique<T>();
-
+	auto obj = Instantiate<T>();
+	obj->m_name = name;
 	obj->m_transform = transform;
 	obj->m_active = active;
-	obj->name = name;
 
-	int id = m_allObjects.size();
+	return obj;
+}
+
+template<typename T>
+GameObject* Scene::Instantiate()
+{
+	auto obj = std::make_unique<T>();
+
+	int id = m_allObjects.size() + m_objWaitQueue.size();
 	obj->m_bufferId = id;
+	
+	// T class의 constructor에서 초기화한 기본 값을 따른다.
+	//obj->transform = Transform {}
+	//obj->name = "new GameObject";
+	obj->m_active = true;
+	obj->SetDirty(true);
 
-	if (active) m_renderObjects.push_back(obj.get());
-
-	m_allObjects.push_back(std::move(obj));	
-
-	return m_allObjects.back().get();
+	m_objWaitQueue.push(std::move(obj));
+	return m_objWaitQueue.back().get();
+	
+	/*m_renderObjects.push_back(obj.get());
+	m_allObjects.push_back(std::move(obj));
+	return m_allObjects.back().get();*/
 }
 
 void Scene::BuildObject()
@@ -186,6 +193,17 @@ void Scene::BuildObject()
 
 void Scene::Update(float dt)
 {
+	while (!m_objWaitQueue.empty())
+	{
+		auto front = std::move(m_objWaitQueue.front());
+		m_objWaitQueue.pop();
+
+		front->SetDirty(true);
+		m_renderObjects.push_back(front.get());
+		m_allObjects.push_back(std::move(front));
+		
+	}
+
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
