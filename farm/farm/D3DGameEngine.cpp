@@ -512,6 +512,7 @@ void D3DGameEngine::Update()
 		{
 			MaterialBuffer material;
 			material.diffuseMapIndex = mat->diffuseMapIndex;
+			material.diffuseColor = mat->diffuseColor;
 
 			matbuffer->CopyData(mat->bufferId, material);
 			
@@ -527,7 +528,7 @@ void D3DGameEngine::Update()
 	XMMATRIX view = scene->m_camera.GetViewMatrix();
 	XMMATRIX proj = scene->m_camera.GetProjectionMatrix();
 	XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
-	cBuffer.ambientLight = { 0.2f, 0.2f, 0.25f, 1.0f };
+	cBuffer.ambientLight = { 0.3f, 0.3f, 0.35f, 1.0f };
 
 
 	//XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);

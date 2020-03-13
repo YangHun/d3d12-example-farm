@@ -109,7 +109,7 @@ public:
 	MeshRenderer m_renderer;
 	BoxCollider m_collider;
 	std::string m_name = "GameObject";
-
+	std::string m_tag = "";
 
 protected:
 };

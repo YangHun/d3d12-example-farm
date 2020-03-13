@@ -65,13 +65,13 @@ struct Material
 	UINT bufferId;
 	std::string name;
 	UINT diffuseMapIndex;
+	XMFLOAT3 diffuseColor = { 1.0f, 1.0f, 1.0f };
 	bool dirty = true;
 };
 
 struct Mesh {
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
-
 	std::vector<UINT> matIndex;
 
 	// bound positions (-, +)

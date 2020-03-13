@@ -4,9 +4,10 @@
 
 #include "DirectXApp.h"
 #include "FrameResource.h"
-#include "Camera.h"
 #include "UploadBuffer.h"
+#include "Camera.h"
 #include "Component.h"
+
 #include <queue>
 
 using namespace DirectX;
@@ -21,9 +22,33 @@ public:
 	void Update(float dt);
 
 	template<typename T>
-	GameObject* Instantiate(std::string name, Transform transform, bool active);
+	GameObject* Instantiate(std::string name, Transform transform, bool active)
+	{
+		auto obj = Instantiate<T>();
+		obj->m_name = name;
+		obj->m_transform = transform;
+		obj->m_active = active;
+
+		return obj;
+	}
+
 	template<typename T>
-	GameObject* Instantiate();
+	GameObject* Instantiate()
+	{
+		auto obj = std::make_unique<T>();
+
+		int id = m_allObjects.size() + m_objWaitQueue.size();
+		obj->m_bufferId = id;
+
+		// T class의 constructor에서 초기화한 기본 값을 따른다.
+		//obj->transform = Transform {}
+		//obj->name = "new GameObject";
+		obj->m_active = true;
+		obj->SetDirty(true);
+
+		m_objWaitQueue.push(std::move(obj));
+		return m_objWaitQueue.back().get();
+	}
 
 private:
 	void BuildObject();
@@ -65,9 +90,11 @@ public:
 
 	void Initialize();
 
+	static Scene* GetCurrentScene() { return m_currentScene; }
+	static Player* GetPlayer() { return m_player.get(); }
 	UINT SceneCount() const { return m_allScenes.size(); }
 	Scene* GetScene(UINT index) const { return m_allScenes[index].get(); }
-	static Scene* GetCurrentScene() { return m_currentScene; }
+
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
 
@@ -86,6 +113,7 @@ private:
 	std::unordered_map<std::string, Mesh> m_models;
 
 	static Scene* m_currentScene;
+	static std::unique_ptr<Player> m_player;
 	std::vector<std::unique_ptr<Scene>> m_allScenes;
 
 	CD3DX12_VIEWPORT* m_pViewport;

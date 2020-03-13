@@ -20,6 +20,8 @@
 #include "Meshes.h"
 #include "Math.h"
 
+#include "Objects.h"
+
 #include <string>
 #include <sstream>
 #include <wrl.h>

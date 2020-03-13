@@ -9,6 +9,7 @@ struct Light
 struct Material
 {
     uint diffuseMapIndex;
+    float3 diffuseColor;
 };
 
 cbuffer cbPerObject : register(b0)

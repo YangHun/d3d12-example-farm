@@ -32,6 +32,7 @@ struct ObjectConstantBuffer
 struct MaterialBuffer
 {
 	UINT diffuseMapIndex;
+	XMFLOAT3 diffuseColor;
 };
 
 class FrameResource

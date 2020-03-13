@@ -47,7 +47,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 {     
     Material mat = gMaterials[gMatIndex];
     uint diffuseIndex = mat.diffuseMapIndex;
-    float4 color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    float4 color = float4(mat.diffuseColor, 1.0f);
     
     color *= gTextureMaps[diffuseIndex].Sample(gAnisotropicWrap, input.uv);
     

@@ -3,7 +3,6 @@
 #include "FbxLoader.h"
 #include "Physics.h"
 #include "Component.h"
-#include "Objects.h"
 
 std::unordered_map<std::string, std::unique_ptr<Texture>> Assets::m_textures;
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
@@ -11,6 +10,7 @@ std::unordered_map<std::string, Mesh> Assets::m_models;
 std::unordered_map<std::string, std::unique_ptr<Material>> Assets::m_materials;
 
 Scene* DirectXGame::m_currentScene = nullptr;
+std::unique_ptr<Player> DirectXGame::m_player = nullptr;
 
 DirectXGame::DirectXGame(CD3DX12_VIEWPORT* viewport) :
 	m_pViewport(viewport)
@@ -77,13 +77,6 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 
 		obj->m_renderer.SetMesh("Assets/house.fbx");
 	}
-
-
-	// a plant.
-	{
-		auto obj = scene->Instantiate<Plant>();
-		obj->m_name = "Plant_1";
-	}
 }
 
 
@@ -97,25 +90,14 @@ void DirectXGame::OnKeyUp(UINT8 key)
 	m_currentScene->m_camera.OnKeyUp(key);
 }
 
-bool _isCasting = false;
-
 void DirectXGame::OnMouseDown(UINT8 btnState, int x, int y)
 {
-	
-	if (!_isCasting)
-	{
-		_isCasting = true;
-		GameObject* result = Physics::Raycast(m_currentScene->m_camera, x, y);
-
-		m_currentScene->m_camera.picked = result;
-		
-		_isCasting = false;
-	}
+	m_player->OnMouseDown(btnState, x, y);
 }
 
 void DirectXGame::OnMouseUp(UINT8 btnState, int x, int y)
 {
-
+	m_player->OnMouseUp(btnState, x, y);
 }
 
 void DirectXGame::OnMouseMove(UINT8 btnState, int x, int y)
@@ -147,39 +129,6 @@ void Scene::Initialize()
 	BuildObject();
 }
 
-template<typename T>
-GameObject* Scene::Instantiate(std::string name, Transform transform, bool active)
-{
-	auto obj = Instantiate<T>();
-	obj->m_name = name;
-	obj->m_transform = transform;
-	obj->m_active = active;
-
-	return obj;
-}
-
-template<typename T>
-GameObject* Scene::Instantiate()
-{
-	auto obj = std::make_unique<T>();
-
-	int id = m_allObjects.size() + m_objWaitQueue.size();
-	obj->m_bufferId = id;
-	
-	// T class의 constructor에서 초기화한 기본 값을 따른다.
-	//obj->transform = Transform {}
-	//obj->name = "new GameObject";
-	obj->m_active = true;
-	obj->SetDirty(true);
-
-	m_objWaitQueue.push(std::move(obj));
-	return m_objWaitQueue.back().get();
-	
-	/*m_renderObjects.push_back(obj.get());
-	m_allObjects.push_back(std::move(obj));
-	return m_allObjects.back().get();*/
-}
-
 void Scene::BuildObject()
 {
 	// create and initialize game objects.
@@ -206,13 +155,14 @@ void Scene::Update(float dt)
 		
 	}
 
+	DirectXGame::GetPlayer()->Update(dt);
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
 		if (obj->m_active) obj->Update(dt);
 	}
-
 	m_camera.Update(dt);
+	
 	UpdateObjectConstantBuffers();
 }
 
@@ -253,6 +203,7 @@ Assets::Assets()
 		auto tex = std::make_unique<Texture>();
 		tex->name = "default-white";
 		tex->filePath = L"Textures/white.dds";
+		tex->id = 0;
 		
 		m_textures[tex->name] = std::move(tex);
 	}
