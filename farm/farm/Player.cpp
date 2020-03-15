@@ -29,7 +29,7 @@ void Player::Update(float dt)
 
 		if (result != nullptr)
 		{
-			if (result->m_tag == "Field")
+			if (result->GetTag() == "Field")
 			{
 				reinterpret_cast<Field*>(result)->Interact();
 			}

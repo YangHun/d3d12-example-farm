@@ -17,14 +17,14 @@ GameObject* Physics::Raycast(Camera camera, int screenX, int screenY)
 	for (auto& i : scene->m_allObjects)
 	{
 		auto obj = i.get();
-		if (!obj->m_active) continue;
+		if (!obj->IsActive()) continue;
 		
-		if (obj->m_collider.IsZeroBound()) continue; // not have bounding box.
+		if (obj->GetCollider()->isZero()) continue; // not have bounding box.
 		
 		// bounding box를 가진 object가 world transform (rotation, transform) 을 가질 수 있으므로
 		// ray에 object의 (ST)^-1 을 곱한 다음 충돌 여부를 체크한다.
 		
-		Transform t = obj->m_transform;
+		Transform t = obj->GetTransform();
 		XMMATRIX ST = obj->GetWorldMatrix();
 
 		XMMATRIX InvST = XMMatrixInverse(&XMMatrixDeterminant(ST), ST);
@@ -41,7 +41,7 @@ GameObject* Physics::Raycast(Camera camera, int screenX, int screenY)
 			XMStoreFloat3(&_ray.position, _pos);
 		}
 
-		float distance = PickAABB(_ray, obj->m_collider.m_bound);
+		float distance = PickAABB(_ray, obj->GetCollider()->GetBound());
 		if (distance < min_distance)
 		{
 			min_distance = distance;

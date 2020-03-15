@@ -25,9 +25,9 @@ public:
 	GameObject* Instantiate(std::string name, Transform transform, bool active)
 	{
 		auto obj = Instantiate<T>();
-		obj->m_name = name;
-		obj->m_transform = transform;
-		obj->m_active = active;
+		obj->SetName(name);
+		obj->SetActive(active);
+		obj->SetTransform(transform);
 
 		return obj;
 	}
@@ -38,13 +38,8 @@ public:
 		auto obj = std::make_unique<T>();
 
 		int id = m_allObjects.size() + m_objWaitQueue.size();
-		obj->m_bufferId = id;
-
-		// T class의 constructor에서 초기화한 기본 값을 따른다.
-		//obj->transform = Transform {}
-		//obj->name = "new GameObject";
-		obj->m_active = true;
-		obj->SetDirty(true);
+		obj->SetBufferId(id);
+		obj->SetDirty();
 
 		m_objWaitQueue.push(std::move(obj));
 		return m_objWaitQueue.back().get();

@@ -75,7 +75,7 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 			},
 			true);
 
-		obj->m_renderer.SetMesh("Assets/house.fbx");
+		obj->GetRenderer()->SetMesh("Assets/house.fbx");
 	}
 }
 
@@ -159,7 +159,7 @@ void Scene::Update(float dt)
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
-		if (obj->m_active) obj->Update(dt);
+		if (obj->IsActive()) obj->Update(dt);
 	}
 	m_camera.Update(dt);
 	
@@ -170,7 +170,7 @@ void Scene::UpdateObjectConstantBuffers()
 {
 	for (auto obj : m_renderObjects)
 	{
-		if (obj->IsDirty() && obj->m_active)
+		if (obj->IsDirty() && obj->IsActive())
 		{
 			// GPU에서 사용할 것이므로 transpose 해준다. 
 			// CPU 는 (column)(row), GPU는 (row)(column)
@@ -178,10 +178,10 @@ void Scene::UpdateObjectConstantBuffers()
 
 			ObjectConstantBuffer objConstants;
 			XMStoreFloat4x4(&objConstants.model, world);
-			objConstants.matIndex = obj->m_renderer.GetMaterialIndex();
+			objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
 
 			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
-			m_objConstantBuffers.get()->CopyData(obj->m_bufferId, objConstants);
+			m_objConstantBuffers.get()->CopyData(obj->GetBufferID(), objConstants);
 
 			obj->SetDirty(false);
 		}

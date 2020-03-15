@@ -3,8 +3,9 @@
 #include "DirectXGame.h"
 
 GameObject::GameObject() :
-	m_renderer(this),
-	m_collider(this)
+	m_transform (Transform{}),
+	m_pRenderer(std::make_unique<MeshRenderer>(this)),
+	m_pCollider(std::make_unique<BoxCollider>(this))
 {
 	
 }
@@ -16,16 +17,16 @@ void GameObject::Start()
 
 void GameObject::Update(float dt)
 {
-	m_renderer.Update(dt);
+	m_pRenderer->Update(dt);
 }
 
 
-Component::Component(Object* object) :
+Component::Component(GameObject* object) :
 	m_pObject(object)
 {
 }
 
-MeshRenderer::MeshRenderer(Object* object) : Component(object)
+MeshRenderer::MeshRenderer(GameObject* object) : Component(object)
 {
 }
 
@@ -59,27 +60,58 @@ void MeshRenderer::SetMesh(std::string name)
 }
 
 
-Collider::Collider(Object* object) : 
+Collider::Collider(GameObject* object) :
 	Component(object),
-	m_center(object->m_transform.position)
+	m_center(object->GetTransform().position)
 {
 }
 
-BoxCollider::BoxCollider(Object* object) :
+void Collider::Start()
+{
+
+}
+
+void Collider::Update(float dt)
+{
+
+}
+
+void Collider::SetBound(const Bound& rhs)
+{
+	m_bound = rhs;
+}
+
+BoxCollider::BoxCollider(GameObject* object) :
 	Collider(object)
 {
 }
 
-void BoxCollider::SetBound(MeshDesc* desc)
+
+void BoxCollider::Start()
+{
+
+}
+
+void BoxCollider::Update(float dt)
+{
+
+}
+
+void BoxCollider::SetBoundFromMesh(MeshDesc* desc)
 {
 	if (desc == nullptr) return;
 	Mesh* mesh = desc->mesh;
 
-	m_bound.min.x = mesh->minBound.x;
-	m_bound.min.y = mesh->minBound.y;
-	m_bound.min.z = mesh->minBound.z;
+	Collider::Bound bound;
 
-	m_bound.max.x = mesh->maxBound.x;
-	m_bound.max.y = mesh->maxBound.y;
-	m_bound.max.z = mesh->maxBound.z;
+	bound.min.x = mesh->minBound.x;
+	bound.min.y = mesh->minBound.y;
+	bound.min.z = mesh->minBound.z;
+
+	bound.max.x = mesh->maxBound.x;
+	bound.max.y = mesh->maxBound.y;
+	bound.max.z = mesh->maxBound.z;
+
+	SetBound(bound);
 }
+

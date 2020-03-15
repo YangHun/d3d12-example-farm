@@ -24,19 +24,12 @@ public:
 
 private:
 	void UpdateState();
-	void ReplicateSelf();
-
 	void Initialize();
-
-public:
-	int m_id;
-	bool m_replicatable;
 
 private:
 	float m_lifeTime;
 	float m_growTime;
 	float m_timer;
-
 	float m_initScale;
 	float m_finalScale;
 
@@ -91,5 +84,10 @@ private:
 	bool m_leftMouseUp = false;
 
 	POINT m_cursorPos;
+
+};
+
+class Inventory : public Object
+{
 
 };

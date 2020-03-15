@@ -692,15 +692,15 @@ void D3DGameEngine::DrawCurrentScene()
 
 	for (auto obj : scene->m_renderObjects)
 	{
-		if (!obj->m_active) continue;
-		auto mesh = obj->m_renderer.GetMeshDesc();
+		if (!obj->IsActive()) continue;
+		auto mesh = obj->GetRenderer()->meshDesc();
 
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
 
 		// get object constant buffer address.
-		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->m_bufferId * bufferSize;
+		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->GetBufferID() * bufferSize;
 
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
 

@@ -2,7 +2,8 @@
 #include "DirectXGame.h"
 
 Plant::Plant() :
-	m_lifeTime(5.0f),
+	m_lifeTime(30.0f),
+	m_growTime(5.0f),
 	m_timer(0.0f),
 	m_replicatable(true),
 	m_id(1),
@@ -10,14 +11,16 @@ Plant::Plant() :
 	m_finalScale(0.005f),
 	m_state (E_STATE::PLANT_NONE)
 {
-	m_renderer = MeshRenderer(this);
-	m_renderer.SetMesh("Assets/plant.fbx");
+	GetRenderer()->SetMesh("Assets/plant.fbx");
 
 	//m_collider = BoxCollider(this);
 	//m_collider.SetBound(m_renderer.GetMeshDesc());
 
-	m_transform.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
-	m_active = false;
+	Transform t = GetTransform();
+	t.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
+	SetTransform(t);
+	
+	SetActive(false);
 }
 
 
@@ -36,14 +39,16 @@ void Plant::Initialize()
 	m_finalScale = 0.005f;
 	m_state = E_STATE::PLANT_NONE;
 
-	m_renderer = MeshRenderer(this);
-	m_renderer.SetMesh("Assets/plant.fbx");
+	GetRenderer()->SetMesh("Assets/plant.fbx");
 
 	//m_collider = BoxCollider(this);
 	//m_collider.SetBound(m_renderer.GetMeshDesc());
 
-	m_transform.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
-	m_active = false;
+	Transform t = GetTransform();
+	t.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
+	SetTransform(t);
+
+	SetActive(false);
 
 	//m_replicatable = false;
 
@@ -57,10 +62,13 @@ void Plant::Update(float dt)
 		if (m_timer < m_growTime) {
 			float scale = (m_timer / m_growTime);
 
-			m_transform.scale = Math::Lerp(
+			Transform t = GetTransform();
+			t.scale = Math::Lerp(
 				XMFLOAT3(m_initScale, m_initScale, m_initScale),
 				XMFLOAT3(m_finalScale, m_finalScale, m_finalScale), scale);
-			m_dirty = true;
+			SetTransform(t);
+
+			SetDirty();
 		}		
 	}
 
@@ -98,48 +106,48 @@ void Plant::Seed()
 {
 	// 한 번 이상 사용된 Plant 오브젝트를 다시 초기화
 	Initialize();
-	m_active = true;
+	SetActive(true);
 	m_state = E_STATE::PLANT_READY_TO_GROW;
 }
 
 void Plant::Harvest()
 {
-	m_active = false;
+	SetActive(false);
 	m_state = E_STATE::PLANT_NONE;
 
 }
 
 // 지금은 안 쓰는 함수
-void Plant::ReplicateSelf()
+//void Plant::ReplicateSelf()
+//{
+//	m_replicatable = false;
+//
+//	for (int i = 0; i < 50; ++i) {
+//
+//		Transform t = transform();
+//		t.position.x += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
+//		t.position.z += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
+//
+//
+//		Plant* replica = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>());
+//		replica->transform().position = t.position;
+//		replica->m_id = m_id * 2 + i;
+//		replica->m_lifeTime = Random::Range(4.0f, 6.0f);
+//		replica->m_name = "Plant_" + std::to_string(replica->m_id);
+//		//replica->m_replicatable = (replica->m_id > 128) ? false : true;
+//		replica->m_replicatable = false;
+//		replica->m_active = true;
+//	}
+//}
+
+Field::Field() : GameObject()
 {
-	m_replicatable = false;
+	GetRenderer()->SetMesh("plane");
 
-	for (int i = 0; i < 50; ++i) {
+	MeshDesc* pDesc = GetRenderer()->meshDesc();
 
-		Transform t = m_transform;
-		t.position.x += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
-		t.position.z += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
-
-
-		Plant* replica = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>());
-		replica->m_transform.position = t.position;
-		replica->m_id = m_id * 2 + i;
-		replica->m_lifeTime = Random::Range(4.0f, 6.0f);
-		replica->m_name = "Plant_" + std::to_string(replica->m_id);
-		//replica->m_replicatable = (replica->m_id > 128) ? false : true;
-		replica->m_replicatable = false;
-		replica->m_active = true;
-	}
-}
-
-Field::Field()
-{
-	m_renderer = MeshRenderer(this);
-	m_renderer.SetMesh("plane");
-
-	m_collider = BoxCollider(this);
-	m_collider.SetBound(m_renderer.GetMeshDesc());
-	m_tag = "Field";
+	GetCollider()->SetBoundFromMesh(pDesc);
+	SetTag("Field");
 }
 
 void Field::Start()
@@ -158,13 +166,17 @@ void Field::Interact()
 	{
 		// 처음으로 식물을 심을 때, instantiate 한다			
 		m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>());
-		m_plant->m_transform.position = m_transform.position;
-		m_plant->m_active = false;
+
+		Transform t = m_plant->GetTransform();
+		t.position = GetTransform().position;
+
+		m_plant->SetTransform(t);
+		m_plant->SetActive(false);
 	}
 	
 	auto state = m_plant->GetCurrentState();
 
-	if (state == Plant::E_STATE::PLANT_NONE && !m_plant->m_active) {
+	if (state == Plant::E_STATE::PLANT_NONE && !m_plant->IsActive()) {
 		m_plant->Seed();
 	}
 
