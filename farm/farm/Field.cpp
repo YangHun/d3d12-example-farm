@@ -5,8 +5,6 @@ Plant::Plant() :
 	m_lifeTime(30.0f),
 	m_growTime(5.0f),
 	m_timer(0.0f),
-	m_replicatable(true),
-	m_id(1),
 	m_initScale(0.0f),
 	m_finalScale(0.005f),
 	m_state (E_STATE::PLANT_NONE)
@@ -34,7 +32,7 @@ void Plant::Initialize()
 {
 	m_lifeTime = 30.0f;
 	m_growTime = 5.0f;
-	m_timer = 0.0f;	m_id = 1;
+	m_timer = 0.0f;
 	m_initScale = 0.0f;
 	m_finalScale = 0.005f;
 	m_state = E_STATE::PLANT_NONE;
@@ -50,7 +48,6 @@ void Plant::Initialize()
 
 	SetActive(false);
 
-	//m_replicatable = false;
 
 }
 
@@ -116,29 +113,6 @@ void Plant::Harvest()
 	m_state = E_STATE::PLANT_NONE;
 
 }
-
-// 지금은 안 쓰는 함수
-//void Plant::ReplicateSelf()
-//{
-//	m_replicatable = false;
-//
-//	for (int i = 0; i < 50; ++i) {
-//
-//		Transform t = transform();
-//		t.position.x += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
-//		t.position.z += Random::Range(1.0f, 2.0f) * (Random::Boolean() ? 1.0f : -1.0f);
-//
-//
-//		Plant* replica = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>());
-//		replica->transform().position = t.position;
-//		replica->m_id = m_id * 2 + i;
-//		replica->m_lifeTime = Random::Range(4.0f, 6.0f);
-//		replica->m_name = "Plant_" + std::to_string(replica->m_id);
-//		//replica->m_replicatable = (replica->m_id > 128) ? false : true;
-//		replica->m_replicatable = false;
-//		replica->m_active = true;
-//	}
-//}
 
 Field::Field() : GameObject()
 {

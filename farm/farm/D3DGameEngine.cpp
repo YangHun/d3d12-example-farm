@@ -438,10 +438,10 @@ void D3DGameEngine::LoadAssets()
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-		for (auto& i : Assets::m_textures)
+		// heapDescriptor에 등록하는 순서와 Texture의 buffer id가 같아야 한다.
+		auto textures = Assets::GetOrderedTextures();
+		for (auto t : textures)
 		{
-			auto t = i.second.get();
-			
 			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(m_device.Get(),
 				m_commandList.Get(), t->filePath.c_str(),
 				t->resource, t->uploadHeap));

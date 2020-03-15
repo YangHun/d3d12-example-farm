@@ -19,11 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bed.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="D3DGameEngine.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
-    <ClCompile Include="Deer.cpp" />
     <ClCompile Include="DirectXApp.cpp" />
     <ClCompile Include="DirectXGame.cpp" />
     <ClCompile Include="Events.cpp" />

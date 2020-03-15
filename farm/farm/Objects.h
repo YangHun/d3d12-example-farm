@@ -49,16 +49,16 @@ private:
 	Plant* m_plant = nullptr;
 };
 
-class Deer : public GameObject
+
+class Bed : public GameObject
 {
 public:
-	Deer();
-
+	Bed();
 	void Start();
 	void Update(float dt);
 
-private:
-	float m_angle = 0.0f;
+	void Interact();
+
 };
 
 class Player : public GameObject
@@ -84,10 +84,5 @@ private:
 	bool m_leftMouseUp = false;
 
 	POINT m_cursorPos;
-
-};
-
-class Inventory : public Object
-{
 
 };

@@ -4,6 +4,7 @@
 #include "Physics.h"
 #include "Component.h"
 
+
 std::unordered_map<std::string, std::unique_ptr<Texture>> Assets::m_textures;
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
 std::unordered_map<std::string, Mesh> Assets::m_models;
@@ -76,6 +77,44 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 			true);
 
 		obj->GetRenderer()->SetMesh("Assets/house.fbx");
+	}
+
+	// a table.
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"Table",
+			Transform{
+				{-8.0f, 1.1f, 1.6f},
+				{0.0f, 0.0f, 0.0f},
+				{0.03f, 0.02f, 0.03f}
+			},
+			true);
+
+		obj->GetRenderer()->SetMesh("Assets/table.fbx");
+	}
+
+	// a bed and a pillow.
+	{
+		auto bed = scene->Instantiate<Bed>(
+			"Bed",
+			Transform{
+				{-17.5f, 1.0f, 3.0f},
+				{0.0f, 0.0f, 0.0f},
+				{0.02f, 0.02f, 0.02f}
+			},
+			true);
+
+		Transform pillowTransform = bed->GetTransform();
+		pillowTransform.position.y += 1.3f;
+		pillowTransform.position.z += -1.5f;
+		pillowTransform.rotation.y += XM_PI / 10.0f;
+
+		auto pillow = scene->Instantiate<GameObject>(
+			"Pillow",
+			pillowTransform,
+			true);
+
+		pillow->GetRenderer()->SetMesh("Assets/pillow.fbx");
 	}
 }
 
@@ -212,7 +251,9 @@ Assets::Assets()
 	// Load meshes and textures.
 	{
 		std::vector<std::string> fbxName = {
-			//"Assets/deer.fbx",
+			"Assets/pillow.fbx",
+			"Assets/bed.fbx",
+			"Assets/table.fbx",
 			"Assets/plant.fbx",
 			"Assets/house.fbx",
 		};
@@ -296,4 +337,20 @@ Assets::Assets()
 		m_meshes["plane"] = std::move(meshDesc);
 	}
 
+}
+
+std::vector<Texture*> Assets::GetOrderedTextures()
+{
+	std::vector<Texture*> vector;
+
+	for (auto& i : m_textures)
+	{
+		vector.push_back(i.second.get());
+	}
+
+	std::sort(vector.begin(), vector.end(), [](Texture* a, Texture* b) {
+		return a->id < b->id;
+		});
+
+	return vector;
 }

@@ -75,6 +75,8 @@ public:
 	static std::unordered_map<std::string, Mesh> m_models;
 	static std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 	static std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
+
+	static std::vector<Texture*> GetOrderedTextures();
 };
 
 class DirectXGame
