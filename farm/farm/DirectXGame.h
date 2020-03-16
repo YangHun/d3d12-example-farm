@@ -45,6 +45,22 @@ public:
 		return m_objWaitQueue.back().get();
 	}
 
+	template<typename T>
+	UIObject* Instantiate(std::string name)
+	{
+		auto obj = std::make_unique<T>();
+
+		int id = m_allUIs.size() + m_uiWaitQueue.size();
+		obj->SetBufferId(id);
+		obj->SetDirty();
+
+		m_uiWaitQueue.push(std::move(obj));
+		return m_uiWaitQueue.back().get();
+	}
+
+	std::vector<UIObject*> GetAllUIObjects();
+	Camera* GetCamera() { return &m_camera; }
+
 private:
 	void BuildObject();
 	void UpdateObjectConstantBuffers();
@@ -53,18 +69,27 @@ public:
 	UINT m_id;
 
 	// 이번 프레임에 Instantiate 된 오브젝트는 waiting queue에 미리 등록했다가 
-	// 다음 Update()가 호출되는 시점에서 m_allObjects에 등록하여
+	// 다음 프레임의 Update()가 호출되는 시점에서 m_allObjects에 등록하여
 	// m_allObjects를 순회하는 도중에는 값이 바뀌지 않게 한다.
 	std::queue<std::unique_ptr<GameObject>> m_objWaitQueue;
+	std::queue<std::unique_ptr<UIObject>> m_uiWaitQueue;
 
 	// scene에 존재하는 모든 GameObject 
 	std::vector<std::unique_ptr<GameObject>> m_allObjects;
 	// Engine에서 실제로 그리는 오브젝트
 	std::vector<GameObject*> m_renderObjects;
 
+
+
 	// object constant buffers for objects in current scene.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
 	
+
+
+private:
+	// scene에 존재하는 모든 UI Objects
+	std::vector<std::unique_ptr<UIObject>> m_allUIs;
+
 	Camera m_camera;
 };
 
@@ -75,8 +100,14 @@ public:
 	static std::unordered_map<std::string, Mesh> m_models;
 	static std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 	static std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
+	static std::unordered_map<std::string, std::unique_ptr<Sprite>> m_sprites;
+	static std::unordered_map<std::string, std::unique_ptr<TextDesc>> m_texts;
 
 	static std::vector<Texture*> GetOrderedTextures();
+	static std::vector<MeshDesc*> GetMeshDesc();
+	static std::vector<Sprite*> GetSprites();
+	static std::vector<TextDesc*> GetTexts();
+
 };
 
 class DirectXGame
@@ -91,7 +122,7 @@ public:
 	static Player* GetPlayer() { return m_player.get(); }
 	UINT SceneCount() const { return m_allScenes.size(); }
 	Scene* GetScene(UINT index) const { return m_allScenes[index].get(); }
-
+	
 	bool IsSceneChanged() const { return m_dirtyScene; }
 	void SetUpdated() { m_dirtyScene = true; }
 
@@ -104,7 +135,6 @@ public:
 
 private:
 	void BuildScenes();
-	void BuildSceneRenderObjects(Scene* scene);
 
 	// resources.
 	std::unordered_map<std::string, Mesh> m_models;
@@ -117,5 +147,7 @@ private:
 
 	bool m_dirtyScene = true;
 };
+
+inline void BuildSceneObjects(Scene* scene);
 
 #endif

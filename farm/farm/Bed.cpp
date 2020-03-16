@@ -17,7 +17,7 @@ void Bed::Update(float dt)
 
 }
 
-void Interact()
+void Bed::Interact()
 {
 
 }

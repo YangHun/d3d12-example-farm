@@ -11,6 +11,7 @@
 #include <DirectXMath.h>
 #include "d3dx12.h"
 
+#include <wincodec.h>
 
 #include <d3d11on12.h>
 #include <d2d1_3.h>
@@ -19,7 +20,7 @@
 #include <fbxsdk.h>
 #include "Meshes.h"
 #include "Math.h"
-
+#include "UI.h"
 #include "Objects.h"
 
 #include <string>
@@ -29,7 +30,3 @@
 #include <unordered_map>
 #include <functional>
 #include <algorithm>
-
-
-
-

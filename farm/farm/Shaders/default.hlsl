@@ -50,10 +50,20 @@ float4 PSMain(PSInput input) : SV_TARGET
     float4 color = float4(mat.diffuseColor, 1.0f);
     
     color *= gTextureMaps[diffuseIndex].Sample(gAnisotropicWrap, input.uv);
-    
+   
     input.normal = normalize(input.normal);
-    float3 light = -gLight.direction;    // directional light
-    float3 diffuse = saturate(dot(light, input.normal)) * gLight.strength * color.xyz;
+    
+    int i = 0;
+    float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+    
+    for (i = 0; i < 3; ++i)
+    {
+        float3 l = gLights[i].direction; // directional light
+        float3 d = max(dot(l, input.normal), 0.0f) * gLights[i].strength;
+        diffuse += d;
+    }
+    
+    diffuse *= color.xyz;
     
     float4 ambient = gAmbient * color;
     

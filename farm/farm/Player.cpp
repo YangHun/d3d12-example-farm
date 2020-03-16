@@ -3,6 +3,8 @@
 #include "Physics.h"
 #include "DirectXGame.h"
 
+inline void Interact(Player* player, GameObject* object);
+
 Player::Player()
 {
 
@@ -20,20 +22,56 @@ void Player::Update(float dt)
 	// 딜레이를 피하기 위해, 마우스 입력은 async하게 감지하여 처리한다.
 	if (GetAsyncKeyState(MK_LBUTTON) & 0x0001)
 	{
-		GetCursorPos(&m_cursorPos);
+		/*GetCursorPos(&m_cursorPos);
 		ScreenToClient(Win32Application::GetHwnd(), &m_cursorPos);
+		GameObject* result = Physics::Raycast(DirectXGame::GetCurrentScene()->m_camera, m_cursorPos.x, m_cursorPos.y);*/
 
-		GameObject* result = Physics::Raycast(DirectXGame::GetCurrentScene()->m_camera, m_cursorPos.x, m_cursorPos.y);
+		Camera* cam = DirectXGame::GetCurrentScene()->GetCamera();
+		GameObject* result = Physics::Raycast(cam, 640, 360);
+		
 
-		DirectXGame::GetCurrentScene()->m_camera.picked = result;
+		cam->picked = result;
 
 		if (result != nullptr)
 		{
-			if (result->GetTag() == "Field")
-			{
-				reinterpret_cast<Field*>(result)->Interact();
-			}
+			Interact(this, result);			
 		}
+	}
+}
+
+void Interact(Player* player, GameObject* object)
+{
+	std::string tag = object->GetTag();
+
+	if (tag == "Field")
+	{
+		reinterpret_cast<Field*>(object)->Interact();
+	}
+	else if (tag == "QuestTable")
+	{
+		reinterpret_cast<QuestTable*>(object)->Interact();
+	}
+}
+
+std::wstring Player::PrintPlayerInfo()
+{
+	std::wostringstream oss;
+	oss << "-------player info----------\n";
+	oss << "# crops: " << m_crops << "\n";
+	oss << "# coins: " << m_coins  << "\n";
+
+	return oss.str();
+}
+
+void Player::OnNotify(Object* object, E_Event event)
+{
+	switch (event)
+	{
+	case E_Event::FIELD_INTERACT_PLANT_HARVEST:
+	{
+		m_crops++;
+		break;
+	}
 	}
 }
 

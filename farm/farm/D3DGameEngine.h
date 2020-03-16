@@ -37,8 +37,6 @@ private:
 	void DrawCurrentScene();
 	void DrawCurrentUI();
 
-	void LoadDDSTextures(std::string name, std::wstring fileName);
-
 	POINT GetWindowCenter();
 
 	static const UINT FrameCount = 2;
@@ -78,6 +76,12 @@ private:
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
 	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;
 
+	XMFLOAT3 mBaseLightDirections[3] = {
+		XMFLOAT3(-0.57735f, -0.57735f, 0.57735f),
+		XMFLOAT3(0.57735f, -0.57735f, 0.57735f),
+		XMFLOAT3(0.0f, -0.707f, -0.707f)
+	};
+
 	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
 	//SceneConstantBuffer* m_pConstantBuffer;
 
@@ -95,6 +99,9 @@ private:
 	// 2d resouces.
 	ComPtr<ID2D1SolidColorBrush> m_textBrush;
 	ComPtr<IDWriteTextFormat> m_textFormat;
+
+	// 2d image.
+	ComPtr<IWICImagingFactory2> m_wicFactory;
 
 	GameTimer m_timer;
 

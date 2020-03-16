@@ -18,7 +18,7 @@ struct SceneConstantBuffer
 	XMFLOAT4X4 viewproj;	// View Proj matrix
 	XMFLOAT4 ambientLight;
 	XMFLOAT3 eye;
-	Light directionalLight;
+	Light Lights[3];
 };
 
 

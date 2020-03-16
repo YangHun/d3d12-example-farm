@@ -9,9 +9,12 @@ std::unordered_map<std::string, std::unique_ptr<Texture>> Assets::m_textures;
 std::unordered_map<std::string, std::unique_ptr<MeshDesc>> Assets::m_meshes;
 std::unordered_map<std::string, Mesh> Assets::m_models;
 std::unordered_map<std::string, std::unique_ptr<Material>> Assets::m_materials;
+std::unordered_map<std::string, std::unique_ptr<Sprite>> Assets::m_sprites;
+std::unordered_map<std::string, std::unique_ptr<TextDesc>> Assets::m_texts;
 
 Scene* DirectXGame::m_currentScene = nullptr;
 std::unique_ptr<Player> DirectXGame::m_player = nullptr;
+
 
 DirectXGame::DirectXGame(CD3DX12_VIEWPORT* viewport) :
 	m_pViewport(viewport)
@@ -22,8 +25,8 @@ DirectXGame::DirectXGame(CD3DX12_VIEWPORT* viewport) :
 
 void DirectXGame::Initialize()
 {
-	BuildScenes();
 	m_player = std::make_unique<Player>();
+	BuildScenes();
 }
 
 void DirectXGame::BuildScenes()
@@ -32,9 +35,10 @@ void DirectXGame::BuildScenes()
 	{
 		UINT _id = i;
 		auto s = std::make_unique<Scene>(_id, m_pViewport);
+		m_currentScene = s.get();
 
 		s->Initialize();
-		BuildSceneRenderObjects(s.get());
+		BuildSceneObjects(s.get());
 
 		m_allScenes.push_back(std::move(s));
 	}
@@ -43,7 +47,7 @@ void DirectXGame::BuildScenes()
 }
 
 // Scene에 그려질 RenderObject 목록을 정의한다.
-void DirectXGame::BuildSceneRenderObjects(Scene* scene)
+void BuildSceneObjects(Scene* scene)
 {
 
 	// create fields
@@ -54,13 +58,14 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 		{
 			for (int j = 0; j < 5; ++j)
 			{
-				scene->Instantiate<Field>(
+				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
 					"Field_" + std::to_string(i * 10 + j), 
 					Transform{
 						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
 						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} 
 					},
-					(i < activeNum) && (j < activeNum));
+					(i < activeNum) && (j < activeNum)));
+				obj->AddObserver(DirectXGame::GetPlayer());
 			}
 		}
 	}
@@ -81,16 +86,19 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 
 	// a table.
 	{
-		auto obj = scene->Instantiate<GameObject>(
+		auto obj = reinterpret_cast<QuestTable*>(scene->Instantiate<QuestTable>(
 			"Table",
 			Transform{
 				{-8.0f, 1.1f, 1.6f},
 				{0.0f, 0.0f, 0.0f},
 				{0.03f, 0.02f, 0.03f}
 			},
-			true);
+			true));
 
-		obj->GetRenderer()->SetMesh("Assets/table.fbx");
+		auto ui = reinterpret_cast<Inventory*>(scene->Instantiate<Inventory>("inventory"));
+		obj->AddObserver(ui);
+		obj->AddObserver(scene->GetCamera());
+		
 	}
 
 	// a bed and a pillow.
@@ -116,17 +124,48 @@ void DirectXGame::BuildSceneRenderObjects(Scene* scene)
 
 		pillow->GetRenderer()->SetMesh("Assets/pillow.fbx");
 	}
-}
 
+	// harvesting crate.
+
+	{
+		/*auto obj = scene->Instantiate<HarvestCrate>(
+			"CrateBox",
+			Transform{
+				{-5.0f, 0.0f, 15.0f},
+				{0.0f, XM_PI / 36.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f}
+			},
+			true);*/
+
+		auto obj = scene->Instantiate<HarvestCrate>(
+			"CrateBox",
+			Transform{
+				{0.0f, 0.0f, 0.0f},
+				{0.0f, XM_PI / 36.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f}
+			},
+			true);
+	}
+
+	// center aim.
+	{
+		auto obj = scene->Instantiate<UIObject>("cross-aim");
+		auto renderer = obj->GetSpriteRenderer();
+		renderer->SetSprite("cross-aim");
+		// 1280 x 720
+		float size = 8;
+		renderer->SetRect(Rect{ 640 - size,  360 - size, 640 + size , 360 + size });
+	}
+}
 
 void DirectXGame::OnKeyDown(UINT8 key)
 {
-	m_currentScene->m_camera.OnKeyDown(key);
+	m_currentScene->GetCamera()->OnKeyDown(key);
 }
 
 void DirectXGame::OnKeyUp(UINT8 key)
 {
-	m_currentScene->m_camera.OnKeyUp(key);
+	m_currentScene->GetCamera()->OnKeyUp(key);
 }
 
 void DirectXGame::OnMouseDown(UINT8 btnState, int x, int y)
@@ -141,7 +180,7 @@ void DirectXGame::OnMouseUp(UINT8 btnState, int x, int y)
 
 void DirectXGame::OnMouseMove(UINT8 btnState, int x, int y)
 {
-	m_currentScene->m_camera.OnMouseMove(btnState, x, y);
+	m_currentScene->GetCamera()->OnMouseMove(btnState, x, y);
 }
 
 void DirectXGame::OnMouseLeave(UINT8 btnState, int x, int y)
@@ -153,7 +192,7 @@ void DirectXGame::OnMouseLeave(UINT8 btnState, int x, int y)
 	center.x = (window.left + window.right) / 2;
 	center.y = (window.top + window.bottom) / 2;
 
-	m_currentScene->m_camera.ResetMousePos(center);
+	m_currentScene->GetCamera()->ResetMousePos(center);
 }
 
 Scene::Scene(UINT id, CD3DX12_VIEWPORT* viewport) :
@@ -194,14 +233,31 @@ void Scene::Update(float dt)
 		
 	}
 
+	while (!m_uiWaitQueue.empty())
+	{
+		auto front = std::move(m_uiWaitQueue.front());
+		m_uiWaitQueue.pop();
+
+		front->SetDirty(true);
+		m_allUIs.push_back(std::move(front));
+
+	}
+
 	DirectXGame::GetPlayer()->Update(dt);
 	for (auto& i : m_allObjects)
 	{
 		auto obj = i.get();
 		if (obj->IsActive()) obj->Update(dt);
 	}
+
 	m_camera.Update(dt);
-	
+
+	for (auto& i : m_allUIs)
+	{
+		auto obj = i.get();
+		if (obj->IsActive()) obj->Update(dt);
+	}
+
 	UpdateObjectConstantBuffers();
 }
 
@@ -227,6 +283,16 @@ void Scene::UpdateObjectConstantBuffers()
 	}
 }
 
+std::vector<UIObject*> Scene::GetAllUIObjects()
+{
+	std::vector<UIObject*> vector;
+
+	for (auto& i : m_allUIs)
+	{
+		vector.push_back(i.get());
+	}
+	return vector;
+}
 
 Assets::Assets()
 {
@@ -256,6 +322,8 @@ Assets::Assets()
 			"Assets/table.fbx",
 			"Assets/plant.fbx",
 			"Assets/house.fbx",
+			"Assets/carrot.fbx",
+			"Assets/cratebox.fbx"
 		};
 
 		FbxLoader loader = FbxLoader(&Assets::m_textures, &Assets::m_materials);
@@ -273,6 +341,38 @@ Assets::Assets()
 				m_meshes[a] = std::move(meshDesc);
 			}
 		}
+	}
+
+
+	// Load bitmap images.
+	{
+		std::vector<std::string> imgName
+		{
+			"example",
+			"cross-aim",
+			"black",
+			"white",
+		};
+		
+		std::vector<std::wstring> imgPath
+		{
+			L"Sprites/example.png",
+			L"Sprites/aim.png",
+			L"Sprites/default/black.jpg",
+			L"Sprites/default/white.jpg",
+		};
+
+		for (UINT i = 0; i < imgName.size(); ++i)
+		{
+			if (m_sprites.find(imgName[i]) == m_sprites.end()) {
+				auto sprite = std::make_unique<Sprite>();
+				sprite->name = imgName[i];
+				sprite->filePath = imgPath[i];
+				sprite->id = i;
+
+				m_sprites[sprite->name] = std::move(sprite);
+			}
+		}	
 	}
 
 	// create default triangle
@@ -351,6 +451,43 @@ std::vector<Texture*> Assets::GetOrderedTextures()
 	std::sort(vector.begin(), vector.end(), [](Texture* a, Texture* b) {
 		return a->id < b->id;
 		});
+
+	return vector;
+}
+
+std::vector<MeshDesc*> Assets::GetMeshDesc()
+{
+	std::vector<MeshDesc*> vector;
+	
+	for (auto& i : m_meshes)
+	{
+		vector.push_back(i.second.get());
+	}
+
+	return vector;
+}
+
+std::vector<Sprite*> Assets::GetSprites()
+{
+	std::vector<Sprite*> vector;
+
+	for (auto& i : m_sprites)
+	{
+		vector.push_back(i.second.get());
+	}
+
+	return vector;
+}
+
+
+std::vector<TextDesc*> Assets::GetTexts()
+{
+	std::vector<TextDesc*> vector;
+
+	for (auto& i : m_texts)
+	{
+		vector.push_back(i.second.get());
+	}
 
 	return vector;
 }

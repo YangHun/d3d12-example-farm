@@ -2,10 +2,12 @@
 
 #include "Component.h"
 
-class Camera
+class Camera : public Observer
 {
 public:
 	Camera(CD3DX12_VIEWPORT* viewport);
+
+	void OnNotify(Object* object, E_Event event) override;
 
 	void SetPosition(XMFLOAT3 position);
 	void SetRotation(XMFLOAT3 euler);
@@ -25,6 +27,9 @@ public:
 	void ResetMousePos(POINT point);
 
 	XMFLOAT2 ScreenToViewport(int x, int y);
+
+	float GetWidth() { return m_pViewport == nullptr ? 0 : m_pViewport->Width; }
+	float GetHeight() { return m_pViewport == nullptr ? 0 : m_pViewport->Height; }
 
 	std::wstring PrintInformation();
 
@@ -57,6 +62,8 @@ private:
 
 	// used to calculate screen-to-world coordinate translation
 	CD3DX12_VIEWPORT* m_pViewport;
+
+	bool m_lockRotation = false;
 
 public:
 	GameObject* picked = nullptr;

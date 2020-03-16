@@ -11,11 +11,14 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 	m_dsvDescriptorSize(0),
 	m_game(&m_viewport)
 {
+	CoInitialize(NULL);	//initialize COM to use Windows Imaging Component
 	m_timer.Reset();	
+
 }
 
 void D3DGameEngine::Initialize()
 {
+	
 	m_timer.Start();
 	LoadPipeline();
 	LoadAssets();
@@ -25,6 +28,7 @@ void D3DGameEngine::Initialize()
 	RECT window;
 	GetWindowRect(Win32Application::GetHwnd(), &window);
 	SetCursorPos((window.left + window.right) / 2, (window.top + window.bottom) / 2);
+	ShowCursor(false);
 }
 
 POINT D3DGameEngine::GetWindowCenter()
@@ -192,6 +196,10 @@ void D3DGameEngine::LoadPipeline()
 		(float)dpi,
 		(float)dpi
 	);
+
+	// create WIC Factory.
+
+	ThrowIfFailed(CoCreateInstance(CLSID_WICImagingFactory2, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_wicFactory)));
 
 
 	// Create frame resources.
@@ -391,20 +399,54 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
 	}
 
+	// load 2d sprite image.
+	{
+
+		auto sprites = Assets::GetSprites();
+
+		for (auto& s : sprites)
+		{
+			Microsoft::WRL::ComPtr<IWICBitmapDecoder> bitmapDecoder;
+			ThrowIfFailed(m_wicFactory->CreateDecoderFromFilename(
+				s->filePath.c_str(),
+				NULL,
+				GENERIC_READ,
+				WICDecodeMetadataCacheOnLoad,
+				bitmapDecoder.GetAddressOf()));
+
+			Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+			ThrowIfFailed(bitmapDecoder->GetFrame(0, frame.GetAddressOf()));
+
+			Microsoft::WRL::ComPtr<IWICFormatConverter> image;
+			ThrowIfFailed(m_wicFactory->CreateFormatConverter(image.GetAddressOf()));
+
+			ThrowIfFailed(image->Initialize(
+				frame.Get(),
+				GUID_WICPixelFormat32bppPBGRA,
+				WICBitmapDitherTypeNone,
+				NULL,
+				0,
+				WICBitmapPaletteTypeCustom));
+		
+			ThrowIfFailed(m_d2dDeviceContext->CreateBitmapFromWicBitmap(image.Get(), &s->bitmap));
+		}
+	}
+
 	// Create the main command list.
 	// Set initial pipeline state is null.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
 	
-	
+
+
 	// Initialize the game.
 	m_game.Initialize();
 
 	// Create the vertex buffer and index buffer for all meshes in game.
 	// Scenes would reference mesh descriptions to draw specific meshes.
 	{
-		for (auto& i : Assets::m_meshes) {
+		auto meshes = Assets::GetMeshDesc();
+		for (auto desc : meshes) {
 
-			auto desc = i.second.get();
 			UINT verticeSize = sizeof(Vertex) * (UINT)(desc->mesh->vertices.size());
 			UINT indiceSize = sizeof(uint16_t) * (UINT)(desc->mesh->indices.size());
 
@@ -438,7 +480,7 @@ void D3DGameEngine::LoadAssets()
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-		// heapDescriptor에 등록하는 순서와 Texture의 buffer id가 같아야 한다.
+		// heapDescriptor에 등록하는 순서와 Texture의 buffer id가 같도록, 정렬한 벡터를 사용.
 		auto textures = Assets::GetOrderedTextures();
 		for (auto t : textures)
 		{
@@ -525,20 +567,26 @@ void D3DGameEngine::Update()
 	auto mainbuffer = m_constantBuffer.get();
 	SceneConstantBuffer cBuffer;
 
-	XMMATRIX view = scene->m_camera.GetViewMatrix();
-	XMMATRIX proj = scene->m_camera.GetProjectionMatrix();
+	XMMATRIX view = scene->GetCamera()->GetViewMatrix();
+	XMMATRIX proj = scene->GetCamera()->GetProjectionMatrix();
 	XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
-	cBuffer.ambientLight = { 0.3f, 0.3f, 0.35f, 1.0f };
+	cBuffer.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
 
 	//XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
 	XMMATRIX r = XMMatrixIdentity();
 	XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
 
-	XMStoreFloat3(&cBuffer.directionalLight.direction, lightDir);
+	for (int i = 0; i < 3; ++i)
+	{
+		XMStoreFloat3(&cBuffer.Lights[i].direction, XMLoadFloat3(&mBaseLightDirections[i]));
+	}
 
-	cBuffer.directionalLight.strength = { 1.0f, 1.0f, 0.9f };
-	cBuffer.eye = scene->m_camera.GetEyePosition();
+	cBuffer.Lights[0].strength = { 0.9f, 0.9f, 0.7f };
+	cBuffer.Lights[1].strength = { 0.4f, 0.4f, 0.4f };
+	cBuffer.Lights[2].strength = { 0.2f, 0.2f, 0.2f };
+	
+	cBuffer.eye = scene->GetCamera()->GetEyePosition();
 
 	mainbuffer->CopyData(0, cBuffer);
 	
@@ -734,11 +782,22 @@ void D3DGameEngine::RenderUI()
 
 void D3DGameEngine::DrawCurrentUI()
 {
+	
+	auto objs = m_game.GetCurrentScene()->GetAllUIObjects();
+	
+	for (auto obj : objs)
+	{
+		if (!obj->IsActive()) continue;
+		obj->Draw(m_d2dDeviceContext.Get());
+	}
+
 	// Render text over D3D12 using D2D via the 11On12 device.
 	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
 	
 	
-	std::wstring info = m_game.GetCurrentScene()->m_camera.PrintInformation();
+	std::wstring info = m_game.GetCurrentScene()->GetCamera()->PrintInformation()
+		+ m_game.GetPlayer()->PrintPlayerInfo();
+	
 	//static const WCHAR text[] = info.c_str();
 	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
 
@@ -763,9 +822,14 @@ void D3DGameEngine::DrawCurrentUI()
 		m_textBrush.Get()
 	);
 
-}
 
-void D3DGameEngine::LoadDDSTextures(std::string name, std::wstring fileName)
-{
+	//m_d2dDeviceContext->DrawBitmap(
+	//	Assets::m_sprites["example"]->bitmap.Get(),
+	//	&textRect,
+	//	1.0f,
+	//	D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
+	//	NULL);
+
+
 
 }

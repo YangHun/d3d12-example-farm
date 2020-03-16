@@ -23,7 +23,7 @@ cbuffer cbScene : register(b1)
     float4x4 gViewProj;
     float4 gAmbient;
     float3 gEyePos;
-    Light gLight;
+    Light gLights[16];
 }
 
 Texture2D gTextureMaps[48] : register(t0);  // space 0

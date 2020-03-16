@@ -13,10 +13,10 @@ class Physics
 	};
 
 public:
-	static GameObject* Raycast(Camera camera, int screenX, int screenY);
+	static GameObject* Raycast(Camera* camera, int screenX, int screenY);
 
 private:
-	static Ray GeneratePickingRay(Camera camera, int screenX, int screenY);
+	static Ray GeneratePickingRay(Camera* camera, int screenX, int screenY);
 	static float PickAABB(Ray ray, Collider::Bound bound);
 };
 

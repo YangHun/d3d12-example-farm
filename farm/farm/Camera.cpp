@@ -22,6 +22,17 @@ Camera::Camera(CD3DX12_VIEWPORT* viewport) :
 	m_prevMousePos = m_nextMousePos = m_initialMousePos;
 }
 
+void Camera::OnNotify(Object* object, E_Event event)
+{	
+	switch (event)
+	{
+	case E_Event::TABLE_INTERACT_CLICKED:
+		m_lockRotation = !m_lockRotation;
+		ShowCursor(m_lockRotation);
+		break;
+	}
+}
+
 void Camera::SetFrustum(float fov, float nearz, float farz)
 {
 	m_fov = fov;
@@ -103,6 +114,7 @@ void Camera::Update(float dt)
 	if (m_pressedS) dir -= forward;
 	if (m_pressedD) dir += right;
 
+	dir = XMVectorSetY(dir, 0.0f);
 	dir = XMVector3Normalize(dir) * 0.1f;
 		
 	if (!XMVector3Equal(dir, XMVectorZero())) {
@@ -112,15 +124,17 @@ void Camera::Update(float dt)
 	}
 
 	// camera height is always fixed.
-	m_transform.position.y = 2.0f;
+	m_transform.position.y = 4.0f;
 
 	if (m_dirty)
 	{
-		float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_prevMousePos.x));
-		float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_prevMousePos.y));
-		m_transform.rotation.y = m_transform.rotation.y + dx;
-		m_transform.rotation.x = m_transform.rotation.x - dy;
-		
+		if (!m_lockRotation) {
+			float dx = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.x - m_prevMousePos.x));
+			float dy = XMConvertToRadians(0.25f * static_cast<float>(m_nextMousePos.y - m_prevMousePos.y));
+			m_transform.rotation.y = m_transform.rotation.y + dx;
+			m_transform.rotation.x = m_transform.rotation.x - dy;
+		}
+
 		CalculateCameraAxis();
 		m_dirty = false;
 	}
@@ -186,16 +200,14 @@ void Camera::OnKeyUp(WPARAM key)
 
 void Camera::OnMouseMove(WPARAM state, int x, int y)
 {	
-	//if ((state & MK_LBUTTON) != 0) 
+	m_prevMousePos = m_nextMousePos;
 
-		m_prevMousePos = m_nextMousePos;
+	m_nextMousePos.x = x;
+	m_nextMousePos.y = y;
 
-		m_nextMousePos.x = x;
-		m_nextMousePos.y = y;
-
-		if ((m_nextMousePos.x != m_prevMousePos.x) ||
-			(m_nextMousePos.y != m_prevMousePos.y))
-			m_dirty = true;
+	if ((m_nextMousePos.x != m_prevMousePos.x) ||
+		(m_nextMousePos.y != m_prevMousePos.y))
+		m_dirty = true;
 	
 }
 

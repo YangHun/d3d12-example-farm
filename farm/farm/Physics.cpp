@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Physics.h"
 
-GameObject* Physics::Raycast(Camera camera, int screenX, int screenY)
+GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY)
 {
 	// generate the picking ray vector.
 	Ray ray = GeneratePickingRay(camera, screenX, screenY);
@@ -87,30 +87,30 @@ float Physics::PickAABB(Ray ray, Collider::Bound bound)
 	return ((_far >= 0) && (_near <= _far))? _near : FLT_MAX;
 }
 
-Physics::Ray Physics::GeneratePickingRay(Camera camera, int screenX, int screenY)
+Physics::Ray Physics::GeneratePickingRay(Camera* camera, int screenX, int screenY)
 {
 	// viewport space (2D)			--> normalized device space (3D)
-	XMVECTOR dir = XMLoadFloat2(&camera.ScreenToViewport(screenX, screenY));
+	XMVECTOR dir = XMLoadFloat2(&camera->ScreenToViewport(screenX, screenY));
 	dir = XMVectorSetZ(dir, 1.0f);
 
 	// normalized device space (3D)	--> homogeneous clip space (4D)
 	dir = XMVectorSetW(dir, 1.0f);	// near plane에서의 position을 계산 중이므로 w = 1
 
 	// homogeneous clip space		--> eye space
-	XMMATRIX P = camera.GetProjectionMatrix();
+	XMMATRIX P = camera->GetProjectionMatrix();
 	XMMATRIX InvP = XMMatrixInverse(&XMMatrixDeterminant(P), P);
 	dir = XMVector4Transform(dir, InvP);
 	dir = XMVectorSetZ(dir, 1.0f);
 	dir = XMVectorSetW(dir, 0.0f);	// world space에서의 ray direction을 계산할 것이므로 w = 0
 
 	// eye space					--> world space
-	XMMATRIX V = camera.GetViewMatrix();
+	XMMATRIX V = camera->GetViewMatrix();
 	XMMATRIX InvV = XMMatrixInverse(&XMMatrixDeterminant(V), V);
 	dir = XMVector4Transform(dir, InvV);
 	dir = XMVector4Normalize(dir);	// z, w 값을 수동으로 넣었으므로 normalize를 해준다.
 
 	Ray ray;
-	ray.position = camera.GetEyePosition();
+	ray.position = camera->GetEyePosition();
 	XMStoreFloat3(&ray.direction, dir);
 
 	return ray;

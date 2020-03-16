@@ -9,7 +9,7 @@ Plant::Plant() :
 	m_finalScale(0.005f),
 	m_state (E_STATE::PLANT_NONE)
 {
-	GetRenderer()->SetMesh("Assets/plant.fbx");
+	GetRenderer()->SetMesh("Assets/carrot.fbx");
 
 	//m_collider = BoxCollider(this);
 	//m_collider.SetBound(m_renderer.GetMeshDesc());
@@ -30,17 +30,9 @@ void Plant::Start()
 
 void Plant::Initialize()
 {
-	m_lifeTime = 30.0f;
-	m_growTime = 5.0f;
 	m_timer = 0.0f;
-	m_initScale = 0.0f;
-	m_finalScale = 0.005f;
 	m_state = E_STATE::PLANT_NONE;
 
-	GetRenderer()->SetMesh("Assets/plant.fbx");
-
-	//m_collider = BoxCollider(this);
-	//m_collider.SetBound(m_renderer.GetMeshDesc());
 
 	Transform t = GetTransform();
 	t.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
@@ -154,10 +146,12 @@ void Field::Interact()
 		m_plant->Seed();
 	}
 
-	if (state == Plant::E_STATE::PLANT_READY_TO_HARVEST |
-		state == Plant::E_STATE::PLANT_DEAD)
+	if ( (state == Plant::E_STATE::PLANT_READY_TO_HARVEST) ||
+		(state == Plant::E_STATE::PLANT_DEAD))
 	{
+		if (state == Plant::E_STATE::PLANT_READY_TO_HARVEST) Notify(reinterpret_cast<Object*>(m_plant), E_Event::FIELD_INTERACT_PLANT_HARVEST);
 		m_plant->Harvest();
+
 	}		
 	
 }
