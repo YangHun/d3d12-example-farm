@@ -49,25 +49,14 @@ void DirectXGame::BuildScenes()
 // Scene에 그려질 RenderObject 목록을 정의한다.
 void BuildSceneObjects(Scene* scene)
 {
-
-	// create fields
+	// center aim.
 	{
-		int activeNum = 5;
-
-		for (int i = 0; i < 5; ++i)
-		{
-			for (int j = 0; j < 5; ++j)
-			{
-				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
-					"Field_" + std::to_string(i * 10 + j), 
-					Transform{
-						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
-						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} 
-					},
-					(i < activeNum) && (j < activeNum)));
-				obj->AddObserver(DirectXGame::GetPlayer());
-			}
-		}
+		auto obj = scene->Instantiate<UIObject>("cross-aim");
+		auto renderer = obj->GetSpriteRenderer();
+		renderer->SetSprite("cross-aim");
+		// 1280 x 720
+		float size = 8;
+		renderer->SetRect(Rect{ 640 - size,  360 - size, 640 + size , 360 + size });
 	}
 
 	// a house.
@@ -95,10 +84,10 @@ void BuildSceneObjects(Scene* scene)
 			},
 			true));
 
-		auto ui = reinterpret_cast<Inventory*>(scene->Instantiate<Inventory>("inventory"));
+		auto ui = reinterpret_cast<QuestInfo*>(scene->Instantiate<QuestInfo>("quest-info"));
 		obj->AddObserver(ui);
 		obj->AddObserver(scene->GetCamera());
-		
+		obj->AddObserver(DirectXGame::GetPlayer());
 	}
 
 	// a bed and a pillow.
@@ -127,35 +116,47 @@ void BuildSceneObjects(Scene* scene)
 
 	// harvesting crate.
 
-	{
-		/*auto obj = scene->Instantiate<HarvestCrate>(
-			"CrateBox",
-			Transform{
-				{-5.0f, 0.0f, 15.0f},
-				{0.0f, XM_PI / 36.0f, 0.0f},
-				{1.0f, 1.0f, 1.0f}
-			},
-			true);*/
+	
+	/*auto obj = scene->Instantiate<HarvestCrate>(
+		"CrateBox",
+		Transform{
+			{-5.0f, 0.0f, 15.0f},
+			{0.0f, XM_PI / 36.0f, 0.0f},
+			{1.0f, 1.0f, 1.0f}
+		},
+		true);*/
 
-		auto obj = scene->Instantiate<HarvestCrate>(
-			"CrateBox",
-			Transform{
-				{0.0f, 0.0f, 0.0f},
-				{0.0f, XM_PI / 36.0f, 0.0f},
-				{1.0f, 1.0f, 1.0f}
-			},
-			true);
+	auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
+		"CrateBox",
+		Transform{
+			{0.0f, 0.0f, 0.0f},
+			{0.0f, XM_PI / 36.0f, 0.0f},
+			{1.0f, 1.0f, 1.0f}
+		},
+		true));
+	
+
+	// create fields
+	{
+		int activeNum = 5;
+
+		for (int i = 0; i < 5; ++i)
+		{
+			for (int j = 0; j < 5; ++j)
+			{
+				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
+					"Field_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+					},
+					(i < activeNum) && (j < activeNum)));
+				obj->AddObserver(DirectXGame::GetPlayer());
+				obj->AddObserver(crate);
+			}
+		}
 	}
 
-	// center aim.
-	{
-		auto obj = scene->Instantiate<UIObject>("cross-aim");
-		auto renderer = obj->GetSpriteRenderer();
-		renderer->SetSprite("cross-aim");
-		// 1280 x 720
-		float size = 8;
-		renderer->SetRect(Rect{ 640 - size,  360 - size, 640 + size , 360 + size });
-	}
 }
 
 void DirectXGame::OnKeyDown(UINT8 key)
@@ -348,18 +349,18 @@ Assets::Assets()
 	{
 		std::vector<std::string> imgName
 		{
-			"example",
 			"cross-aim",
-			"black",
-			"white",
+			"default-black",
+			"default-white",
+			"scroll",
 		};
 		
 		std::vector<std::wstring> imgPath
 		{
-			L"Sprites/example.png",
 			L"Sprites/aim.png",
 			L"Sprites/default/black.jpg",
 			L"Sprites/default/white.jpg",
+			L"Sprites/scroll.png",
 		};
 
 		for (UINT i = 0; i < imgName.size(); ++i)
@@ -373,6 +374,15 @@ Assets::Assets()
 				m_sprites[sprite->name] = std::move(sprite);
 			}
 		}	
+	}
+
+	// create default text brushes.
+	{
+		auto text = std::make_unique<TextDesc>();
+		text->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		text->fontSize = 20;
+		text->id = m_texts.size();
+		m_texts["black"] = std::move(text);
 	}
 
 	// create default triangle

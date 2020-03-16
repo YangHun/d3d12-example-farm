@@ -20,8 +20,10 @@ struct TextDesc
 	UINT id;
 	DWRITE_TEXT_ALIGNMENT textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING;
 	DWRITE_PARAGRAPH_ALIGNMENT paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_CENTER;
-	
-	ComPtr<ID2D1Brush> brush;
+	XMFLOAT3 brushColor;
+	UINT fontSize;
+
+	ComPtr<ID2D1SolidColorBrush> brush;
 	ComPtr<IDWriteTextFormat> textFormat;
 };
 

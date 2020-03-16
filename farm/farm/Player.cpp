@@ -70,8 +70,15 @@ void Player::OnNotify(Object* object, E_Event event)
 	case E_Event::FIELD_INTERACT_PLANT_HARVEST:
 	{
 		m_crops++;
-		break;
+		return;
 	}
+	case E_Event::TABLE_INTERACT_CLICKED:
+		if (m_crops > 0) 
+		{
+			m_crops--;
+			m_coins += 100;
+		}
+		return;
 	}
 }
 

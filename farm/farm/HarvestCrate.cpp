@@ -10,7 +10,7 @@ HarvestCrate::HarvestCrate() :
 	GetRenderer()->SetMesh("Assets/cratebox.fbx");
 	GetCollider()->SetBoundFromMesh(GetRenderer()->meshDesc());
 
-	XMFLOAT3 localPivot = { -1.8f, 0.0f, -3.8f };
+	
 
 	for (int i = 0; i < m_size; ++i) {
 		auto obj = DirectXGame::GetCurrentScene()->Instantiate<GameObject>(
@@ -28,6 +28,22 @@ HarvestCrate::HarvestCrate() :
 	}
 }
 
+void HarvestCrate::OnNotify(Object* object, E_Event event)
+{
+	switch (event)
+	{
+	case E_Event::FIELD_INTERACT_PLANT_HARVEST:
+	{
+		if (m_count < m_size) {
+			Increase(1);
+			MoveNearObject(reinterpret_cast<GameObject*>(object)->GetTransform());
+		}
+
+		return;
+	}
+	}
+}
+
 void HarvestCrate::Start()
 {}
 
@@ -37,8 +53,7 @@ void HarvestCrate::Update(float dt)
 		
 		for (int i = 0; i < m_size; ++i)
 		{
-			//m_crops[i]->SetActive(i < m_count);
-			m_crops[i]->SetActive(true);
+			m_crops[i]->SetActive(i < m_count);
 		}
 
 		m_changed = false;
@@ -51,17 +66,21 @@ void HarvestCrate::Increase(int value)
 	m_changed = true;
 }
 
-void HarvestCrate::Move(Transform transform)
+void HarvestCrate::MoveNearObject(Transform transform)
 {
+	XMFLOAT3 right = DirectXGame::GetCurrentScene()->GetCamera()->GetRightVector();
+
 	Transform t;
 	t.position = transform.position;
+	t.position.x -= localPivot.x;
 	t.position.y = 0.0f;
+	t.position.z -= localPivot.z;
 
-	t.position.x += Random::Range(0.5f, 1.0f) * (Random::Boolean() ? 1.0f : -1.0f);
-	t.position.z += Random::Range(0.5f, 1.0f) * (Random::Boolean() ? 1.0f : -1.0f);
+	t.position.x += 0.2f * (Random::Boolean() ? 1.0f : -1.0f) - right.x * 2;
+	t.position.z += 0.2f * (Random::Boolean() ? 1.0f : -1.0f) - right.z * 2;
 
 	t.rotation = XMFLOAT3{ 0.0f, 0.0f, 0.0f };
-	t.rotation.y = Random::Range(0.0f, 35.0f) * XM_PI / 36.0f;
+	t.rotation.y = XM_PI / 36.0f * (Random::Boolean() ? 1.0f : -1.0f);
 	
 	SetTransform(t);
 }

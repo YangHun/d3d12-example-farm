@@ -65,10 +65,5 @@ void Inventory::Draw(ID2D1DeviceContext2* pDeviceContext)
 
 void Inventory::OnNotify(Object* object, E_Event event)
 {
-	switch (event)
-	{
-	case E_Event::TABLE_INTERACT_CLICKED:
-		SetActive(!IsActive());
-		break;
-	}
+	
 }

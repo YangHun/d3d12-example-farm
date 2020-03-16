@@ -397,6 +397,29 @@ void D3DGameEngine::LoadAssets()
 
 		ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
 		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+	
+	
+		auto texts = Assets::GetTexts();
+		
+		for (auto& t : texts)
+		{
+			ThrowIfFailed(m_d2dDeviceContext->CreateSolidColorBrush(
+				D2D1::ColorF(t->brushColor.x, t->brushColor.y, t->brushColor.z), &t->brush));
+			ThrowIfFailed(m_dWriteFactory->CreateTextFormat(
+				L"Verdana",
+				NULL,
+				DWRITE_FONT_WEIGHT_NORMAL,
+				DWRITE_FONT_STYLE_NORMAL,
+				DWRITE_FONT_STRETCH_NORMAL,
+				t->fontSize,
+				L"en-us",
+				&t->textFormat
+			));
+
+			ThrowIfFailed(t->textFormat->SetTextAlignment(t->textAlignment));
+			ThrowIfFailed(t->textFormat->SetParagraphAlignment(t->paragraphAlignment));
+		}
+	
 	}
 
 	// load 2d sprite image.

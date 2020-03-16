@@ -99,18 +99,19 @@ private:
 };
 
 
-class HarvestCrate : public GameObject
+class HarvestCrate : public GameObject, public Observer
 {
 public:
 	HarvestCrate();
 
 	void Start();
 	void Update(float dt);
+	void OnNotify(Object* object, E_Event event) override;
 
 	bool IsEmpty() { return m_count < 1; }
 
 	void Increase(int value);
-	void Move(Transform transform);
+	void MoveNearObject(Transform transform);
 
 private:
 	int m_count;
@@ -123,6 +124,8 @@ private:
 				{ {-5.0f, 0.0f, 15.0f},
 				{0.0f, XM_PI / 36.0f, 0.0f},
 				{1.0f, 1.0f, 1.0f} };
+
+	const XMFLOAT3 localPivot = { -1.8f, 0.0f, -3.8f };
 };
 
 class QuestTable : public GameObject, public Subject
@@ -156,10 +159,24 @@ public:
 	void Start();
 	void Update(float dt);
 
-	void Draw(ID2D1DeviceContext2* pDeviceContext);
+	void Draw(ID2D1DeviceContext2* pDeviceContext) override;
 	
 	void OnNotify(Object* object, E_Event event) override;
 
 private:
 	std::vector<InventorySlot*> m_slots;
+};
+
+class QuestInfo : public UIObject, public Observer
+{
+public:
+	QuestInfo();
+
+	void Start();
+	void Update(float dt);
+	void Draw(ID2D1DeviceContext2* pDeviceContext) override;
+	void OnNotify(Object* object, E_Event event) override;
+
+private:
+	std::unique_ptr<SpriteRenderer> m_pBackground;
 };

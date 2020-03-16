@@ -18,6 +18,11 @@ public:
 	XMMATRIX LookAt(XMFLOAT3 position);
 	XMMATRIX GetViewMatrix();
 	XMFLOAT3 GetEyePosition();
+
+	XMFLOAT3 GetRightVector()
+	{
+		return m_u;
+	}
 	
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);

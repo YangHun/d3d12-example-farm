@@ -10,7 +10,11 @@ public:
 	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 
-	bool IsDirty() const { return m_dirty; }
+	bool IsDirty() const 
+	{ 
+		bool parent = m_parent != nullptr ? m_parent->IsDirty() : false;
+		return parent | m_dirty; 
+	}
 	bool IsActive() const 
 	{
 		bool parent = m_parent != nullptr ? m_parent->IsActive() : true;
@@ -235,13 +239,17 @@ public:
 
 	XMMATRIX GetWorldMatrix();
 
-	std::string GetName() const { return m_name; }
-	std::string GetTag() const { return m_tag; }
-	Transform GetTransform() const { return m_transform; }
+	std::string GetName() { return m_name; }
+	std::string GetTag() { return m_tag; }
+	Transform GetTransform() { return m_transform; }
 
 	void SetName(const std::string& value) { m_name = value; }
 	void SetTag(const std::string& value) { m_tag = value; }
-	void SetTransform(const Transform& value) { m_transform = value; }
+	void SetTransform(const Transform& value) 
+	{ 
+		m_transform = value; 
+		SetDirty(true);
+	}
 
 	MeshRenderer* GetRenderer() const { return m_pRenderer.get(); }
 	BoxCollider* GetCollider() const { return m_pCollider.get(); }

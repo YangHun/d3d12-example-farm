@@ -21,8 +21,8 @@ GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY)
 		
 		if (obj->GetCollider()->isZero()) continue; // not have bounding box.
 		
-		// bounding box를 가진 object가 world transform (rotation, transform) 을 가질 수 있으므로
-		// ray에 object의 (ST)^-1 을 곱한 다음 충돌 여부를 체크한다.
+		// bounding box를 가진 object가 world transform을 가질 수 있으므로
+		// ray에 object의 (W)^-1 을 곱한 다음 충돌 여부를 체크한다.
 		
 		Transform t = obj->GetTransform();
 		XMMATRIX ST = obj->GetWorldMatrix();
