@@ -131,7 +131,7 @@ void Field::Interact()
 	if (m_plant == nullptr)
 	{
 		// 처음으로 식물을 심을 때, instantiate 한다			
-		m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>());
+		m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>(E_RenderLayer::Opaque));
 
 		Transform t = m_plant->GetTransform();
 		t.position = GetTransform().position;

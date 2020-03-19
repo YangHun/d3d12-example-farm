@@ -22,9 +22,24 @@ public:
 	void Update(float dt);
 
 	template<typename T>
-	GameObject* Instantiate(std::string name, Transform transform, bool active)
+	GameObject* Instantiate(E_RenderLayer layer)
 	{
-		auto obj = Instantiate<T>();
+		auto obj = std::make_unique<T>();
+
+		int layerID = static_cast<int>(layer);
+
+		int id = m_allObjects.size() + m_objQueue[layerID].size();
+		obj->SetBufferId(id);
+		obj->SetDirty();
+
+		m_objQueue[layerID].push(std::move(obj));
+		return m_objQueue[layerID].back().get();
+	}
+
+	template<typename T>
+	GameObject* Instantiate(std::string name, Transform transform, bool active, E_RenderLayer layer)
+	{
+		auto obj = Instantiate<T>(layer);
 		obj->SetName(name);
 		obj->SetActive(active);
 		obj->SetTransform(transform);
@@ -33,60 +48,50 @@ public:
 	}
 
 	template<typename T>
-	GameObject* Instantiate()
-	{
-		auto obj = std::make_unique<T>();
-
-		int id = m_allObjects.size() + m_objWaitQueue.size();
-		obj->SetBufferId(id);
-		obj->SetDirty();
-
-		m_objWaitQueue.push(std::move(obj));
-		return m_objWaitQueue.back().get();
-	}
-
-	template<typename T>
 	UIObject* Instantiate(std::string name)
 	{
 		auto obj = std::make_unique<T>();
 
-		int id = m_allUIs.size() + m_uiWaitQueue.size();
+		int id = m_allUIs.size() + m_uiQueue.size();
 		obj->SetBufferId(id);
 		obj->SetDirty();
 
-		m_uiWaitQueue.push(std::move(obj));
-		return m_uiWaitQueue.back().get();
+		m_uiQueue.push(std::move(obj));
+		return m_uiQueue.back().get();
 	}
 
 	std::vector<UIObject*> GetAllUIObjects();
+	std::vector<GameObject*> GetObjectsByLayer(E_RenderLayer layer)
+	{
+		return m_layeredObjects[static_cast<int>(layer)];
+	}
+
 	Camera* GetCamera() { return &m_camera; }
 
 private:
 	void BuildObject();
 	void UpdateObjectConstantBuffers();
+	void AssignInstantiatedObjects();
 
 public: 
-	UINT m_id;
-
-	// 이번 프레임에 Instantiate 된 오브젝트는 waiting queue에 미리 등록했다가 
-	// 다음 프레임의 Update()가 호출되는 시점에서 m_allObjects에 등록하여
-	// m_allObjects를 순회하는 도중에는 값이 바뀌지 않게 한다.
-	std::queue<std::unique_ptr<GameObject>> m_objWaitQueue;
-	std::queue<std::unique_ptr<UIObject>> m_uiWaitQueue;
-
-	// scene에 존재하는 모든 GameObject 
-	std::vector<std::unique_ptr<GameObject>> m_allObjects;
-	// Engine에서 실제로 그리는 오브젝트
-	std::vector<GameObject*> m_renderObjects;
-
-
-
 	// object constant buffers for objects in current scene.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
 	
 
 
 private:
+	UINT m_id;
+
+	// 이번 프레임에 Instantiate 된 오브젝트는 waiting queue에 미리 등록했다가 
+	// 다음 프레임의 Update()가 호출되는 시점에서 m_allObjects에 등록하여
+	// m_allObjects를 순회하는 도중에는 값이 바뀌지 않게 한다.
+	std::unordered_map<int, std::queue<std::unique_ptr<GameObject>>> m_objQueue;
+	std::queue<std::unique_ptr<UIObject>> m_uiQueue;
+
+	// scene에 존재하는 모든 Game objects
+	std::vector<std::unique_ptr<GameObject>> m_allObjects;
+	std::unordered_map <int, std::vector<GameObject*>> m_layeredObjects;
+
 	// scene에 존재하는 모든 UI Objects
 	std::vector<std::unique_ptr<UIObject>> m_allUIs;
 
@@ -112,7 +117,6 @@ public:
 
 class DirectXGame
 {
-
 public:
 	DirectXGame(CD3DX12_VIEWPORT* viewport);
 

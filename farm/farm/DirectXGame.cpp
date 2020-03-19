@@ -68,7 +68,8 @@ void BuildSceneObjects(Scene* scene)
 				{0.0f, XM_PI / 2.0f, 0.0f},
 				{0.2f, 0.2f, 0.2f}
 			},
-			true);
+			true,
+			E_RenderLayer::Opaque);
 
 		obj->GetRenderer()->SetMesh("Assets/house.fbx");
 	}
@@ -82,7 +83,8 @@ void BuildSceneObjects(Scene* scene)
 				{0.0f, 0.0f, 0.0f},
 				{0.03f, 0.02f, 0.03f}
 			},
-			true));
+			true,
+			E_RenderLayer::Opaque));
 
 		auto ui = reinterpret_cast<QuestInfo*>(scene->Instantiate<QuestInfo>("quest-info"));
 		obj->AddObserver(ui);
@@ -99,7 +101,8 @@ void BuildSceneObjects(Scene* scene)
 				{0.0f, 0.0f, 0.0f},
 				{0.02f, 0.02f, 0.02f}
 			},
-			true);
+			true,
+			E_RenderLayer::Opaque);
 
 		Transform pillowTransform = bed->GetTransform();
 		pillowTransform.position.y += 1.3f;
@@ -109,7 +112,8 @@ void BuildSceneObjects(Scene* scene)
 		auto pillow = scene->Instantiate<GameObject>(
 			"Pillow",
 			pillowTransform,
-			true);
+			true,
+			E_RenderLayer::Opaque);
 
 		pillow->GetRenderer()->SetMesh("Assets/pillow.fbx");
 	}
@@ -133,7 +137,8 @@ void BuildSceneObjects(Scene* scene)
 			{0.0f, XM_PI / 36.0f, 0.0f},
 			{1.0f, 1.0f, 1.0f}
 		},
-		true));
+		true,
+		E_RenderLayer::Opaque));
 	
 
 	// create fields
@@ -150,7 +155,8 @@ void BuildSceneObjects(Scene* scene)
 						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
 						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
 					},
-					(i < activeNum) && (j < activeNum)));
+					(i < activeNum) && (j < activeNum),
+					E_RenderLayer::Opaque));
 				obj->AddObserver(DirectXGame::GetPlayer());
 				obj->AddObserver(crate);
 			}
@@ -223,48 +229,62 @@ void Scene::BuildObject()
 
 void Scene::Update(float dt)
 {
-	while (!m_objWaitQueue.empty())
-	{
-		auto front = std::move(m_objWaitQueue.front());
-		m_objWaitQueue.pop();
+	// assign instantiated objects at prev frame.
+	AssignInstantiatedObjects();
 
-		front->SetDirty(true);
-		m_renderObjects.push_back(front.get());
-		m_allObjects.push_back(std::move(front));
-		
-	}
-
-	while (!m_uiWaitQueue.empty())
-	{
-		auto front = std::move(m_uiWaitQueue.front());
-		m_uiWaitQueue.pop();
-
-		front->SetDirty(true);
-		m_allUIs.push_back(std::move(front));
-
-	}
-
+	// update all objects.
 	DirectXGame::GetPlayer()->Update(dt);
-	for (auto& i : m_allObjects)
+	for (auto& obj : m_allObjects)
 	{
-		auto obj = i.get();
 		if (obj->IsActive()) obj->Update(dt);
 	}
 
 	m_camera.Update(dt);
 
-	for (auto& i : m_allUIs)
+	for (auto& obj : m_allUIs)
 	{
-		auto obj = i.get();
 		if (obj->IsActive()) obj->Update(dt);
 	}
 
+	// update object constant buffers.
 	UpdateObjectConstantBuffers();
+}
+
+void Scene::AssignInstantiatedObjects()
+{
+	int count = static_cast<int>(E_RenderLayer::Count);
+
+	for (int i = 0; i < count; ++i)
+	{
+		int _layer = i;
+		if (m_objQueue.find(_layer) == m_objQueue.end()) continue;
+
+		while (!m_objQueue[_layer].empty())
+		{
+			auto front = std::move(m_objQueue[_layer].front());
+			m_objQueue[_layer].pop();
+
+			front->SetDirty(true);
+			
+			m_layeredObjects[i].push_back(front.get());
+			m_allObjects.push_back(std::move(front));
+
+		}
+	}	
+
+	while (!m_uiQueue.empty())
+	{
+		auto front = std::move(m_uiQueue.front());
+		m_uiQueue.pop();
+
+		front->SetDirty(true);
+		m_allUIs.push_back(std::move(front));
+	}
 }
 
 void Scene::UpdateObjectConstantBuffers()
 {
-	for (auto obj : m_renderObjects)
+	for (auto& obj : m_allObjects)
 	{
 		if (obj->IsDirty() && obj->IsActive())
 		{

@@ -5,6 +5,14 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
+enum class E_RenderLayer
+{
+	Opaque,
+	Transparent,
+	Sky,
+	Count
+};
+
 struct Light
 {
 	XMFLOAT3 strength = { 0.5f, 0.5f, 0.5f };

@@ -13,7 +13,7 @@ class Physics
 	};
 
 public:
-	static GameObject* Raycast(Camera* camera, int screenX, int screenY);
+	static GameObject* Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layerMask = E_RenderLayer::Opaque);
 
 private:
 	static Ray GeneratePickingRay(Camera* camera, int screenX, int screenY);

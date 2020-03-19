@@ -21,7 +21,8 @@ HarvestCrate::HarvestCrate() :
 				{XM_PI / 2.0f, Random::Range(-2.0f, 2.0f) * XM_PI / 36.0f , 0.0f},
 				{0.0075f, 0.0075f, 0.0075f}
 			},
-			false);
+			false,
+			E_RenderLayer::Opaque);
 		obj->SetParent(this);
 		obj->GetRenderer()->SetMesh("Assets/carrot.fbx");
 		m_crops.push_back(obj);

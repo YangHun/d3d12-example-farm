@@ -34,7 +34,7 @@ private:
 	void WaitForPreviousFrame();
 	void PopulateCommandList();
 	void RenderUI();
-	void DrawCurrentScene();
+	void DrawCurrentScene(E_RenderLayer layer);
 	void DrawCurrentUI();
 
 	POINT GetWindowCenter();

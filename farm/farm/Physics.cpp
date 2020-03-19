@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Physics.h"
 
-GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY)
+GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layerMask)
 {
 	// generate the picking ray vector.
 	Ray ray = GeneratePickingRay(camera, screenX, screenY);
@@ -14,9 +14,10 @@ GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY)
 	GameObject* hit = nullptr;
 	float min_distance = FLT_MAX;
 
-	for (auto& i : scene->m_allObjects)
+
+
+	for (auto obj : scene->GetObjectsByLayer(layerMask))
 	{
-		auto obj = i.get();
 		if (!obj->IsActive()) continue;
 		
 		if (obj->GetCollider()->isZero()) continue; // not have bounding box.

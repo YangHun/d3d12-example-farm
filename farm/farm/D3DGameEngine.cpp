@@ -330,7 +330,7 @@ void D3DGameEngine::LoadAssets()
 #else
 		UINT compileFlags = 0;
 #endif
-		
+
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, nullptr));
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, nullptr));
 
@@ -364,21 +364,23 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates["opaque"])));
 
 
-		//// Shaders for sky.
+		// Pipeline state object for sky.
 
-		//ComPtr<ID3DBlob> skyVertexShader;
-		//ComPtr<ID3DBlob> skyPixelShader;
-		//ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &skyVertexShader, nullptr));
-		//ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &skyPixelShader, nullptr));
+		ComPtr<ID3DBlob> skyVS;
+		ComPtr<ID3DBlob> skyPS;
 
-		//// Pipeline state for Skybox.
-		//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-		//psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-		//psoDesc.pRootSignature = m_rootSignature.Get();
-		//psoDesc.VS = CD3DX12_SHADER_BYTECODE(skyVertexShader.Get());
-		//psoDesc.PS = CD3DX12_SHADER_BYTECODE(skyPixelShader.Get());
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &skyVS, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &skyPS, nullptr));
 
-		//ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates["sky"])));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC skyDesc = psoDesc;
+
+		skyDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		skyDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		skyDesc.pRootSignature = m_rootSignature.Get();
+		skyDesc.VS = CD3DX12_SHADER_BYTECODE(skyVS.Get());
+		skyDesc.PS = CD3DX12_SHADER_BYTECODE(skyPS.Get());
+
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates["sky"])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
@@ -739,7 +741,11 @@ void D3DGameEngine::PopulateCommandList()
 
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
-	DrawCurrentScene();
+	DrawCurrentScene(E_RenderLayer::Opaque);
+
+	//m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
+	//DrawCurrentScene(E_RenderLayer::Sky);
+
 
 	// back buffer state 를 여기서 present로 transition하지 않는다.
 	// 이후, wrapped 11on12 target resource가 released될 때 일어남.
@@ -754,14 +760,15 @@ void D3DGameEngine::PopulateCommandList()
 }
 
 
-void D3DGameEngine::DrawCurrentScene()
+void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 {
 	UINT bufferSize = (sizeof(ObjectConstantBuffer) + 255) & ~255;
-
 	auto scene = m_game.GetCurrentScene();
-	auto buffer = scene->m_objConstantBuffers.get();
 
-	for (auto obj : scene->m_renderObjects)
+	auto buffer = scene->m_objConstantBuffers.get();
+	auto objects = scene->GetObjectsByLayer(layer);
+
+	for (auto obj : objects)
 	{
 		if (!obj->IsActive()) continue;
 		auto mesh = obj->GetRenderer()->meshDesc();
