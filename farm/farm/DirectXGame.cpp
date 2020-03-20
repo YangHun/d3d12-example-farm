@@ -56,12 +56,13 @@ void BuildSceneObjects(Scene* scene)
 			Transform{
 				{0.0f, 0.0f, 0.0f},
 				{0.0f, 0.0f, 0.0f},
-				{1.0f, 1.0f, 1.0f}
+				{1000.0f, 1000.0f, 1000.0f}
 			},
 			true,
 			E_RenderLayer::Sky);
 		auto renderer = obj->GetRenderer();
 		renderer->SetMesh("sphere");
+		renderer->SetMaterial("sky");
 
 	}
 
@@ -414,6 +415,25 @@ Assets::Assets()
 				m_sprites[sprite->name] = std::move(sprite);
 			}
 		}	
+	}
+
+
+	// Create the default skybox material.
+	{
+		auto tex = std::make_unique<Texture>();
+		tex->name = "skybox";
+		tex->filePath = L"Textures/sky/grasscube1024.dds";
+		tex->id = m_textures.size();
+		tex->type = E_TextureType::TextureCube;
+
+		m_textures[tex->name] = std::move(tex);
+
+		auto mat = std::make_unique<Material>();
+		mat->name = "sky";
+		mat->diffuseMapIndex = m_textures["skybox"]->id;
+		mat->bufferId = m_materials.size();
+
+		m_materials[mat->name] = std::move(mat);
 	}
 
 	// create default text brushes.

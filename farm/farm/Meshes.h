@@ -7,6 +7,12 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
+enum class E_TextureType
+{
+	Texture2D,
+	TextureCube,
+	Count
+};
 
 struct FVector3 {
 public:
@@ -113,6 +119,8 @@ struct Texture
 	UINT id;
 	std::string name;
 	std::wstring filePath;
+
+	E_TextureType type = E_TextureType::Texture2D;
 
 	ComPtr<ID3D12Resource> resource = nullptr;
 	ComPtr<ID3D12Resource> uploadHeap = nullptr;
