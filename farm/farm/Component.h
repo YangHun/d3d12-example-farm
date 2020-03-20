@@ -69,13 +69,17 @@ public:
 
 	UINT GetMaterialIndex() const
 	{
+		if (m_mesh == nullptr) return 0;
 		if (m_mesh->mesh == nullptr) return 0;
 		if (m_mesh->mesh->matIndex.size() < 1) return 0;
 		return m_mesh->mesh->matIndex[0];
 	}
 
+	Material* GetMaterial();
+
 private:
 	MeshDesc* m_mesh = nullptr;
+	Material* m_material = nullptr;
 };
 
 class Collider : public Component

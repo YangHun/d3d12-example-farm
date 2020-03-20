@@ -50,6 +50,12 @@ void MeshRenderer::Update(float dt)
 
 }
 
+Material* MeshRenderer::GetMaterial()
+{
+	if (m_material == nullptr) m_material = Assets::GetMaterialByID(GetMaterialIndex());
+	return m_material;
+}
+
 void MeshRenderer::SetMaterial(std::string name, std::unique_ptr<Material> pMaterial)
 {
 	m_mesh->mesh->matIndex.push_back(pMaterial->bufferId);

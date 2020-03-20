@@ -21,11 +21,15 @@ struct VSInput
 struct PSInput
 {
     float4 position : SV_POSITION;
+    float3 localPos : POSITION;
 };
 
 PSInput VSMain(VSInput input)
 {
     PSInput result;
+    
+    result.localPos = input.position;
+    
     float4 world = float4(input.position, 1.0f);
     world = mul(world, gWorld);
     world.xyz += gEyePos;
@@ -38,7 +42,5 @@ PSInput VSMain(VSInput input)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    
-    return gCubeMap.Sample(gsamLinearWrap, input.position.xyz);
-  
+    return gCubeMap.Sample(gLinearWrap, input.localPos);
 }

@@ -623,6 +623,18 @@ Assets::Assets()
 	}
 }
 
+Material* Assets::GetMaterialByID(UINT id)
+{
+	for (auto& m : m_materials)
+	{
+		if (m.second->bufferId == id) {
+			return m.second.get();
+		}
+	}
+
+	return nullptr;
+}
+
 std::vector<Texture*> Assets::GetOrderedTextures()
 {
 	std::vector<Texture*> vector;

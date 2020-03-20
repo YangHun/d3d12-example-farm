@@ -284,15 +284,18 @@ void D3DGameEngine::LoadAssets()
 
 	// Create the root signature.
 	{
+		CD3DX12_DESCRIPTOR_RANGE bufferTable;
+		bufferTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
 		CD3DX12_DESCRIPTOR_RANGE textureTable;
-		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 0, 0);
+		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 1, 0);
 
-		CD3DX12_ROOT_PARAMETER rootParameters[4];
+		CD3DX12_ROOT_PARAMETER rootParameters[5];
 
 		rootParameters[0].InitAsConstantBufferView(0);	// register b0 (object constant buffer)
 		rootParameters[1].InitAsConstantBufferView(1);	// register b1 (scene constant buffer)
 		rootParameters[2].InitAsShaderResourceView(0, 1); // register t0, space 1 (material map)
-		rootParameters[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t0 (texture table)
+		rootParameters[3].InitAsDescriptorTable(1, &bufferTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t0 (gCubeMap)
+		rootParameters[4].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t1 (gTextureMap)
 
 
 		const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
@@ -303,15 +306,21 @@ void D3DGameEngine::LoadAssets()
 			D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 			0.0f, 8);
 
+		const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+			1, // shaderRegister
+			D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
 		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> samplers =
 		{
-			anisotropicWrap	// register s0 (gAnisotropicWrap)
+			anisotropicWrap,	// register s0 (gAnisotropicWrap)
+			linearWrap,			// register s1 (gLinearWrap)
 		};
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(4, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-		/*rootSignatureDesc.Init(3, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);*/
+		rootSignatureDesc.Init(5, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -369,8 +378,8 @@ void D3DGameEngine::LoadAssets()
 		ComPtr<ID3DBlob> skyVS;
 		ComPtr<ID3DBlob> skyPS;
 
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &skyVS, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &skyPS, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &skyVS, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/sky.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &skyPS, nullptr));
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC skyDesc = psoDesc;
 
@@ -501,9 +510,6 @@ void D3DGameEngine::LoadAssets()
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		// heapDescriptor에 등록하는 순서와 Texture의 buffer id가 같도록, 정렬한 벡터를 사용.
 		auto textures = Assets::GetOrderedTextures();
@@ -513,8 +519,22 @@ void D3DGameEngine::LoadAssets()
 				m_commandList.Get(), t->filePath.c_str(),
 				t->resource, t->uploadHeap));
 
+			if (t->type == E_TextureType::Texture2D)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				srvDesc.Texture2D.MostDetailedMip = 0;
+				srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+				srvDesc.Texture2D.MipLevels = t->resource->GetDesc().MipLevels;
+			}
+			else if (t->type == E_TextureType::TextureCube)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+				srvDesc.TextureCube.MostDetailedMip = 0;
+				srvDesc.TextureCube.MipLevels = t->resource->GetDesc().MipLevels;
+				srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+			}
+
 			srvDesc.Format = t->resource->GetDesc().Format;
-			srvDesc.Texture2D.MipLevels = t->resource->GetDesc().MipLevels;
 			
 			m_device->CreateShaderResourceView(t->resource.Get(), &srvDesc, heapDescriptor);
 			heapDescriptor.Offset(1, m_CbvSrvUavDescriptorSize);
@@ -715,7 +735,7 @@ void D3DGameEngine::PopulateCommandList()
 	// bind material buffer to command queue
 	m_commandList->SetGraphicsRootShaderResourceView(2, m_materialBuffer->Resource()->GetGPUVirtualAddress());
 	// bind texture heap to command queue
-	m_commandList->SetGraphicsRootDescriptorTable(3, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->SetGraphicsRootDescriptorTable(4, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
@@ -781,6 +801,14 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->GetBufferID() * bufferSize;
 
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
+
+		if (layer == E_RenderLayer::Sky)
+		{
+			// if sky object, bind texture cube to command queue.
+			CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+			skyTexDescriptor.Offset(obj->GetRenderer()->GetMaterial()->diffuseMapIndex, m_CbvSrvUavDescriptorSize);
+			m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+		}
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}

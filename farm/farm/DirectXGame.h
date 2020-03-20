@@ -112,6 +112,7 @@ public:
 	static std::vector<MeshDesc*> GetMeshDesc();
 	static std::vector<Sprite*> GetSprites();
 	static std::vector<TextDesc*> GetTexts();
+	static Material* GetMaterialByID(UINT id);
 
 };
 
