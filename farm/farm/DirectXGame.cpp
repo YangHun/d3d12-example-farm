@@ -66,6 +66,23 @@ void BuildSceneObjects(Scene* scene)
 
 	}
 
+	// plane to test shadow map.
+
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"plane",
+			Transform{
+				{0.0f, -2.0f, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{20.0f, 1.0f, 20.0f}
+			},
+			true,
+			E_RenderLayer::Opaque);
+
+		auto renderer = obj->GetRenderer();
+		renderer->SetMesh("plane");
+	}
+
 	// center aim.
 	{
 		auto obj = scene->Instantiate<UIObject>("cross-aim");
@@ -315,7 +332,8 @@ void Scene::UpdateObjectConstantBuffers()
 
 			ObjectConstantBuffer objConstants;
 			XMStoreFloat4x4(&objConstants.model, world);
-			objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
+			//objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
+			objConstants.matIndex = 0;
 
 			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
 			m_objConstantBuffers.get()->CopyData(obj->GetBufferID(), objConstants);
