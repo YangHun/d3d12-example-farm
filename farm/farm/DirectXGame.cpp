@@ -49,6 +49,22 @@ void DirectXGame::BuildScenes()
 // Scene에 그려질 RenderObject 목록을 정의한다.
 void BuildSceneObjects(Scene* scene)
 {
+	// sky.
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"sky",
+			Transform{
+				{0.0f, 0.0f, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f}
+			},
+			true,
+			E_RenderLayer::Sky);
+		auto renderer = obj->GetRenderer();
+		renderer->SetMesh("sphere");
+
+	}
+
 	// center aim.
 	{
 		auto obj = scene->Instantiate<UIObject>("cross-aim");
@@ -264,6 +280,8 @@ void Scene::AssignInstantiatedObjects()
 			auto front = std::move(m_objQueue[_layer].front());
 			m_objQueue[_layer].pop();
 
+
+			front->SetBufferId((UINT)m_allObjects.size());
 			front->SetDirty(true);
 			
 			m_layeredObjects[i].push_back(front.get());
@@ -277,7 +295,9 @@ void Scene::AssignInstantiatedObjects()
 		auto front = std::move(m_uiQueue.front());
 		m_uiQueue.pop();
 
+		front->SetBufferId((UINT)m_allUIs.size());
 		front->SetDirty(true);
+
 		m_allUIs.push_back(std::move(front));
 	}
 }
@@ -467,6 +487,120 @@ Assets::Assets()
 		m_meshes["plane"] = std::move(meshDesc);
 	}
 
+	// create default sphere.
+	{
+		float radius = 0.5f;
+		uint16_t sliceCount = 20;
+		uint16_t stackCount = 20;
+
+
+		Mesh mesh;
+
+		Vertex top = {{ 0.0f, +radius, 0.0f }, { 0.0f, +1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }};
+		Vertex bottom = { {0.0f, -radius, 0.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f} , {1.0f, 0.0f, 0.0f} };
+
+		mesh.vertices.push_back(top);
+
+		float phiStep = XM_PI / stackCount;
+		float thetaStep = 2.0f * XM_PI / sliceCount;
+
+		// Compute vertices for each stack ring (do not count the poles as rings).
+		for (uint16_t i = 1; i <= stackCount - 1; ++i)
+		{
+			float phi = i * phiStep;
+
+			// Vertices of ring.
+			for (uint16_t j = 0; j <= sliceCount; ++j)
+			{
+				float theta = j * thetaStep;
+
+				Vertex v;
+
+				// spherical to cartesian
+				v.position.x = radius * sinf(phi) * cosf(theta);
+				v.position.y = radius * cosf(phi);
+				v.position.z = radius * sinf(phi) * sinf(theta);
+
+				// Partial derivative of P with respect to theta
+				v.tangent.x = -radius * sinf(phi) * sinf(theta);
+				v.tangent.y = 0.0f;
+				v.tangent.z = +radius * sinf(phi) * cosf(theta);
+
+				XMVECTOR T = XMLoadFloat3(&v.tangent);
+				XMStoreFloat3(&v.tangent, XMVector3Normalize(T));
+
+				XMVECTOR p = XMLoadFloat3(&v.position);
+				XMStoreFloat3(&v.normal, XMVector3Normalize(p));
+
+				v.uv.x = theta / XM_2PI;
+				v.uv.y = phi / XM_PI;
+
+				mesh.vertices.push_back(v);
+			}
+		}
+
+		mesh.vertices.push_back(bottom);
+
+		//
+		// Compute indices for top stack.  The top stack was written first to the vertex buffer
+		// and connects the top pole to the first ring.
+		//
+
+		for (uint16_t i = 1; i <= sliceCount; ++i)
+		{
+			mesh.indices.push_back(0);
+			mesh.indices.push_back(i + 1);
+			mesh.indices.push_back(i);
+		}
+
+		//
+		// Compute indices for inner stacks (not connected to poles).
+		//
+
+		// Offset the indices to the index of the first vertex in the first ring.
+		// This is just skipping the top pole vertex.
+		uint16_t baseIndex = 1;
+		uint16_t ringVertexCount = sliceCount + 1;
+		for (uint16_t i = 0; i < stackCount - 2; ++i)
+		{
+			for (uint16_t j = 0; j < sliceCount; ++j)
+			{
+				mesh.indices.push_back(baseIndex + i * ringVertexCount + j);
+				mesh.indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				mesh.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+
+				mesh.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+				mesh.indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				mesh.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+			}
+		}
+
+		//
+		// Compute indices for bottom stack.  The bottom stack was written last to the vertex buffer
+		// and connects the bottom pole to the bottom ring.
+		//
+
+		// South pole vertex was added last.
+		uint16_t southPoleIndex = (uint16_t)mesh.vertices.size() - 1;
+
+		// Offset the indices to the index of the first vertex in the last ring.
+		baseIndex = southPoleIndex - ringVertexCount;
+
+		for (uint16_t i = 0; i < sliceCount; ++i)
+		{
+			mesh.indices.push_back(southPoleIndex);
+			mesh.indices.push_back(baseIndex + i);
+			mesh.indices.push_back(baseIndex + i + 1);
+		}
+
+		m_models["sphere"] = mesh;
+
+		auto meshDesc = std::make_unique<MeshDesc>();
+		meshDesc->mesh = &m_models["sphere"];
+		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+		m_meshes["sphere"] = std::move(meshDesc);
+	}
 }
 
 std::vector<Texture*> Assets::GetOrderedTextures()

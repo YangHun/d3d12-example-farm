@@ -28,7 +28,7 @@ public:
 
 		int layerID = static_cast<int>(layer);
 
-		int id = m_allObjects.size() + m_objQueue[layerID].size();
+		int id = -1;
 		obj->SetBufferId(id);
 		obj->SetDirty();
 
@@ -52,7 +52,7 @@ public:
 	{
 		auto obj = std::make_unique<T>();
 
-		int id = m_allUIs.size() + m_uiQueue.size();
+		int id = -1;
 		obj->SetBufferId(id);
 		obj->SetDirty();
 

@@ -743,8 +743,8 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
 	DrawCurrentScene(E_RenderLayer::Opaque);
 
-	//m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
-	//DrawCurrentScene(E_RenderLayer::Sky);
+	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
+	DrawCurrentScene(E_RenderLayer::Sky);
 
 
 	// back buffer state 를 여기서 present로 transition하지 않는다.
