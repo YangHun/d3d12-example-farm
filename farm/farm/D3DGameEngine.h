@@ -6,10 +6,10 @@
 #include "FrameResource.h"
 #include "UploadBuffer.h"
 #include "DDSTextureLoader.h"
+#include "ShadowMap.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
-
 
 class D3DGameEngine : public DirectXApp
 {
@@ -71,6 +71,8 @@ private:
 	ComPtr<ID3D12Resource> m_indexUploadBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
 	ComPtr<ID3D12Resource> m_depthStencil;	// depth stencil buffer
+
+	std::unique_ptr<ShadowMap> m_shadowMap;
 
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;

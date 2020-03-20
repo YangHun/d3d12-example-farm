@@ -20,11 +20,10 @@ void D3DGameEngine::Initialize()
 {
 	
 	m_timer.Start();
+
 	LoadPipeline();
 	LoadAssets();
-
-	//m_game.GetCurrentScene()->m_camera.SetInitialMousePos(GetWindowCenter());
-
+	
 	RECT window;
 	GetWindowRect(Win32Application::GetHwnd(), &window);
 	SetCursorPos((window.left + window.right) / 2, (window.top + window.bottom) / 2);
@@ -136,9 +135,10 @@ void D3DGameEngine::LoadPipeline()
 
 		// Describe and create a depth / stencil buffer view (DSV) descriptor heap.
 		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-		dsvHeapDesc.NumDescriptors = 1;
+		dsvHeapDesc.NumDescriptors = 2;		// 1 for depth test, 1 for shadow map.
 		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		dsvHeapDesc.NodeMask = 0;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
 		
 		
@@ -269,6 +269,11 @@ void D3DGameEngine::LoadPipeline()
 		NAME_D3D12_OBJECT(m_depthStencil);
 
 		m_device->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+	}
+
+	// Create the shadow map.
+	{
+		m_shadowMap = std::make_unique<ShadowMap>(m_device.Get(), 2048, 2048);
 	}
 
 	// Create the command list allocator and main command list.
@@ -539,6 +544,23 @@ void D3DGameEngine::LoadAssets()
 			m_device->CreateShaderResourceView(t->resource.Get(), &srvDesc, heapDescriptor);
 			heapDescriptor.Offset(1, m_CbvSrvUavDescriptorSize);
 		}
+	}
+
+	// fill out the descriptor heap with shadow map textures.
+	{
+		UINT id = (UINT)Assets::m_textures.size() + 1;
+		m_shadowMap->SetHeapIDs(id, 1);
+
+		auto cpuSrv = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+		cpuSrv.Offset(m_shadowMap->GetSrvHeapID(), m_CbvSrvUavDescriptorSize);
+
+		auto gpuSrv = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		gpuSrv.Offset(m_shadowMap->GetSrvHeapID(), m_CbvSrvUavDescriptorSize);
+
+		auto cpuDsv = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		cpuDsv.Offset(m_shadowMap->GetDsvHeapID(), m_dsvDescriptorSize);
+
+		m_shadowMap->BuildDescriptors(cpuSrv, gpuSrv, cpuDsv);
 	}
 
 	// Create object constant buffers.
