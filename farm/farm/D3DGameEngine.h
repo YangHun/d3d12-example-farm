@@ -77,8 +77,9 @@ private:
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
 	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;
+	std::unique_ptr<UploadBuffer<ShadowPassConstantBuffer>> m_shadowBuffer;
 
-	XMFLOAT3 mBaseLightDirections[3] = {
+	XMFLOAT3 m_BaseLightDirections[3] = {
 		XMFLOAT3(-0.57735f, -0.57735f, 0.57735f),
 		XMFLOAT3(0.57735f, -0.57735f, 0.57735f),
 		XMFLOAT3(0.0f, -0.707f, -0.707f)

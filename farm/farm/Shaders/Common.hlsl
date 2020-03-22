@@ -26,10 +26,18 @@ cbuffer cbScene : register(b1)
     Light gLights[16];
 }
 
-TextureCube gCubeMap : register(t0);
+cbuffer cbShadow : register(b2)
+{
+    float4x4 gLightViewProj;   
+    float4x4 gNormalizedDevice;
+}
 
-Texture2D gTextureMaps[48] : register(t1);  // space 0
+TextureCube gCubeMap : register(t0);
+Texture2D gShadowMap : register(t1);
+
+Texture2D gTextureMaps[48] : register(t2);  // space 0
 StructuredBuffer<Material> gMaterials : register(t0, space1);
 
 SamplerState gAnisotropicWrap : register(s0);
 SamplerState gLinearWrap : register(s1);
+SamplerComparisonState gsamShadow : register(s2);

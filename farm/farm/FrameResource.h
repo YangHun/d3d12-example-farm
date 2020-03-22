@@ -36,6 +36,11 @@ struct ObjectConstantBuffer
 	UINT matIndex;		// material index
 };
 
+struct ShadowPassConstantBuffer
+{
+	XMFLOAT4X4 lightViewProj;	// light-space View Proj materix.
+	XMFLOAT4X4 NDC;				// normalized device transform matrix
+};
 
 struct MaterialBuffer
 {

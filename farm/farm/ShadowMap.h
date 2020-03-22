@@ -22,6 +22,11 @@ public:
 
 	UINT GetSrvHeapID() { return m_SrvID; }
 	UINT GetDsvHeapID() { return m_DsvID; }
+	D3D12_VIEWPORT GetViewport() const { return m_viewport; }
+	D3D12_RECT GetRect() const { return m_sissorRect; }
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetDsv() const { return m_cpuDsvHandle; }
+
 
 private:
 	ID3D12Device* m_pDevice;

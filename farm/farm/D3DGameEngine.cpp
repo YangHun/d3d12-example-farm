@@ -286,21 +286,27 @@ void D3DGameEngine::LoadAssets()
 
 	// Create the main constant buffer.
 	m_constantBuffer = std::make_unique<UploadBuffer<SceneConstantBuffer>>(m_device.Get(), 1, true);
+	m_shadowBuffer = std::make_unique<UploadBuffer<ShadowPassConstantBuffer>>(m_device.Get(), 1, true);
 
 	// Create the root signature.
 	{
 		CD3DX12_DESCRIPTOR_RANGE bufferTable;
-		bufferTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+		bufferTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0);
 		CD3DX12_DESCRIPTOR_RANGE textureTable;
-		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 1, 0);
+		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 2, 0);
 
-		CD3DX12_ROOT_PARAMETER rootParameters[5];
+		CD3DX12_ROOT_PARAMETER rootParameters[6];
 
 		rootParameters[0].InitAsConstantBufferView(0);	// register b0 (object constant buffer)
 		rootParameters[1].InitAsConstantBufferView(1);	// register b1 (scene constant buffer)
-		rootParameters[2].InitAsShaderResourceView(0, 1); // register t0, space 1 (material map)
-		rootParameters[3].InitAsDescriptorTable(1, &bufferTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t0 (gCubeMap)
-		rootParameters[4].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); // register t1 (gTextureMap)
+		rootParameters[2].InitAsConstantBufferView(2);	// register b2 (shadow poass constant buffer)
+		rootParameters[3].InitAsShaderResourceView(0, 1); // register t0, space 1 (material map)
+
+		// register t0 (gCubeMap)
+		// register t1 (gShadowMap)
+		rootParameters[4].InitAsDescriptorTable(1, &bufferTable, D3D12_SHADER_VISIBILITY_PIXEL); 
+		// register t2 (gTextureMap [48])
+		rootParameters[5].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); 
 
 
 		const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
@@ -318,14 +324,26 @@ void D3DGameEngine::LoadAssets()
 			D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
 			D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
+		const CD3DX12_STATIC_SAMPLER_DESC shadow(
+			2,
+			D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+			D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+			D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+			D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+			0.0f,
+			16,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
+
 		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> samplers =
 		{
 			anisotropicWrap,	// register s0 (gAnisotropicWrap)
 			linearWrap,			// register s1 (gLinearWrap)
+			shadow,				// register s2 (gsamShadow)
 		};
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(5, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSignatureDesc.Init(6, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -395,6 +413,29 @@ void D3DGameEngine::LoadAssets()
 		skyDesc.PS = CD3DX12_SHADER_BYTECODE(skyPS.Get());
 
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates["sky"])));
+
+
+
+		// Pipeline state object for shadow opaque.
+		ComPtr<ID3DBlob> shadowVS;
+		ComPtr<ID3DBlob> shadowPS;
+
+		// shadow.hlsl
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, nullptr));
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowDesc = psoDesc;
+		shadowDesc.RasterizerState.DepthBias = 100000;
+		shadowDesc.RasterizerState.DepthBiasClamp = 0.0f;
+		shadowDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+		shadowDesc.pRootSignature = m_rootSignature.Get();
+		shadowDesc.VS = CD3DX12_SHADER_BYTECODE(shadowVS.Get());
+		shadowDesc.PS = CD3DX12_SHADER_BYTECODE(shadowPS.Get());
+		// shadow map pass는 render target을 갖지 않음.
+		shadowDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+		shadowDesc.NumRenderTargets = 0;
+
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_opaque"])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
@@ -629,6 +670,42 @@ void D3DGameEngine::Update()
 		}
 	}
 
+	// update shadow pass constant buffer.
+	{
+		auto shadowbuffer = m_shadowBuffer.get();
+		ShadowPassConstantBuffer cBuffer;
+		
+		float sceneRadius = 1000.0f;
+
+		// only the first directional light casts shadow.
+		XMVECTOR lightPos = -2.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]);
+		XMVECTOR targetPos = XMVectorZero();
+		XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightPos, targetPos, lightUp);
+
+		XMFLOAT3 sphereCenterLS;
+		XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, lightView));
+
+		// Ortho frustum in light space encloses scene.
+		float l = sphereCenterLS.x - sceneRadius;
+		float b = sphereCenterLS.y - sceneRadius;
+		float n = sphereCenterLS.z - sceneRadius;
+		float r = sphereCenterLS.x + sceneRadius;
+		float t = sphereCenterLS.y + sceneRadius;
+		float f = sphereCenterLS.z + sceneRadius;
+
+		XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+		// transform NDC space [-1, +1]^2 to texture space [0, 1]^2
+		XMMATRIX normalizedDevice(
+			0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, -0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0, 0.0f,
+			0.5f, 0.5f, 0.0, 1.0f);
+
+		XMStoreFloat4x4(&cBuffer.lightViewProj, lightView * lightProj);
+		XMStoreFloat4x4(&cBuffer.NDC, normalizedDevice);
+	}
 
 	// update scene constant buffer
 	auto mainbuffer = m_constantBuffer.get();
@@ -646,7 +723,7 @@ void D3DGameEngine::Update()
 
 	for (int i = 0; i < 3; ++i)
 	{
-		XMStoreFloat3(&cBuffer.Lights[i].direction, XMLoadFloat3(&mBaseLightDirections[i]));
+		XMStoreFloat3(&cBuffer.Lights[i].direction, XMLoadFloat3(&m_BaseLightDirections[i]));
 	}
 
 	cBuffer.Lights[0].strength = { 0.9f, 0.9f, 0.7f };
@@ -754,10 +831,54 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
+
+	// shadow map, first pass.
+	{
+		// bind shadow buffer to command queue
+		m_commandList->SetGraphicsRootShaderResourceView(2, m_shadowBuffer->Resource()->GetGPUVirtualAddress());
+
+		// bind null texture to command queue.
+		auto nullHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		nullHandle.Offset(m_shadowMap->GetSrvHeapID());
+		m_commandList->SetGraphicsRootDescriptorTable(4, nullHandle);
+
+		// bind texture heap to command queue
+		m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+
+		m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
+		m_commandList->RSSetScissorRects(1, &m_shadowMap->GetRect());
+
+		// change state to depth_write.
+		m_commandList->ResourceBarrier(1,
+			&CD3DX12_RESOURCE_BARRIER::Transition(m_shadowMap->Resource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
+		// clear the depth buffer.
+		m_commandList->ClearDepthStencilView(m_shadowMap->GetDsv(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+		// specify the buffers we are going to render to.
+		// depth stencil buffer에만 그릴 것이므로, rtv 는 nullptr
+		m_commandList->OMSetRenderTargets(0, nullptr, false, &m_shadowMap->GetDsv());
+
+		// TODO: shadow shader, shadow buffer struct, 그리고 constant buffer 업데이트 하는 코드 작성
+		// bind the shadow pass buffer to command queue.
+		auto address = m_constantBuffer.get()->Resource()->GetGPUVirtualAddress();
+		m_commandList->SetGraphicsRootConstantBufferView(2, address);
+
+		m_commandList->SetPipelineState(m_pipelineStates["shadow_opaque"].Get());
+		DrawCurrentScene(E_RenderLayer::Opaque);
+
+		// change state to generic_read so we can read the texture in a shader.
+		m_commandList->ResourceBarrier(1,
+			&CD3DX12_RESOURCE_BARRIER::Transition(m_shadowMap->Resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
+	}
+
+
+	// Rebind state whenever graphics root signature changes.
+
 	// bind material buffer to command queue
-	m_commandList->SetGraphicsRootShaderResourceView(2, m_materialBuffer->Resource()->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootShaderResourceView(3, m_materialBuffer->Resource()->GetGPUVirtualAddress());
 	// bind texture heap to command queue
-	m_commandList->SetGraphicsRootDescriptorTable(4, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
@@ -779,6 +900,7 @@ void D3DGameEngine::PopulateCommandList()
 
 	auto address = m_constantBuffer.get()->Resource()->GetGPUVirtualAddress();
 	
+	// bind the scene constant buffer to command queue.
 	m_commandList->SetGraphicsRootConstantBufferView(1, address);
 
 	// 현재 scene의 indexed instance를 그린다.
@@ -789,7 +911,7 @@ void D3DGameEngine::PopulateCommandList()
 	DrawCurrentScene(E_RenderLayer::Sky);
 
 
-	// back buffer state 를 여기서 present로 transition하지 않는다.
+	// back buffer state 를 여기서 present로 transition하지 않는다. (UI를 그리기 때문)
 	// 이후, wrapped 11on12 target resource가 released될 때 일어남.
 		
 	// back buffer texture의 state를 present 상태로 변경.
@@ -826,10 +948,11 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 
 		if (layer == E_RenderLayer::Sky)
 		{
-			// if sky object, bind texture cube to command queue.
 			CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 			skyTexDescriptor.Offset(obj->GetRenderer()->GetMaterial()->diffuseMapIndex, m_CbvSrvUavDescriptorSize);
-			m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+
+			// bind texture cube to command queue.
+			m_commandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
 		}
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);

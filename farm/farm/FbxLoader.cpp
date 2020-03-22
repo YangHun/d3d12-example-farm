@@ -55,7 +55,7 @@ bool FbxLoader::Load(const char* filename, Mesh* meshOutput)
 
 	FbxNode* rootNode = scene->GetRootNode();
 	FbxAxisSystem sceneAxisSystem = scene->GetGlobalSettings().GetAxisSystem();
-
+	FbxAxisSystem::MayaYUp.ConvertScene(scene);
 
 	FbxGeometryConverter* geometryConverter = new FbxGeometryConverter(m_manager);
 	// triangulate all nodes that could be changed to triangle.

@@ -17,5 +17,5 @@
 
 0. gAnisotropicWrap (register s0)  
 0. gLinearWrap (register s1)
-
+0. gsamShadow (register s2)
 
