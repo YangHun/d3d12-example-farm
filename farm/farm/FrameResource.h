@@ -15,8 +15,8 @@ enum class E_RenderLayer
 
 struct Light
 {
-	XMFLOAT3 strength = { 0.5f, 0.5f, 0.5f };
-	XMFLOAT3 direction = { 0.0f, -1.0f, 0.0f };
+	XMFLOAT4 strength = { 0.5f, 0.5f, 0.5f, 0.0f};
+	XMFLOAT4 direction = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 
 // Constant buffer size는 256의 배수가 되도록 padding 해준다.
@@ -25,7 +25,7 @@ struct SceneConstantBuffer
 {
 	XMFLOAT4X4 viewproj;	// View Proj matrix
 	XMFLOAT4 ambientLight;
-	XMFLOAT3 eye;
+	XMFLOAT4 eye;
 	Light Lights[3];
 };
 
@@ -44,8 +44,8 @@ struct ShadowPassConstantBuffer
 
 struct MaterialBuffer
 {
-	UINT diffuseMapIndex;
 	XMFLOAT3 diffuseColor;
+	UINT diffuseMapIndex;
 };
 
 class FrameResource

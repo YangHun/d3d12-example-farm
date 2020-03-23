@@ -420,9 +420,27 @@ void D3DGameEngine::LoadAssets()
 		ComPtr<ID3DBlob> shadowVS;
 		ComPtr<ID3DBlob> shadowPS;
 
+		ComPtr<ID3D10Blob> error;
+
 		// shadow.hlsl
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, &error));
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, nullptr));
+
+		//HRESULT hr = D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, &error);
+
+		//if (error != nullptr)
+		//{
+		//	std::string e = (char*)error->GetBufferPointer();
+		//}
+
+
+		//hr = D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, &error);
+
+		//if (error != nullptr)
+		//{
+		//	std::string e = (char*)error->GetBufferPointer();
+		//}
+
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowDesc = psoDesc;
 		shadowDesc.RasterizerState.DepthBias = 100000;
@@ -703,37 +721,40 @@ void D3DGameEngine::Update()
 			0.0f, 0.0f, 1.0, 0.0f,
 			0.5f, 0.5f, 0.0, 1.0f);
 
-		XMStoreFloat4x4(&cBuffer.lightViewProj, lightView * lightProj);
-		XMStoreFloat4x4(&cBuffer.NDC, normalizedDevice);
+		XMStoreFloat4x4(&cBuffer.lightViewProj, XMMatrixTranspose(lightView * lightProj));
+		XMStoreFloat4x4(&cBuffer.NDC, XMMatrixTranspose(normalizedDevice));
+
+		shadowbuffer->CopyData(0, cBuffer);
 	}
 
 	// update scene constant buffer
-	auto mainbuffer = m_constantBuffer.get();
-	SceneConstantBuffer cBuffer;
-
-	XMMATRIX view = scene->GetCamera()->GetViewMatrix();
-	XMMATRIX proj = scene->GetCamera()->GetProjectionMatrix();
-	XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
-	cBuffer.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-
-
-	//XMMATRIX r = XMMatrixRotationY(m_timer.Time() * 0.1f);
-	XMMATRIX r = XMMatrixIdentity();
-	XMVECTOR lightDir = XMVector3TransformNormal(XMVectorSet(0.57735f, -0.57735f, 0.57735f, 0.0f), r);
-
-	for (int i = 0; i < 3; ++i)
 	{
-		XMStoreFloat3(&cBuffer.Lights[i].direction, XMLoadFloat3(&m_BaseLightDirections[i]));
+		auto mainbuffer = m_constantBuffer.get();
+		SceneConstantBuffer cBuffer;
+
+		XMMATRIX view = scene->GetCamera()->GetViewMatrix();
+		XMMATRIX proj = scene->GetCamera()->GetProjectionMatrix();
+		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
+		cBuffer.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+
+		// todo: shader light value is incorrect.
+
+		for (int i = 0; i < 3; ++i)
+		{
+			XMFLOAT3 dir = m_BaseLightDirections[i];
+			cBuffer.Lights[i].direction = XMFLOAT4(dir.x, dir.y, dir.z, 0.0f);
+		}
+
+		cBuffer.Lights[0].strength = { 0.9f, 0.9f, 0.7f, 0.0f };
+		cBuffer.Lights[1].strength = { 0.4f, 0.4f, 0.4f, 0.0f };
+		cBuffer.Lights[2].strength = { 0.2f, 0.2f, 0.2f, 0.0f };
+
+		XMFLOAT3 e = scene->GetCamera()->GetEyePosition();
+
+		cBuffer.eye = XMFLOAT4(e.x, e.y, e.z, 1.0f);
+
+		mainbuffer->CopyData(0, cBuffer);
 	}
-
-	cBuffer.Lights[0].strength = { 0.9f, 0.9f, 0.7f };
-	cBuffer.Lights[1].strength = { 0.4f, 0.4f, 0.4f };
-	cBuffer.Lights[2].strength = { 0.2f, 0.2f, 0.2f };
-	
-	cBuffer.eye = scene->GetCamera()->GetEyePosition();
-
-	mainbuffer->CopyData(0, cBuffer);
-	
 }
 
 void D3DGameEngine::Render()
@@ -861,7 +882,7 @@ void D3DGameEngine::PopulateCommandList()
 
 		// TODO: shadow shader, shadow buffer struct, 그리고 constant buffer 업데이트 하는 코드 작성
 		// bind the shadow pass buffer to command queue.
-		auto address = m_constantBuffer.get()->Resource()->GetGPUVirtualAddress();
+		auto address = m_shadowBuffer->Resource()->GetGPUVirtualAddress();
 		m_commandList->SetGraphicsRootConstantBufferView(2, address);
 
 		m_commandList->SetPipelineState(m_pipelineStates["shadow_opaque"].Get());
@@ -876,7 +897,8 @@ void D3DGameEngine::PopulateCommandList()
 	// Rebind state whenever graphics root signature changes.
 
 	// bind material buffer to command queue
-	m_commandList->SetGraphicsRootShaderResourceView(3, m_materialBuffer->Resource()->GetGPUVirtualAddress());
+	auto mat = m_materialBuffer->Resource()->GetGPUVirtualAddress();
+	m_commandList->SetGraphicsRootShaderResourceView(3, mat);
 	// bind texture heap to command queue
 	m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
@@ -898,10 +920,13 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 
-	auto address = m_constantBuffer.get()->Resource()->GetGPUVirtualAddress();
-	
+	auto scene = m_constantBuffer->Resource()->GetGPUVirtualAddress();
 	// bind the scene constant buffer to command queue.
-	m_commandList->SetGraphicsRootConstantBufferView(1, address);
+	m_commandList->SetGraphicsRootConstantBufferView(1, scene);
+
+	// bind the shadow pass buffer to command queue.
+	auto shadow = m_shadowBuffer->Resource()->GetGPUVirtualAddress();
+	m_commandList->SetGraphicsRootConstantBufferView(2, shadow);
 
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());

@@ -51,6 +51,7 @@ PSInput VSMain(VSInput input)
 
 float GetShadowFactor(float4 shadowPos)
 {
+    
     shadowPos.xyz /= shadowPos.w;
     
     // depth in NDC space.
@@ -81,7 +82,12 @@ float GetShadowFactor(float4 shadowPos)
 
 
 float4 PSMain(PSInput input) : SV_TARGET
-{    
+{        
+    
+    //return float4(0.0f, 0.0f, 0.0f, 1.0f);
+    //return float4((gLights[0].direction.xyz), 1.0f);
+    
+    
     Material mat = gMaterials[gMatIndex];
     uint diffuseIndex = mat.diffuseMapIndex;
     float4 color = float4(mat.diffuseColor, 1.0f);
@@ -93,14 +99,16 @@ float4 PSMain(PSInput input) : SV_TARGET
     int i = 0;
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     
+    
+    // todo: light dir, shadow Map value
+    
     float shadowFactor = 1.0f;
     //float shadowFactor = GetShadowFactor(input.shadowPos);
     
-    //return input.shadowPos;
-    //return float4(shadowFactor, shadowFactor, shadowFactor, 1.0f);
     
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < 1; ++i)
     {
+        //float3 l = -float3(-0.57735f, -0.57735f, 0.57735f);
         float3 l = -gLights[i].direction; // directional light
         float3 d = max(dot(l, input.normal), 0.0f) * gLights[i].strength;
         if (i == 0)

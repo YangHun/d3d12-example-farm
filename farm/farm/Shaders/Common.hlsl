@@ -2,14 +2,14 @@
 
 struct Light
 {
-    float3 strength;
-    float3 direction; // directional light
+    float4 strength;
+    float4 direction; // directional light
 };
 
 struct Material
 {
-    uint diffuseMapIndex;
     float3 diffuseColor;
+    uint diffuseMapIndex;
 };
 
 cbuffer cbPerObject : register(b0)
@@ -23,7 +23,7 @@ cbuffer cbScene : register(b1)
     float4x4 gViewProj;
     float4 gAmbient;
     float3 gEyePos;
-    Light gLights[16];
+    Light gLights[3];
 }
 
 cbuffer cbShadow : register(b2)
