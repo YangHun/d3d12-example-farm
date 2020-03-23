@@ -72,7 +72,7 @@ public:
 		if (m_mesh == nullptr) return 0;
 		if (m_mesh->mesh == nullptr) return 0;
 		if (m_mesh->mesh->matIndex.size() < 1) return 0;
-		return m_mesh->mesh->matIndex[0];
+		return m_material->bufferId;
 	}
 
 	Material* GetMaterial();

@@ -58,22 +58,32 @@ Material* MeshRenderer::GetMaterial()
 
 void MeshRenderer::SetMaterial(std::string name, std::unique_ptr<Material> pMaterial)
 {
-	m_mesh->mesh->matIndex.push_back(pMaterial->bufferId);
+	m_material = pMaterial.get();
 	Assets::m_materials[name] = std::move(pMaterial);
 }
 
 void MeshRenderer::SetMaterial(std::string name)
 {
 	auto lookup = Assets::m_materials.find(name);
-	if (lookup != Assets::m_materials.end()) m_mesh->mesh->matIndex.push_back(lookup->second->bufferId);	
+	if (lookup != Assets::m_materials.end()) {
+		m_material = lookup->second.get();
+	}
 }
 
 void MeshRenderer::SetMesh(std::string name)
 {
 	auto lookup = Assets::m_meshes.find(name);
 
-	if (lookup != Assets::m_meshes.end()) m_mesh = lookup->second.get();
-	else m_mesh = nullptr;
+	if (lookup != Assets::m_meshes.end()) {
+		m_mesh = lookup->second.get();
+		
+		if (m_mesh->mesh != nullptr && !m_mesh->mesh->matIndex.empty()) m_material = Assets::GetMaterialByID(m_mesh->mesh->matIndex[0]);
+	}
+	else
+	{
+		m_mesh = nullptr;
+		m_material = nullptr;
+	}
 }
 
 Collider::Collider(GameObject* object) :

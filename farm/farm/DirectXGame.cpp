@@ -87,12 +87,11 @@ void BuildSceneObjects(Scene* scene)
 						E_RenderLayer::Opaque);
 					auto renderer = obj->GetRenderer();
 					renderer->SetMesh("sphere");
+					renderer->SetMaterial("default-mat");
 				}
 			}
 		}
 	}
-
-	return;
 
 
 	// plane to test shadow map.
@@ -101,7 +100,7 @@ void BuildSceneObjects(Scene* scene)
 		auto obj = scene->Instantiate<GameObject>(
 			"plane",
 			Transform{
-				{0.0f, -2.0f, 0.0f},
+				{0.0f, -5.0f, 0.0f},
 				{0.0f, 0.0f, 0.0f},
 				{20.0f, 1.0f, 20.0f}
 			},
