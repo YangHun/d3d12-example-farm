@@ -10,6 +10,7 @@ enum class E_RenderLayer
 	Opaque,
 	Transparent,
 	Sky,
+	Debug,
 	Count
 };
 
@@ -29,11 +30,15 @@ struct SceneConstantBuffer
 	Light Lights[3];
 };
 
-
+// 16byte (float4) 단위로 packing 하므로, padding 해준다.
+// https://docs.microsoft.com/ko-kr/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules?redirectedfrom=MSDN
 struct ObjectConstantBuffer
 {
 	XMFLOAT4X4 model;	// Model matrix
 	UINT matIndex;		// material index
+	UINT pad0 = 0;
+	UINT pad1 = 0;
+	UINT pad2 = 0;
 };
 
 struct ShadowPassConstantBuffer

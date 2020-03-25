@@ -16,13 +16,16 @@ cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
     uint gMatIndex;
+    uint pad0;
+    uint pad1;
+    uint pad2;
 };
 
 cbuffer cbScene : register(b1)
 {
     float4x4 gViewProj;
     float4 gAmbient;
-    float3 gEyePos;
+    float4 gEyePos;
     Light gLights[3];
 }
 
@@ -34,6 +37,7 @@ cbuffer cbShadow : register(b2)
 
 TextureCube gCubeMap : register(t0);
 Texture2D gShadowMap : register(t1);
+
 
 Texture2D gTextureMaps[48] : register(t2);  // space 0
 StructuredBuffer<Material> gMaterials : register(t0, space1);

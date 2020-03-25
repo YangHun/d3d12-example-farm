@@ -42,7 +42,7 @@ PSInput VSMain(VSInput input)
         
     result.position = worldpos;
     result.shadowPos = shadowpos;
-    result.normal = mul(input.normal, (float3x3) gWorld);
+    result.normal = mul(float4(input.normal, 0.0f), gWorld).xyz;
     result.uv = input.uv;
     result.tangent = input.tangent;
     
@@ -51,11 +51,11 @@ PSInput VSMain(VSInput input)
 
 float GetShadowFactor(float4 shadowPos)
 {
-    
+    // PCF kernel   
     shadowPos.xyz /= shadowPos.w;
     
     // depth in NDC space.
-    float depth = shadowPos.w;
+    float depth = shadowPos.z;
     
     uint w, h, m;
     gShadowMap.GetDimensions(0, w, h, m);
@@ -82,12 +82,7 @@ float GetShadowFactor(float4 shadowPos)
 
 
 float4 PSMain(PSInput input) : SV_TARGET
-{        
-    
-    //return float4(0.0f, 0.0f, 0.0f, 1.0f);
-    //return float4((gLights[0].direction.xyz), 1.0f);
-    
-    
+{             
     Material mat = gMaterials[gMatIndex];
     uint diffuseIndex = mat.diffuseMapIndex;
     float4 color = float4(mat.diffuseColor, 1.0f);
@@ -99,20 +94,19 @@ float4 PSMain(PSInput input) : SV_TARGET
     int i = 0;
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     
-    
-    // todo: light dir, shadow Map value
-    
-    float shadowFactor = 1.0f;
-    //float shadowFactor = GetShadowFactor(input.shadowPos);
-    
+    //float shadowFactor = 1.0f;
+    float3 shadowFactor = float3(GetShadowFactor(input.shadowPos), 1.0f, 1.0f);
+   
+    //if (gShadowMap.Sample(gAnisotropicWrap, input.shadowPos.xy).z < input.shadowPos.z)
+    //{
+    //    shadowFactor = 0.5f;
+    //}
     
     for (i = 0; i < 1; ++i)
     {
-        //float3 l = -float3(-0.57735f, -0.57735f, 0.57735f);
         float3 l = -gLights[i].direction; // directional light
-        float3 d = max(dot(l, input.normal), 0.0f) * gLights[i].strength;
-        if (i == 0)
-            d *= shadowFactor;
+        float3 d = saturate(dot(l, input.normal)) * gLights[i].strength;
+        d *= shadowFactor[i];
         diffuse += d;
     }
     
@@ -120,6 +114,6 @@ float4 PSMain(PSInput input) : SV_TARGET
     
     float4 ambient = gAmbient * color;
     
-    return ambient + float4(diffuse, 0.0f);
+    return ambient + float4(diffuse, color.a);
   
 }

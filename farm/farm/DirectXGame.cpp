@@ -67,6 +67,22 @@ void BuildSceneObjects(Scene* scene)
 	}
 
 
+	// quad for debug shadow.
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"quad",
+			Transform{
+				{0.0f, 0.0f, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{0.5f, 0.5f, 1.0f}
+			},
+			true,
+			E_RenderLayer::Debug);
+
+		obj->GetRenderer()->SetMesh("quad");
+		obj->GetRenderer()->SetMaterial("default-mat");
+	}
+
 	// sphere to test shadow map.
 
 	{
@@ -79,7 +95,7 @@ void BuildSceneObjects(Scene* scene)
 					auto obj = scene->Instantiate<GameObject>(
 						"sphere_" + std::to_string(i * 100 + j * 10 + k),
 						Transform{
-							{(float)i * 1.2f, (float)k * 1.2f + 2.0f, (float)j * 1.2f},
+							{(float)i * 1.0f, (float)k * 1.0f + 0.0f, (float)j * 1.0f},
 							{0.0f, 0.0f, 0.0f},
 							{1.0f, 1.0f, 1.0f}
 						},
@@ -100,7 +116,7 @@ void BuildSceneObjects(Scene* scene)
 		auto obj = scene->Instantiate<GameObject>(
 			"plane",
 			Transform{
-				{0.0f, -5.0f, 0.0f},
+				{0.0f, -0.5f, 0.0f},
 				{0.0f, 0.0f, 0.0f},
 				{20.0f, 1.0f, 20.0f}
 			},
@@ -360,8 +376,8 @@ void Scene::UpdateObjectConstantBuffers()
 
 			ObjectConstantBuffer objConstants;
 			XMStoreFloat4x4(&objConstants.model, world);
-			//objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
-			objConstants.matIndex = 0;
+			objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
+			//objConstants.matIndex = 0;
 
 			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
 			m_objConstantBuffers.get()->CopyData(obj->GetBufferID(), objConstants);
@@ -666,6 +682,38 @@ Assets::Assets()
 		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
 		m_meshes["sphere"] = std::move(meshDesc);
+	}
+
+	// create default quad.
+	{
+	Mesh mesh;
+	float x = 0.0f;
+	float y = 0.0f;
+	float w = 1.0f;
+	float h = 1.0f;
+	float depth = 0.0f;
+
+	mesh.vertices = {
+		Vertex {{ x, y - h, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+		Vertex {{ x, y, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+		Vertex {{ x + w, y, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+		Vertex {{ x + w, y - h, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+	};
+
+	mesh.indices = {
+		0, 1, 2,
+		0, 2, 3
+	};
+
+	mesh.matIndex.push_back(0);
+
+	m_models["quad"] = mesh;
+
+	auto meshDesc = std::make_unique<MeshDesc>();
+	meshDesc->mesh = &m_models["quad"];
+	meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+	m_meshes["quad"] = std::move(meshDesc);
 	}
 }
 

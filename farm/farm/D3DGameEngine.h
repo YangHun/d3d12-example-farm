@@ -63,6 +63,8 @@ private:
 	UINT m_CbvSrvUavDescriptorSize;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 
+	CD3DX12_GPU_DESCRIPTOR_HANDLE m_nullSrv;
+
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	ComPtr<ID3D12Resource> m_vertexUploadBuffer;
@@ -73,7 +75,7 @@ private:
 	ComPtr<ID3D12Resource> m_depthStencil;	// depth stencil buffer
 
 	std::unique_ptr<ShadowMap> m_shadowMap;
-
+	UINT m_skyID;
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
 	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;

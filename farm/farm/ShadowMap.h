@@ -26,7 +26,7 @@ public:
 	D3D12_RECT GetRect() const { return m_sissorRect; }
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetDsv() const { return m_cpuDsvHandle; }
-
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSrv() const { return m_gpuSrvHandle; }
 
 private:
 	ID3D12Device* m_pDevice;

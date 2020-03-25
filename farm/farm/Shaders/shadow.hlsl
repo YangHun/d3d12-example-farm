@@ -18,28 +18,24 @@ PSInput VSMain(VSInput input)
     PSInput result;
     
     // generate shadow map.
-    float4 pos = float4(input.position, 1.0f);
-    pos = mul(pos, gWorld);
+    float4 pos = mul(float4(input.position, 1.0f), gWorld);
     pos = mul(pos, gLightViewProj);
+    //pos = mul(pos, gNormalizedDevice);
     result.position = pos;
 
-    float4 uv = float4(input.uv, 0.0f, 1.0f);
-    uv = mul(uv, gLightViewProj);
-    uv = mul(uv, gNormalizedDevice);
-    
-    result.uv = uv.xy;
+    result.uv = input.uv;
     
     return result;
 }
 
 void PSMain(PSInput input)
 {
-    Material mat = gMaterials[gMatIndex];
-    uint diffuseIndex = mat.diffuseMapIndex;
-    float4 diffuseAlbedo = float4(mat.diffuseColor, 1.0f);
+ //   Material mat = gMaterials[gMatIndex];
+ //   uint diffuseIndex = mat.diffuseMapIndex;
+ //   float4 diffuseAlbedo = float4(mat.diffuseColor, 1.0f);
 	
-	// Dynamically look up the texture in the array.
-    diffuseAlbedo *= gTextureMaps[diffuseIndex].Sample(gAnisotropicWrap, input.uv);
+	//// Dynamically look up the texture in the array.
+ //   diffuseAlbedo *= gTextureMaps[diffuseIndex].Sample(gAnisotropicWrap, input.uv);
        
    // first shadow pass does not determine the fragment's color.  
     

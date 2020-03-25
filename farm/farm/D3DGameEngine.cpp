@@ -45,6 +45,16 @@ POINT D3DGameEngine::GetWindowCenter()
 
 void D3DGameEngine::LoadPipeline()
 {
+
+#if defined(DEBUG) || defined(_DEBUG) 
+	// Enable the D3D12 debug layer.
+	{
+		ComPtr<ID3D12Debug> debugController;
+		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+		debugController->EnableDebugLayer();
+	}
+#endif
+
 	UINT dxgiFactoryFlags = 0;
 
 	// Create the device.
@@ -247,20 +257,28 @@ void D3DGameEngine::LoadPipeline()
 
 	// Create the depth stencil view.
 	{
-		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
-		depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+		D3D12_RESOURCE_DESC depthStencilDesc = {};
+		depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+		depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		depthStencilDesc.Alignment = 0;
+		depthStencilDesc.Width = m_width;
+		depthStencilDesc.Height = m_height;
+		depthStencilDesc.DepthOrArraySize = 1;
+		depthStencilDesc.MipLevels = 1;
+		depthStencilDesc.SampleDesc.Count = 1;
+		depthStencilDesc.SampleDesc.Quality = 0;
+		depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 		D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-		depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+		depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 		depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
 		ThrowIfFailed(m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_width, m_height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+			&depthStencilDesc,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,
 			&depthOptimizedClearValue,
 			IID_PPV_ARGS(&m_depthStencil)
@@ -268,7 +286,13 @@ void D3DGameEngine::LoadPipeline()
 
 		NAME_D3D12_OBJECT(m_depthStencil);
 
-		m_device->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		dsvDesc.Texture2D.MipSlice = 0;
+		m_device->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		NAME_D3D12_OBJECT(m_dsvHeap);
 	}
 
 	// Create the shadow map.
@@ -283,7 +307,6 @@ void D3DGameEngine::LoadPipeline()
 
 void D3DGameEngine::LoadAssets()
 {
-
 	// Create the main constant buffer.
 	m_constantBuffer = std::make_unique<UploadBuffer<SceneConstantBuffer>>(m_device.Get(), 1, true);
 	m_shadowBuffer = std::make_unique<UploadBuffer<ShadowPassConstantBuffer>>(m_device.Get(), 1, true);
@@ -426,24 +449,8 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, &error));
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, nullptr));
 
-		//HRESULT hr = D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, &error);
-
-		//if (error != nullptr)
-		//{
-		//	std::string e = (char*)error->GetBufferPointer();
-		//}
-
-
-		//hr = D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, &error);
-
-		//if (error != nullptr)
-		//{
-		//	std::string e = (char*)error->GetBufferPointer();
-		//}
-
-
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowDesc = psoDesc;
-		shadowDesc.RasterizerState.DepthBias = 100000;
+		shadowDesc.RasterizerState.DepthBias = 10000;
 		shadowDesc.RasterizerState.DepthBiasClamp = 0.0f;
 		shadowDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 		shadowDesc.pRootSignature = m_rootSignature.Get();
@@ -453,7 +460,28 @@ void D3DGameEngine::LoadAssets()
 		shadowDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 		shadowDesc.NumRenderTargets = 0;
 
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_opaque"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&shadowDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_opaque"])));
+
+		
+		// Pipeline state object for shadow debug.
+		ComPtr<ID3DBlob> debugVS;
+		ComPtr<ID3DBlob> debugPS;
+
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadowDebug.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &debugVS, nullptr));
+
+		D3DCompileFromFile(L"Shaders/shadowDebug.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &debugPS, &error);
+		if (error != nullptr)
+		{
+			std::string e = (char*)error->GetBufferPointer();
+		}
+
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC debugDesc = psoDesc;
+		debugDesc.pRootSignature = m_rootSignature.Get();
+		debugDesc.VS = CD3DX12_SHADER_BYTECODE(debugVS.Get());
+		debugDesc.PS = CD3DX12_SHADER_BYTECODE(debugPS.Get());
+
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&debugDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_debug"])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
@@ -596,6 +624,7 @@ void D3DGameEngine::LoadAssets()
 				srvDesc.TextureCube.MostDetailedMip = 0;
 				srvDesc.TextureCube.MipLevels = t->resource->GetDesc().MipLevels;
 				srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+				m_skyID = t->id;
 			}
 
 			srvDesc.Format = t->resource->GetDesc().Format;
@@ -603,13 +632,32 @@ void D3DGameEngine::LoadAssets()
 			m_device->CreateShaderResourceView(t->resource.Get(), &srvDesc, heapDescriptor);
 			heapDescriptor.Offset(1, m_CbvSrvUavDescriptorSize);
 		}
+
+		UINT shadowID = (UINT)Assets::m_textures.size();
+		m_shadowMap->SetHeapIDs(shadowID, 1);
+
+		UINT nullCubeID = shadowID + 1;
+		auto srvCpuStart = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+		auto srvGpuStart = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
+		auto nullSrv = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCpuStart, nullCubeID, m_CbvSrvUavDescriptorSize);
+		m_nullSrv = CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGpuStart, nullCubeID, m_CbvSrvUavDescriptorSize);
+
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		m_device->CreateShaderResourceView(nullptr, &srvDesc, nullSrv);
+		nullSrv.Offset(1, m_CbvSrvUavDescriptorSize);
+
+
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+		m_device->CreateShaderResourceView(nullptr, &srvDesc, nullSrv);
+		
 	}
 
 	// fill out the descriptor heap with shadow map textures.
 	{
-		UINT id = (UINT)Assets::m_textures.size() + 1;
-		m_shadowMap->SetHeapIDs(id, 1);
-
 		auto cpuSrv = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 		cpuSrv.Offset(m_shadowMap->GetSrvHeapID(), m_CbvSrvUavDescriptorSize);
 
@@ -693,7 +741,7 @@ void D3DGameEngine::Update()
 		auto shadowbuffer = m_shadowBuffer.get();
 		ShadowPassConstantBuffer cBuffer;
 		
-		float sceneRadius = 1000.0f;
+		float sceneRadius = 25.0f;
 
 		// only the first directional light casts shadow.
 		XMVECTOR lightPos = -2.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]);
@@ -852,16 +900,14 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
-
 	// shadow map, first pass.
 	{
-		// bind shadow buffer to command queue
-		m_commandList->SetGraphicsRootShaderResourceView(2, m_shadowBuffer->Resource()->GetGPUVirtualAddress());
+		// bind material buffer to command queue
+		auto mat = m_materialBuffer->Resource()->GetGPUVirtualAddress();
+		m_commandList->SetGraphicsRootShaderResourceView(3, mat);
 
 		// bind null texture to command queue.
-		auto nullHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-		nullHandle.Offset(m_shadowMap->GetSrvHeapID());
-		m_commandList->SetGraphicsRootDescriptorTable(4, nullHandle);
+		m_commandList->SetGraphicsRootDescriptorTable(4, m_nullSrv);
 
 		// bind texture heap to command queue
 		m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -880,10 +926,8 @@ void D3DGameEngine::PopulateCommandList()
 		// depth stencil buffer에만 그릴 것이므로, rtv 는 nullptr
 		m_commandList->OMSetRenderTargets(0, nullptr, false, &m_shadowMap->GetDsv());
 
-		// TODO: shadow shader, shadow buffer struct, 그리고 constant buffer 업데이트 하는 코드 작성
-		// bind the shadow pass buffer to command queue.
-		auto address = m_shadowBuffer->Resource()->GetGPUVirtualAddress();
-		m_commandList->SetGraphicsRootConstantBufferView(2, address);
+		// bind shadow buffer to command queue
+		m_commandList->SetGraphicsRootConstantBufferView(2, m_shadowBuffer->Resource()->GetGPUVirtualAddress());
 
 		m_commandList->SetPipelineState(m_pipelineStates["shadow_opaque"].Get());
 		DrawCurrentScene(E_RenderLayer::Opaque);
@@ -893,55 +937,52 @@ void D3DGameEngine::PopulateCommandList()
 			&CD3DX12_RESOURCE_BARRIER::Transition(m_shadowMap->Resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
-
-	// Rebind state whenever graphics root signature changes.
-
-	// bind material buffer to command queue
-	auto mat = m_materialBuffer->Resource()->GetGPUVirtualAddress();
-	m_commandList->SetGraphicsRootShaderResourceView(3, mat);
-	// bind texture heap to command queue
-	m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
 	// back buffer texture의 state를 render target 상태로 변경.
 	// GPU가 해당 resource 에 write 작업을 할 것임을 명시한다.
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	   
+	// Rebind state whenever graphics root signature changes.
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-
 	const float clearColor[] = { 0.7f, 0.7f, 0.7f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
+	m_commandList->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
 
-	auto scene = m_constantBuffer->Resource()->GetGPUVirtualAddress();
 	// bind the scene constant buffer to command queue.
+	auto scene = m_constantBuffer->Resource()->GetGPUVirtualAddress();
 	m_commandList->SetGraphicsRootConstantBufferView(1, scene);
 
-	// bind the shadow pass buffer to command queue.
-	auto shadow = m_shadowBuffer->Resource()->GetGPUVirtualAddress();
-	m_commandList->SetGraphicsRootConstantBufferView(2, shadow);
-
+	// bind texture cube to command queue.
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+	skyTexDescriptor.Offset(m_skyID, m_CbvSrvUavDescriptorSize);
+	m_commandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
+	
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
 	DrawCurrentScene(E_RenderLayer::Opaque);
 
+	m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
+	DrawCurrentScene(E_RenderLayer::Debug);
+
 	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
 	DrawCurrentScene(E_RenderLayer::Sky);
 
+	
 
 	// back buffer state 를 여기서 present로 transition하지 않는다. (UI를 그리기 때문)
 	// 이후, wrapped 11on12 target resource가 released될 때 일어남.
 		
 	// back buffer texture의 state를 present 상태로 변경.
 	// 위 command가 실행된 후 back buffer에 더이상 write 작업이 없음을 명시.
-	// m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	//m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 
 	// command 추가가 완료되었으므로 queue에 넘기기 전 list를 close.
@@ -970,15 +1011,6 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->GetBufferID() * bufferSize;
 
 		m_commandList->SetGraphicsRootConstantBufferView(0, address);
-
-		if (layer == E_RenderLayer::Sky)
-		{
-			CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-			skyTexDescriptor.Offset(obj->GetRenderer()->GetMaterial()->diffuseMapIndex, m_CbvSrvUavDescriptorSize);
-
-			// bind texture cube to command queue.
-			m_commandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
-		}
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
