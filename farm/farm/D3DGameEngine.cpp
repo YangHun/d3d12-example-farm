@@ -450,7 +450,7 @@ void D3DGameEngine::LoadAssets()
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &shadowPS, nullptr));
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowDesc = psoDesc;
-		shadowDesc.RasterizerState.DepthBias = 10000;
+		shadowDesc.RasterizerState.DepthBias = 25000;
 		shadowDesc.RasterizerState.DepthBiasClamp = 0.0f;
 		shadowDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 		shadowDesc.pRootSignature = m_rootSignature.Get();

@@ -83,35 +83,8 @@ void BuildSceneObjects(Scene* scene)
 		obj->GetRenderer()->SetMaterial("default-mat");
 	}
 
-	// sphere to test shadow map.
-
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			for (int j = 0; j < 3; ++j)
-			{
-
-				for (int k = 0; k < 3; ++k) {
-					auto obj = scene->Instantiate<GameObject>(
-						"sphere_" + std::to_string(i * 100 + j * 10 + k),
-						Transform{
-							{(float)i * 1.0f, (float)k * 1.0f + 0.0f, (float)j * 1.0f},
-							{0.0f, 0.0f, 0.0f},
-							{1.0f, 1.0f, 1.0f}
-						},
-						true,
-						E_RenderLayer::Opaque);
-					auto renderer = obj->GetRenderer();
-					renderer->SetMesh("sphere");
-					renderer->SetMaterial("default-mat");
-				}
-			}
-		}
-	}
-
 
 	// plane to test shadow map.
-
 	{
 		auto obj = scene->Instantiate<GameObject>(
 			"plane",

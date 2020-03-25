@@ -93,16 +93,10 @@ float4 PSMain(PSInput input) : SV_TARGET
     
     int i = 0;
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
-    
-    //float shadowFactor = 1.0f;
+  
     float3 shadowFactor = float3(GetShadowFactor(input.shadowPos), 1.0f, 1.0f);
-   
-    //if (gShadowMap.Sample(gAnisotropicWrap, input.shadowPos.xy).z < input.shadowPos.z)
-    //{
-    //    shadowFactor = 0.5f;
-    //}
-    
-    for (i = 0; i < 1; ++i)
+
+    for (i = 0; i < 3; ++i)
     {
         float3 l = -gLights[i].direction; // directional light
         float3 d = saturate(dot(l, input.normal)) * gLights[i].strength;
