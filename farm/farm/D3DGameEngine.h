@@ -29,6 +29,16 @@ public:
 	virtual void OnMouseLeave(UINT8 btnState, int x, int y);
 
 private:
+	enum class E_RootParam {
+		InstanceMap,
+		MaterialMap,
+		Scene,
+		ShadowPass,
+		BufferTexture,
+		Texture2DHeap,
+		Count
+	};
+
 	void LoadPipeline();
 	void LoadAssets();
 	void WaitForPreviousFrame();
@@ -79,6 +89,8 @@ private:
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
 	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;
+	std::unordered_map<E_RenderLayer, std::vector<std::unique_ptr<UploadBuffer<InstanceBuffer>>>> m_instanceBuffers;
+	
 	std::unique_ptr<UploadBuffer<ShadowPassConstantBuffer>> m_shadowBuffer;
 
 	XMFLOAT3 m_BaseLightDirections[3] = {
@@ -117,4 +129,6 @@ private:
 	UINT64 m_fenceValue;
 
 	UINT m_4xMsaaQuality = 0;
+
+
 };

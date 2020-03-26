@@ -41,6 +41,16 @@ struct ObjectConstantBuffer
 	UINT pad2 = 0;
 };
 
+// instance data는 meshdesc 에 저장되어, 해당 meshdesc가 몇 번 그려져야 하는지 알 수 있게 한다.
+struct InstanceBuffer
+{
+	XMFLOAT4X4 model;	// Model matrix
+	UINT matIndex;		// material index
+	UINT pad0 = 0;
+	UINT pad1 = 0;
+	UINT pad2 = 0;
+};
+
 struct ShadowPassConstantBuffer
 {
 	XMFLOAT4X4 lightViewProj;	// light-space View Proj materix.

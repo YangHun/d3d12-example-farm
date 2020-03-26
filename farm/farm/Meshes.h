@@ -101,6 +101,8 @@ struct MeshDesc {
 
 	UINT constantBufferId = -1;
 
+	std::vector<InstanceBuffer> instances;
+
 	//Transform transform;
 	//XMFLOAT4X4 world;
 

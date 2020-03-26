@@ -26,14 +26,21 @@ struct PSInput
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
     float3 tangent : TANGENT;
+    
+    nointerpolation uint matIndex : MATINDEX;
 };
 
-PSInput VSMain(VSInput input)
+PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
 {
     PSInput result;
         
+    
+    Instance inst = gInstances[instanceID];
+    float4x4 world = inst.World;
+    result.matIndex = inst.MatIndex;
+    
     float4 worldpos = float4(input.position, 1.0f);
-    worldpos = mul(worldpos, gWorld);
+    worldpos = mul(worldpos, world);
     
     float4 shadowpos = mul(worldpos, gLightViewProj);
     shadowpos = mul(shadowpos, gNormalizedDevice);
@@ -82,8 +89,9 @@ float GetShadowFactor(float4 shadowPos)
 
 
 float4 PSMain(PSInput input) : SV_TARGET
-{             
-    Material mat = gMaterials[gMatIndex];
+{       
+    
+    Material mat = gMaterials[input.matIndex];
     uint diffuseIndex = mat.diffuseMapIndex;
     float4 color = float4(mat.diffuseColor, 1.0f);
     

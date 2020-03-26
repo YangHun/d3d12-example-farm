@@ -318,18 +318,21 @@ void D3DGameEngine::LoadAssets()
 		CD3DX12_DESCRIPTOR_RANGE textureTable;
 		textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 48, 2, 0);
 
-		CD3DX12_ROOT_PARAMETER rootParameters[6];
+		CD3DX12_ROOT_PARAMETER rootParameters[static_cast<int>(E_RootParam::Count)];
 
-		rootParameters[0].InitAsConstantBufferView(0);	// register b0 (object constant buffer)
-		rootParameters[1].InitAsConstantBufferView(1);	// register b1 (scene constant buffer)
-		rootParameters[2].InitAsConstantBufferView(2);	// register b2 (shadow poass constant buffer)
-		rootParameters[3].InitAsShaderResourceView(0, 1); // register t0, space 1 (material map)
+		//rootParameters[0].InitAsConstantBufferView(0);	// register b0 (object constant buffer)
+		
+		rootParameters[static_cast<int>(E_RootParam::InstanceMap)].InitAsShaderResourceView(0, 1); // register t0, space 1 (instance map)
+		rootParameters[static_cast<int>(E_RootParam::MaterialMap)].InitAsShaderResourceView(1, 1); // register t1, space 1 (material map)
 
+		rootParameters[static_cast<int>(E_RootParam::Scene)].InitAsConstantBufferView(1);	// register b0 (scene constant buffer)
+		rootParameters[static_cast<int>(E_RootParam::ShadowPass)].InitAsConstantBufferView(2);	// register b1 (shadow poass constant buffer)
+		
 		// register t0 (gCubeMap)
 		// register t1 (gShadowMap)
-		rootParameters[4].InitAsDescriptorTable(1, &bufferTable, D3D12_SHADER_VISIBILITY_PIXEL); 
+		rootParameters[static_cast<int>(E_RootParam::BufferTexture)].InitAsDescriptorTable(1, &bufferTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		// register t2 (gTextureMap [48])
-		rootParameters[5].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL); 
+		rootParameters[static_cast<int>(E_RootParam::Texture2DHeap)].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 
 		const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
@@ -366,7 +369,7 @@ void D3DGameEngine::LoadAssets()
 		};
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(6, rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSignatureDesc.Init(static_cast<int>(E_RootParam::Count), rootParameters, samplers.size(), samplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -567,15 +570,16 @@ void D3DGameEngine::LoadAssets()
 	// Initialize the game.
 	m_game.Initialize();
 
-	// Create the vertex buffer and index buffer for all meshes in game.
-	// Scenes would reference mesh descriptions to draw specific meshes.
+	// Create the buffers per mesh desc.
 	{
 		auto meshes = Assets::GetMeshDesc();
 		for (auto desc : meshes) {
 
 			UINT verticeSize = sizeof(Vertex) * (UINT)(desc->mesh->vertices.size());
 			UINT indiceSize = sizeof(uint16_t) * (UINT)(desc->mesh->indices.size());
-
+			
+			// Create the vertex buffer and index buffer.
+			// Scenes would reference mesh descriptions to draw specific meshes.
 			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), desc->mesh->vertices.data(), verticeSize, desc->vertexBuffer, desc->vertexUploadBuffer);
 			// create the index buffer using triangle data and copy to upload buffer.
 			CreateDefaultBuffer(m_device.Get(), m_commandList.Get(), desc->mesh->indices.data(), indiceSize, desc->indexBuffer, desc->indexUploadBuffer);
@@ -588,6 +592,10 @@ void D3DGameEngine::LoadAssets()
 			desc->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 			desc->indexBufferView.SizeInBytes = indiceSize;
 
+			// instance buffer는 meshdesc 개수만큼 만든다
+			// instance buffer는 constant buffer가 아님.
+			auto buffer = std::make_unique<UploadBuffer<InstanceBuffer>>(m_device.Get(), 1000, false);
+			m_instanceBuffers.push_back(std::move(buffer));
 		}
 	}
 
@@ -904,13 +912,13 @@ void D3DGameEngine::PopulateCommandList()
 	{
 		// bind material buffer to command queue
 		auto mat = m_materialBuffer->Resource()->GetGPUVirtualAddress();
-		m_commandList->SetGraphicsRootShaderResourceView(3, mat);
+		m_commandList->SetGraphicsRootShaderResourceView(static_cast<int>(E_RootParam::MaterialMap), mat);
 
 		// bind null texture to command queue.
-		m_commandList->SetGraphicsRootDescriptorTable(4, m_nullSrv);
+		m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::BufferTexture), m_nullSrv);
 
 		// bind texture heap to command queue
-		m_commandList->SetGraphicsRootDescriptorTable(5, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::Texture2DHeap), m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 		m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
 		m_commandList->RSSetScissorRects(1, &m_shadowMap->GetRect());
@@ -927,7 +935,7 @@ void D3DGameEngine::PopulateCommandList()
 		m_commandList->OMSetRenderTargets(0, nullptr, false, &m_shadowMap->GetDsv());
 
 		// bind shadow buffer to command queue
-		m_commandList->SetGraphicsRootConstantBufferView(2, m_shadowBuffer->Resource()->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootConstantBufferView(static_cast<int>(E_RootParam::ShadowPass), m_shadowBuffer->Resource()->GetGPUVirtualAddress());
 
 		m_commandList->SetPipelineState(m_pipelineStates["shadow_opaque"].Get());
 		DrawCurrentScene(E_RenderLayer::Opaque);
@@ -958,12 +966,12 @@ void D3DGameEngine::PopulateCommandList()
 
 	// bind the scene constant buffer to command queue.
 	auto scene = m_constantBuffer->Resource()->GetGPUVirtualAddress();
-	m_commandList->SetGraphicsRootConstantBufferView(1, scene);
+	m_commandList->SetGraphicsRootConstantBufferView(static_cast<int>(E_RootParam::Scene), scene);
 
 	// bind texture cube to command queue.
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 	skyTexDescriptor.Offset(m_skyID, m_CbvSrvUavDescriptorSize);
-	m_commandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
+	m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::BufferTexture), skyTexDescriptor);
 	
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
@@ -994,8 +1002,8 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 {
 	UINT bufferSize = (sizeof(ObjectConstantBuffer) + 255) & ~255;
 	auto scene = m_game.GetCurrentScene();
-
-	auto buffer = scene->m_objConstantBuffers.get();
+	
+	// objects -> meshdesc
 	auto objects = scene->GetObjectsByLayer(layer);
 
 	for (auto obj : objects)
@@ -1007,12 +1015,11 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
 
-		// get object constant buffer address.
-		D3D12_GPU_VIRTUAL_ADDRESS address = buffer->Resource()->GetGPUVirtualAddress() + obj->GetBufferID() * bufferSize;
+		// get intance buffer address.
+		auto buffer = scene->m_objConstantBuffers.get();
+		m_commandList->SetGraphicsRootShaderResourceView(0, buffer->Resource()->GetGPUVirtualAddress());
 
-		m_commandList->SetGraphicsRootConstantBufferView(0, address);
-
-		m_commandList->DrawIndexedInstanced(mesh->indexCount, 1, mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
+		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instances.size(), mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
 }
 
