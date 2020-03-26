@@ -26,7 +26,6 @@
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DirectXApp.cpp" />
     <ClCompile Include="DirectXGame.cpp" />
-    <ClCompile Include="Events.cpp" />
     <ClCompile Include="FbxLoader.cpp" />
     <ClCompile Include="Field.cpp" />
     <ClCompile Include="FrameResource.cpp" />
@@ -57,7 +56,6 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DirectXApp.h" />
     <ClInclude Include="DirectXGame.h" />
-    <ClInclude Include="Events.h" />
     <ClInclude Include="FbxLoader.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GameTimer.h" />

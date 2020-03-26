@@ -69,9 +69,6 @@
     <ClCompile Include="Field.cpp">
       <Filter>소스 파일\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Events.cpp">
-      <Filter>소스 파일\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Physics.cpp">
       <Filter>소스 파일\Component</Filter>
     </ClCompile>
@@ -142,9 +139,6 @@
     </ClInclude>
     <ClInclude Include="UploadBuffer.h">
       <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Events.h">
-      <Filter>헤더 파일\Component</Filter>
     </ClInclude>
     <ClInclude Include="Physics.h">
       <Filter>헤더 파일\Component</Filter>
