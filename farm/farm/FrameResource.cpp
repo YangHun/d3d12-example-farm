@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "d3dHelper.h"
 #include "FrameResource.h"
 
 FrameResource::FrameResource(ID3D12Device* pDevice) :

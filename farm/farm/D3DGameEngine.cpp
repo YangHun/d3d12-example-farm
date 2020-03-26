@@ -595,10 +595,13 @@ void D3DGameEngine::LoadAssets()
 			desc->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 			desc->indexBufferView.SizeInBytes = indiceSize;
 
-			// instance buffer는 meshdesc 개수만큼 만든다
-			// instance buffer는 constant buffer가 아님.
-			auto buffer = std::make_unique<UploadBuffer<InstanceBuffer>>(m_device.Get(), 1000, false);
-			m_instanceBuffers.push_back(std::move(buffer));
+
+			// mesh desc당, layer count 만큼의 instance buffer를 가진다.
+			for (int i = 0; i < static_cast<int>(E_RenderLayer::Count); ++i)
+			{
+				auto buffer = std::make_unique<UploadBuffer<InstanceBuffer>>(m_device.Get(), 1000, false);
+				m_instanceBuffers[desc->id].push_back(std::move(buffer));
+			}
 		}
 	}
 
@@ -724,26 +727,49 @@ void D3DGameEngine::Update()
 
 	WaitForPreviousFrame();
 
-	// update object constant buffer
+	// update objects in scene.
 	auto scene = m_game.GetCurrentScene();
 	scene->Update(m_timer.DeltaTime());
 
-	// update material buffer
-
-	auto matbuffer = m_materialBuffer.get();
-
-	for (auto& e : Assets::m_materials)
+	// update instance buffer
+	// meshdesc에 저장된 instanceBuffer 데이터를 upload buffer로 올린다.
 	{
-		Material* mat = e.second.get();
-		if (mat->dirty)
+		auto meshes = Assets::GetMeshDesc();
+		for (auto& m : meshes)
 		{
-			MaterialBuffer material;
-			material.diffuseMapIndex = mat->diffuseMapIndex;
-			material.diffuseColor = mat->diffuseColor;
+			m->instanceCount.clear();
+			m->instanceCount = std::vector<UINT>(static_cast<size_t>(E_RenderLayer::Count), 0);
+			for (auto data : m->instanceBuffer)
+			{
+				auto d = data.second;
 
-			matbuffer->CopyData(mat->bufferId, material);
-			
-			mat->dirty = false;
+				InstanceBuffer buffer;
+				buffer.model = d.model;
+				buffer.matIndex = d.matIndex;
+
+				m_instanceBuffers[m->id][d.layer]->CopyData(m->instanceCount[d.layer], buffer);
+				++m->instanceCount[d.layer];
+			}
+		}
+	}
+
+	// update material buffer
+	{
+		auto matbuffer = m_materialBuffer.get();
+
+		for (auto& e : Assets::m_materials)
+		{
+			Material* mat = e.second.get();
+			if (mat->dirty)
+			{
+				MaterialBuffer material;
+				material.diffuseMapIndex = mat->diffuseMapIndex;
+				material.diffuseColor = mat->diffuseColor;
+
+				matbuffer->CopyData(mat->bufferId, material);
+
+				mat->dirty = false;
+			}
 		}
 	}
 
@@ -1003,27 +1029,42 @@ void D3DGameEngine::PopulateCommandList()
 
 void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 {
-	UINT bufferSize = (sizeof(ObjectConstantBuffer) + 255) & ~255;
 	auto scene = m_game.GetCurrentScene();
-	
-	// objects -> meshdesc
-	auto objects = scene->GetObjectsByLayer(layer);
+	// todo: change iterating object to meshdesc
+	UINT layerID = static_cast<UINT>(layer);
 
-	for (auto obj : objects)
+
+	auto meshes = Assets::GetMeshDesc();
+
+	for (auto mesh : meshes)
 	{
-		if (!obj->IsActive()) continue;
-		auto mesh = obj->GetRenderer()->meshDesc();
-
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
 		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
 
-		// get intance buffer address.
-		auto buffer = scene->m_objConstantBuffers.get();
-		m_commandList->SetGraphicsRootShaderResourceView(0, buffer->Resource()->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootShaderResourceView(0, m_instanceBuffers[mesh->id][layerID]->Resource()->GetGPUVirtualAddress());
 
-		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instances.size(), mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
+		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instanceCount[layerID], mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
+
+	//// objects -> meshdesc
+	//auto objects = scene->GetObjectsByLayer(layer);
+
+	//for (auto obj : objects)
+	//{
+	//	if (!obj->IsActive()) continue;
+	//	auto mesh = obj->GetRenderer()->meshDesc();
+
+	//	m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
+	//	m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
+	//	m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
+
+	//	// get intance buffer address.
+	//	auto buffer = scene->m_objConstantBuffers.get();
+	//	m_commandList->SetGraphicsRootShaderResourceView(0, buffer->Resource()->GetGPUVirtualAddress());
+
+	//	//m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instances.size(), mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
+	//}
 }
 
 

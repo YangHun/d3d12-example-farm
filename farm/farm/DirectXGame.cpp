@@ -298,7 +298,7 @@ void Scene::Update(float dt)
 	}
 
 	// update object constant buffers.
-	UpdateObjectConstantBuffers();
+	UpdateInstanceData();
 }
 
 void Scene::AssignInstantiatedObjects()
@@ -337,26 +337,20 @@ void Scene::AssignInstantiatedObjects()
 	}
 }
 
-void Scene::UpdateObjectConstantBuffers()
+void Scene::UpdateInstanceData()
 {
+
 	for (auto& obj : m_allObjects)
 	{
-		if (obj->IsDirty() && obj->IsActive())
-		{
-			// GPU에서 사용할 것이므로 transpose 해준다. 
-			// CPU 는 (column)(row), GPU는 (row)(column)
-			XMMATRIX world = XMMatrixTranspose(obj->GetWorldMatrix());
+		if (!obj->IsDirty() || !obj->IsActive()) continue;
 
-			ObjectConstantBuffer objConstants;
-			XMStoreFloat4x4(&objConstants.model, world);
-			objConstants.matIndex = obj->GetRenderer()->GetMaterialIndex();
-			//objConstants.matIndex = 0;
+		InstanceData data;
+		XMStoreFloat4x4(&data.model, XMMatrixTranspose(obj->GetWorldMatrix()));
+		data.matIndex = obj->GetRenderer()->GetMaterialIndex();
+		data.layer = obj->GetLayer();
 
-			//memcpy(&m_objConstantBuffer + obj->constantBufferId * bufferSize, &objConstants, sizeof(objConstants));
-			m_objConstantBuffers.get()->CopyData(obj->GetBufferID(), objConstants);
-
-			obj->SetDirty(false);
-		}
+		obj->GetRenderer()->AssignInstance(data);
+		obj->SetDirty(false);
 	}
 }
 
@@ -413,6 +407,7 @@ Assets::Assets()
 				m_models[a] = mesh;
 
 				auto meshDesc = std::make_unique<MeshDesc>();
+				meshDesc->id = m_meshes.size();
 				meshDesc->mesh = &m_models[a];
 				meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 				m_meshes[a] = std::move(meshDesc);
@@ -505,6 +500,7 @@ Assets::Assets()
 
 		auto meshDesc = std::make_unique<MeshDesc>();
 		meshDesc->mesh = &m_models["triangle"];
+		meshDesc->id = m_meshes.size();
 		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
 		m_meshes["triangle"] = std::move(meshDesc);
@@ -537,6 +533,7 @@ Assets::Assets()
 
 		auto meshDesc = std::make_unique<MeshDesc>();
 		meshDesc->mesh = &m_models["plane"];
+		meshDesc->id = m_meshes.size();
 		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
 		m_meshes["plane"] = std::move(meshDesc);
@@ -652,6 +649,7 @@ Assets::Assets()
 
 		auto meshDesc = std::make_unique<MeshDesc>();
 		meshDesc->mesh = &m_models["sphere"];
+		meshDesc->id = m_meshes.size();
 		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
 		m_meshes["sphere"] = std::move(meshDesc);
@@ -684,6 +682,7 @@ Assets::Assets()
 
 	auto meshDesc = std::make_unique<MeshDesc>();
 	meshDesc->mesh = &m_models["quad"];
+	meshDesc->id = m_meshes.size();
 	meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
 	m_meshes["quad"] = std::move(meshDesc);

@@ -89,8 +89,12 @@ private:
 
 	std::unique_ptr<UploadBuffer<SceneConstantBuffer>> m_constantBuffer;
 	std::unique_ptr<UploadBuffer<MaterialBuffer>> m_materialBuffer;
-	std::unordered_map<E_RenderLayer, std::vector<std::unique_ptr<UploadBuffer<InstanceBuffer>>>> m_instanceBuffers;
 	
+	// key = meshDescID
+	// value = UploadBuffer<InstanceBuffer> [E_RenderLayer]
+	std::unordered_map<int, std::vector<std::unique_ptr<UploadBuffer<InstanceBuffer>>>> m_instanceBuffers;
+
+
 	std::unique_ptr<UploadBuffer<ShadowPassConstantBuffer>> m_shadowBuffer;
 
 	XMFLOAT3 m_BaseLightDirections[3] = {
@@ -98,10 +102,6 @@ private:
 		XMFLOAT3(0.57735f, -0.57735f, 0.57735f),
 		XMFLOAT3(0.0f, -0.707f, -0.707f)
 	};
-
-	//ComPtr<ID3D12Resource> m_cbUploadBuffer; // constant buffer uploader
-	//SceneConstantBuffer* m_pConstantBuffer;
-
 
 	 // 2d pipeline objects
 	ComPtr<ID3D11On12Device> m_d3d11On12Device;

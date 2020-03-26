@@ -1,4 +1,5 @@
 #pragma once
+#include "FrameResource.h"
 
 // 클래스 전방선언
 class GameObject;
@@ -76,6 +77,9 @@ public:
 	}
 
 	Material* GetMaterial();
+
+	void AssignInstance(const InstanceData& data);
+	//void UpdateInstance(const InstanceData& data);
 
 private:
 	MeshDesc* m_mesh = nullptr;
@@ -246,6 +250,8 @@ public:
 	std::string GetName() { return m_name; }
 	std::string GetTag() { return m_tag; }
 	Transform GetTransform() { return m_transform; }
+	int GetLayer() { return m_layer; }
+	UINT GetInstanceID() { return m_instanceID; }
 
 	void SetName(const std::string& value) { m_name = value; }
 	void SetTag(const std::string& value) { m_tag = value; }
@@ -254,6 +260,8 @@ public:
 		m_transform = value; 
 		SetDirty(true);
 	}
+	void SetLayer(int value) { m_layer = value; }
+	void SetInstanceID(UINT value) { m_instanceID = value; }
 
 	MeshRenderer* GetRenderer() const { return m_pRenderer.get(); }
 	BoxCollider* GetCollider() const { return m_pCollider.get(); }
@@ -266,6 +274,9 @@ private:
 
 	std::string m_name;
 	std::string m_tag;
+
+	int m_layer;
+	UINT m_instanceID;
 };
 
 class UIObject : public Object

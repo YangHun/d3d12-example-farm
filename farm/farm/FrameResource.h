@@ -1,6 +1,5 @@
 #pragma once
 
-#include "d3dHelper.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -42,6 +41,14 @@ struct ObjectConstantBuffer
 };
 
 // instance data는 meshdesc 에 저장되어, 해당 meshdesc가 몇 번 그려져야 하는지 알 수 있게 한다.
+struct InstanceData
+{
+	XMFLOAT4X4 model;	// Model matrix
+	UINT matIndex;		// material index
+	int layer;
+};
+
+
 struct InstanceBuffer
 {
 	XMFLOAT4X4 model;	// Model matrix
@@ -71,9 +78,6 @@ public:
 
 	void PopulateCommandList();
 
-	//void XM_CALLCONV UpdateConstantBuffers(FXMMATRIX view, CXMMATRIX proj);
-
-	
 public:
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12Resource> m_cbvUploadHeap;

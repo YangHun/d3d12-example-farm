@@ -5,7 +5,8 @@
 GameObject::GameObject() :
 	m_transform (Transform{}),
 	m_pRenderer(std::make_unique<MeshRenderer>(this)),
-	m_pCollider(std::make_unique<BoxCollider>(this))
+	m_pCollider(std::make_unique<BoxCollider>(this)),
+	m_layer(0)
 {
 	
 }
@@ -68,6 +69,12 @@ void MeshRenderer::SetMaterial(std::string name)
 	if (lookup != Assets::m_materials.end()) {
 		m_material = lookup->second.get();
 	}
+}
+
+void MeshRenderer::AssignInstance(const InstanceData& data)
+{
+	if (m_mesh == nullptr) return;
+	m_mesh->instanceBuffer[gameObject()->GetBufferID()] = data;
 }
 
 void MeshRenderer::SetMesh(std::string name)

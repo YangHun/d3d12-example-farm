@@ -3,6 +3,7 @@
 #define _MESHES_H
 
 #include <unordered_map>
+#include "FrameResource.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -93,19 +94,18 @@ struct Transform
 };
 
 struct MeshDesc {
+	UINT id = -1;
 	D3D_PRIMITIVE_TOPOLOGY primitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	Mesh* mesh = nullptr;
-	UINT indexCount;
+	UINT indexCount = 0;
 	UINT startIndexLocation = 0;
 	int baseVertexLocation = 0;
-
-	UINT constantBufferId = -1;
-
-	std::vector<InstanceBuffer> instances;
-
-	//Transform transform;
-	//XMFLOAT4X4 world;
-
+		
+	std::unordered_map<UINT, InstanceData> instanceBuffer;
+	
+	//std::vector<InstanceData> instanceBuffer;	// has layer information of each instance.
+	std::vector<UINT> instanceCount;
+	
 	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
 	ComPtr<ID3D12Resource> indexBuffer = nullptr;
 	ComPtr<ID3D12Resource> vertexUploadBuffer = nullptr;

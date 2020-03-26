@@ -25,10 +25,9 @@ public:
 	GameObject* Instantiate(E_RenderLayer layer)
 	{
 		auto obj = std::make_unique<T>();
-
 		int layerID = static_cast<int>(layer);
-
 		int id = -1;
+		obj->SetLayer(layerID);
 		obj->SetBufferId(id);
 		obj->SetDirty();
 
@@ -70,14 +69,12 @@ public:
 
 private:
 	void BuildObject();
-	void UpdateObjectConstantBuffers();
+	void UpdateInstanceData();
 	void AssignInstantiatedObjects();
 
 public: 
 	// object constant buffers for objects in current scene.
 	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
-	
-
 
 private:
 	UINT m_id;
