@@ -325,8 +325,8 @@ void D3DGameEngine::LoadAssets()
 		rootParameters[static_cast<int>(E_RootParam::InstanceMap)].InitAsShaderResourceView(0, 1); // register t0, space 1 (instance map)
 		rootParameters[static_cast<int>(E_RootParam::MaterialMap)].InitAsShaderResourceView(1, 1); // register t1, space 1 (material map)
 
-		rootParameters[static_cast<int>(E_RootParam::Scene)].InitAsConstantBufferView(1);	// register b0 (scene constant buffer)
-		rootParameters[static_cast<int>(E_RootParam::ShadowPass)].InitAsConstantBufferView(2);	// register b1 (shadow poass constant buffer)
+		rootParameters[static_cast<int>(E_RootParam::Scene)].InitAsConstantBufferView(0);	// register b0 (scene constant buffer)
+		rootParameters[static_cast<int>(E_RootParam::ShadowPass)].InitAsConstantBufferView(1);	// register b1 (shadow poass constant buffer)
 		
 		// register t0 (gCubeMap)
 		// register t1 (gShadowMap)
