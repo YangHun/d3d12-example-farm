@@ -742,6 +742,7 @@ void D3DGameEngine::Update()
 			for (auto data : m->instanceBuffer)
 			{
 				auto d = data.second;
+				if (!d.active) continue;
 
 				InstanceBuffer buffer;
 				buffer.model = d.model;

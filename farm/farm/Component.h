@@ -25,11 +25,20 @@ public:
 	UINT GetBufferID() const { return m_bufferId; }
 
 	void SetDirty(bool value = true) { m_dirty = value; }
-	void SetActive(bool value) { m_active = value; }
+	void SetActive(bool value) { 
+		m_active = value; 
+		SetDirty(true);
+	}
 	void SetBufferId(UINT value) { m_bufferId = value; }
 
-	void SetParent(Object* value) { m_parent = value; }
-	void DetachParent() { m_parent = nullptr; }
+	void SetParent(Object* value) { 
+		m_parent = value; 
+		SetDirty(true);
+	}
+	void DetachParent() { 
+		m_parent = nullptr; 
+		SetDirty(true);
+	}
 
 	Object* GetParentObject() { return m_parent; }
 

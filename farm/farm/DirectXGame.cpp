@@ -342,12 +342,13 @@ void Scene::UpdateInstanceData()
 
 	for (auto& obj : m_allObjects)
 	{
-		if (!obj->IsDirty() || !obj->IsActive()) continue;
+		if (!obj->IsDirty()) continue;
 
 		InstanceData data;
 		XMStoreFloat4x4(&data.model, XMMatrixTranspose(obj->GetWorldMatrix()));
 		data.matIndex = obj->GetRenderer()->GetMaterialIndex();
 		data.layer = obj->GetLayer();
+		data.active = obj->IsActive();
 
 		obj->GetRenderer()->AssignInstance(data);
 		obj->SetDirty(false);
