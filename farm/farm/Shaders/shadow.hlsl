@@ -13,12 +13,15 @@ struct PSInput
     float2 uv : TEXCOORD;
 };
 
-PSInput VSMain(VSInput input)
+PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
 {
     PSInput result;
     
+    Instance inst = gInstances[instanceID];
+    float4x4 world = inst.World;
+    
     // generate shadow map.
-    float4 pos = mul(float4(input.position, 1.0f), gWorld);
+    float4 pos = mul(float4(input.position, 1.0f), world);
     pos = mul(pos, gLightViewProj);
     //pos = mul(pos, gNormalizedDevice);
     result.position = pos;

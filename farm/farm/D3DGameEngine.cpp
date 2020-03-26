@@ -379,6 +379,9 @@ void D3DGameEngine::LoadAssets()
 
 	// Create the pipeline states, which includes compiling and loading shaders.
 	{
+
+		ComPtr<ID3D10Blob> error;
+
 		ComPtr<ID3DBlob> vertexShader;
 		ComPtr<ID3DBlob> pixelShader;
 
@@ -389,8 +392,10 @@ void D3DGameEngine::LoadAssets()
 		UINT compileFlags = 0;
 #endif
 
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, nullptr));
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, &error));
+
+
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/default.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, &error));
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -445,8 +450,6 @@ void D3DGameEngine::LoadAssets()
 		// Pipeline state object for shadow opaque.
 		ComPtr<ID3DBlob> shadowVS;
 		ComPtr<ID3DBlob> shadowPS;
-
-		ComPtr<ID3D10Blob> error;
 
 		// shadow.hlsl
 		ThrowIfFailed(D3DCompileFromFile(L"Shaders/shadow.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &shadowVS, &error));

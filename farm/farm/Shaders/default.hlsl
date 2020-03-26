@@ -33,8 +33,7 @@ struct PSInput
 PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
 {
     PSInput result;
-        
-    
+     
     Instance inst = gInstances[instanceID];
     float4x4 world = inst.World;
     result.matIndex = inst.MatIndex;
@@ -49,7 +48,7 @@ PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
         
     result.position = worldpos;
     result.shadowPos = shadowpos;
-    result.normal = mul(float4(input.normal, 0.0f), gWorld).xyz;
+    result.normal = mul(float4(input.normal, 0.0f), world).xyz;
     result.uv = input.uv;
     result.tangent = input.tangent;
     
@@ -106,8 +105,8 @@ float4 PSMain(PSInput input) : SV_TARGET
 
     for (i = 0; i < 3; ++i)
     {
-        float3 l = -gLights[i].direction; // directional light
-        float3 d = saturate(dot(l, input.normal)) * gLights[i].strength;
+        float3 l = -gLights[i].direction.xyz; // directional light
+        float3 d = saturate(dot(l, input.normal)) * gLights[i].strength.xyz;
         d *= shadowFactor[i];
         diffuse += d;
     }
