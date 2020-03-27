@@ -21,8 +21,9 @@ struct VSInput
 
 struct PSInput
 {
-    float4 position : SV_POSITION;
-    float4 shadowPos : POSITION;
+    float4 position : SV_POSITION;  // homogeneous clip space position
+    float4 shadowPos : POSITION0;
+    float3 worldPos : POSITION1;
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
     float3 tangent : TANGENT;
@@ -40,14 +41,15 @@ PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
     
     float4 worldpos = float4(input.position, 1.0f);
     worldpos = mul(worldpos, world);
+    result.worldPos = worldpos;
     
     float4 shadowpos = mul(worldpos, gLightViewProj);
     shadowpos = mul(shadowpos, gNormalizedDevice);
-    
-    worldpos = mul(worldpos, gViewProj);
-        
-    result.position = worldpos;
     result.shadowPos = shadowpos;
+     
+    worldpos = mul(worldpos, gViewProj);        
+    result.position = worldpos;
+
     result.normal = mul(float4(input.normal, 0.0f), world).xyz;
     result.uv = input.uv;
     result.tangent = input.tangent;
@@ -113,8 +115,19 @@ float4 PSMain(PSInput input) : SV_TARGET
     
     diffuse *= color.xyz;
     
-    float4 ambient = gAmbient * color;
     
-    return ambient + float4(diffuse, color.a);
+    float4 light = gAmbient * color + float4(diffuse, color.a);
+    
+    float4 fogColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float fogStart = 5.0f;
+    float fogRange = 50.0f;
+    
+    float distToEye = length(gEyePos.xyz - input.worldPos.xyz);
+    float fogAmount = saturate((distToEye - fogStart) / fogRange);
+    
+    light = lerp(light, fogColor, fogAmount);
+    light.a = color.a;
+    
+    return light;
   
 }
