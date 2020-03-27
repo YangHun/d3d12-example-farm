@@ -82,8 +82,8 @@ struct Mesh {
 	std::vector<UINT> matIndex;
 
 	// bound positions (-, +)
-	XMFLOAT3 minBound = { 0.0f, 0.0f, 0.0f };
-	XMFLOAT3 maxBound = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT3 minBound = { FLT_MAX, FLT_MAX, FLT_MAX };
+	XMFLOAT3 maxBound = { FLT_MIN, FLT_MIN, FLT_MIN };
 };
 
 struct Transform

@@ -8,15 +8,20 @@ HarvestCrate::HarvestCrate() :
 	m_changed(true)
 {
 	GetRenderer()->SetMesh("Assets/cratebox.fbx");
-	GetCollider()->SetBoundFromMesh(GetRenderer()->meshDesc());
-
 	
+	auto collider = GetCollider();
+	collider->SetBoundFromMesh(GetRenderer()->meshDesc());	
+
+	// Bound Àç¼³Á¤
+	auto bound = collider->GetBound();
+	bound.max.x = -0.85;
+	bound.max.z = -2.9;
+	collider->SetBound(bound);
 
 	for (int i = 0; i < m_size; ++i) {
 		auto obj = DirectXGame::GetCurrentScene()->Instantiate<GameObject>(
 			"crops",
 			Transform{
-				//{localPivot.x + (i % 2) * 0.5f -1.0f, localPivot.y + (i / 4) * 0.2f + 0.2f, localPivot.z + ((i+1) % 2) * 0.5f },
 				{localPivot.x + 0.5f + (-1.0f * (i % 5) * 0.25f), 0.7f + (i / 5) * 0.25f, localPivot.z - 0.6f},
 				{XM_PI / 2.0f, Random::Range(-2.0f, 2.0f) * XM_PI / 36.0f , 0.0f},
 				{0.0075f, 0.0075f, 0.0075f}

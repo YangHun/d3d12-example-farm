@@ -148,10 +148,10 @@ public:
 
 	Bound GetBound() const { return m_bound; }
 	XMFLOAT3 GetCenter() const { return m_center; }
+	
+	virtual void SetBound(const Bound& value) { m_bound = value; }
+	virtual void SetCenter(const XMFLOAT3& value) { m_center = value; }
 
-protected:
-	void SetBound(const Bound& value) { m_bound = value;}
-	void SetCenter(const XMFLOAT3& value) { m_center = value; }
 
 private:
 	XMFLOAT3 m_center;
@@ -166,8 +166,15 @@ public:
 	void Update(float dt);
 	void SetBoundFromMesh(MeshDesc* mesh);
 
+
 #ifdef COLLIDER_DEBUG
-	GameObject* GetBoundLineObject() const { return m_pBox; }
+	GameObject* GetBoundBoxObject() const { return m_pBox; }
+	
+	using Collider::SetBound;
+	void SetBound(const Bound& value) override;
+	
+	using Collider::SetCenter;
+	void SetCenter(const XMFLOAT3& value) override;
 
 private:
 	GameObject* m_pBox = nullptr;
