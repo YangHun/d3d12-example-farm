@@ -46,6 +46,7 @@ struct InstanceData
 	XMFLOAT4X4 model;	// Model matrix
 	UINT matIndex;		// material index
 	int layer;
+	bool active;
 };
 
 

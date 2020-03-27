@@ -121,6 +121,7 @@ private:
 	ComPtr<IWICImagingFactory2> m_wicFactory;
 
 	GameTimer m_timer;
+	float m_angle = 0;
 
 	// synchronization objects
 	UINT m_frameIndex;

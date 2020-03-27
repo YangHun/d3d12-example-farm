@@ -17,6 +17,11 @@ void Player::Start()
 
 void Player::Update(float dt)
 {
+	
+	Transform t = GetTransform();
+	t.position = DirectXGame::GetCurrentScene()->GetCamera()->GetEyePosition();
+	SetTransform(t);
+
 	// windows message queue는 queue에 등록된 순서대로 이벤트를 처리하기 때문에
 	// 실제 입력된 시각에 비해 미세한 딜레이가 생길 수 있다.
 	// 딜레이를 피하기 위해, 마우스 입력은 async하게 감지하여 처리한다.

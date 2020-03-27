@@ -194,11 +194,11 @@ void BuildSceneObjects(Scene* scene)
 
 	// create fields
 	{
-		int activeNum = 5;
+		int activeNum = 50;
 
-		for (int i = 0; i < 5; ++i)
+		for (int i = 0; i < 20; ++i)
 		{
-			for (int j = 0; j < 5; ++j)
+			for (int j = 0; j < 50; ++j)
 			{
 				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
 					"Field_" + std::to_string(i * 10 + j),
@@ -272,7 +272,7 @@ void Scene::BuildObject()
 
 	// init camera
 	{
-		m_camera.SetPosition(XMFLOAT3(-5.0f, 6.0f, -6.0f));
+		m_camera.SetPosition(XMFLOAT3(-5.0f, 5.0f, -6.0f));
 		m_camera.SetRotation(XMFLOAT3(30.0f, 45.0f, 0.0f));
 		m_camera.SetFrustum(XM_PI * 0.25f);
 	}

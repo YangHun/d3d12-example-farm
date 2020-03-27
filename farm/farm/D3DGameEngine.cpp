@@ -599,7 +599,7 @@ void D3DGameEngine::LoadAssets()
 			// mesh desc당, layer count 만큼의 instance buffer를 가진다.
 			for (int i = 0; i < static_cast<int>(E_RenderLayer::Count); ++i)
 			{
-				auto buffer = std::make_unique<UploadBuffer<InstanceBuffer>>(m_device.Get(), 1000, false);
+				auto buffer = std::make_unique<UploadBuffer<InstanceBuffer>>(m_device.Get(), 2000, false);
 				m_instanceBuffers[desc->id].push_back(std::move(buffer));
 			}
 		}
@@ -774,16 +774,29 @@ void D3DGameEngine::Update()
 		}
 	}
 
+	// rotate light
+	{
+		XMMATRIX R = XMMatrixRotationY(m_timer.DeltaTime() * 0.1f);
+		for (int i = 0; i < 3; ++i)
+		{
+			XMVECTOR dir = XMLoadFloat3(&m_BaseLightDirections[i]);
+			dir = XMVector3TransformNormal(dir, R);
+			XMStoreFloat3(&m_BaseLightDirections[i], dir);
+		}
+	}
+
 	// update shadow pass constant buffer.
 	{
 		auto shadowbuffer = m_shadowBuffer.get();
 		ShadowPassConstantBuffer cBuffer;
 		
-		float sceneRadius = 25.0f;
+		float sceneRadius = max(25.0f, m_game.GetPlayer()->GetTransform().position.y);
 
 		// only the first directional light casts shadow.
-		XMVECTOR lightPos = -2.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]);
+		//XMFLOAT3 pos = m_game.GetPlayer()->GetTransform().position;
+		//XMVECTOR targetPos = XMLoadFloat3(&pos);
 		XMVECTOR targetPos = XMVectorZero();
+		XMVECTOR lightPos = -2.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]);
 		XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		XMMATRIX lightView = XMMatrixLookAtLH(lightPos, targetPos, lightUp);
 
