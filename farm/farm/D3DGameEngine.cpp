@@ -1062,25 +1062,6 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instanceCount[layerID], mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
 	}
-
-	//// objects -> meshdesc
-	//auto objects = scene->GetObjectsByLayer(layer);
-
-	//for (auto obj : objects)
-	//{
-	//	if (!obj->IsActive()) continue;
-	//	auto mesh = obj->GetRenderer()->meshDesc();
-
-	//	m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
-	//	m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
-	//	m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
-
-	//	// get intance buffer address.
-	//	auto buffer = scene->m_objConstantBuffers.get();
-	//	m_commandList->SetGraphicsRootShaderResourceView(0, buffer->Resource()->GetGPUVirtualAddress());
-
-	//	//m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instances.size(), mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
-	//}
 }
 
 

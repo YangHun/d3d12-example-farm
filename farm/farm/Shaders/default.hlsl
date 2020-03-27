@@ -22,8 +22,8 @@ struct VSInput
 struct PSInput
 {
     float4 position : SV_POSITION;  // homogeneous clip space position
-    float4 shadowPos : POSITION0;
-    float3 worldPos : POSITION1;
+    float4 shadowPos : POSITION0;   // light-projected NDC space position
+    float3 worldPos : POSITION1;    // world space position
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
     float3 tangent : TANGENT;
