@@ -39,16 +39,14 @@ PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
     float4x4 world = inst.World;
     result.matIndex = inst.MatIndex;
     
-    float4 worldpos = float4(input.position, 1.0f);
-    worldpos = mul(worldpos, world);
+    float4 worldpos = mul(float4(input.position, 1.0f), world);
     result.worldPos = worldpos;
     
     float4 shadowpos = mul(worldpos, gLightViewProj);
     shadowpos = mul(shadowpos, gNormalizedDevice);
     result.shadowPos = shadowpos;
      
-    worldpos = mul(worldpos, gViewProj);        
-    result.position = worldpos;
+    result.position = mul(worldpos, gViewProj);
 
     result.normal = mul(float4(input.normal, 0.0f), world).xyz;
     result.uv = input.uv;
