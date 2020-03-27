@@ -130,6 +130,8 @@ private:
 class Collider : public Component
 {
 public:
+	// change to use BoundingBox for frustum culling
+
 	struct Bound
 	{
 		XMFLOAT3 min = XMFLOAT3(0.0f, 0.0f, 0.0f);
