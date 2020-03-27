@@ -488,6 +488,24 @@ void D3DGameEngine::LoadAssets()
 		debugDesc.PS = CD3DX12_SHADER_BYTECODE(debugPS.Get());
 
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&debugDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_debug"])));
+	
+
+
+		// Pipeline state object for collider debug.
+		ThrowIfFailed(D3DCompileFromFile(L"Shaders/colliderDebug.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &debugVS, nullptr));
+
+		D3DCompileFromFile(L"Shaders/colliderDebug.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &debugPS, &error);
+		if (error != nullptr)
+		{
+			std::string e = (char*)error->GetBufferPointer();
+		}
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC colliderDesc = psoDesc;
+		colliderDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		colliderDesc.pRootSignature = m_rootSignature.Get();
+		colliderDesc.VS = CD3DX12_SHADER_BYTECODE(debugVS.Get());	// use opaque shader
+		colliderDesc.PS = CD3DX12_SHADER_BYTECODE(debugPS.Get());
+
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&colliderDesc, IID_PPV_ARGS(&m_pipelineStates["collider_debug"])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
@@ -1020,10 +1038,13 @@ void D3DGameEngine::PopulateCommandList()
 	
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
-	DrawCurrentScene(E_RenderLayer::Opaque);
+	//DrawCurrentScene(E_RenderLayer::Opaque);
 
 	m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
 	DrawCurrentScene(E_RenderLayer::Debug);
+
+	m_commandList->SetPipelineState(m_pipelineStates["collider_debug"].Get());
+	DrawCurrentScene(E_RenderLayer::Opaque);
 
 	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
 	DrawCurrentScene(E_RenderLayer::Sky);
