@@ -836,8 +836,6 @@ void D3DGameEngine::Update()
 		XMStoreFloat4x4(&cBuffer.viewproj, XMMatrixTranspose(view * proj));
 		cBuffer.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
-		// todo: shader light value is incorrect.
-
 		for (int i = 0; i < 3; ++i)
 		{
 			XMFLOAT3 dir = m_BaseLightDirections[i];
@@ -851,6 +849,10 @@ void D3DGameEngine::Update()
 		XMFLOAT3 e = scene->GetCamera()->GetEyePosition();
 
 		cBuffer.eye = XMFLOAT4(e.x, e.y, e.z, 1.0f);
+
+		cBuffer.fogColor = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+		cBuffer.fogStart = 5.0f;
+		cBuffer.fogRange = 50.0f;
 
 		mainbuffer->CopyData(0, cBuffer);
 	}

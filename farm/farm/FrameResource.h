@@ -26,6 +26,10 @@ struct SceneConstantBuffer
 	XMFLOAT4X4 viewproj;	// View Proj matrix
 	XMFLOAT4 ambientLight;
 	XMFLOAT4 eye;
+	XMFLOAT4 fogColor;
+	float fogStart;
+	float fogRange;
+	XMFLOAT2 pad0;
 	Light Lights[3];
 };
 

@@ -117,15 +117,11 @@ float4 PSMain(PSInput input) : SV_TARGET
     
     
     float4 light = gAmbient * color + float4(diffuse, color.a);
-    
-    float4 fogColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    float fogStart = 5.0f;
-    float fogRange = 50.0f;
-    
+       
     float distToEye = length(gEyePos.xyz - input.worldPos.xyz);
-    float fogAmount = saturate((distToEye - fogStart) / fogRange);
+    float fogAmount = saturate((distToEye - gFogStartDistance) / gFogRange);
     
-    light = lerp(light, fogColor, fogAmount);
+    light = lerp(light, gFogColor, fogAmount);
     light.a = color.a;
     
     return light;

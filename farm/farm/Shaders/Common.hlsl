@@ -12,19 +12,10 @@ struct Material
     uint diffuseMapIndex;
 };
 
-//cbuffer cbPerObject : register(b0)
-//{
-//    float4x4 gWorld;
-//    uint gMatIndex;
-//    uint pad0;
-//    uint pad1;
-//    uint pad2;
-//};
-
-
 struct Instance
 {
     float4x4 World;
+    
     uint MatIndex;
     uint pad0;
     uint pad1;
@@ -36,6 +27,12 @@ cbuffer cbScene : register(b0)
     float4x4 gViewProj;
     float4 gAmbient;
     float4 gEyePos;
+    float4 gFogColor;
+    
+    float gFogStartDistance;
+    float gFogRange;
+    float2 pad0;
+    
     Light gLights[3];
 }
 
