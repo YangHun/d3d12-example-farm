@@ -101,9 +101,7 @@ struct MeshDesc {
 	UINT startIndexLocation = 0;
 	int baseVertexLocation = 0;
 		
-	std::unordered_map<UINT, InstanceData> instanceBuffer;
-	
-	//std::vector<InstanceData> instanceBuffer;	// has layer information of each instance.
+	std::unordered_map<UINT, InstanceData> instanceBuffer;	// has all InstanceData of instantiated GameObjects 
 	std::vector<UINT> instanceCount;
 	
 	ComPtr<ID3D12Resource> vertexBuffer = nullptr;
