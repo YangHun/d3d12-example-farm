@@ -114,7 +114,7 @@ void Camera::Update(float dt)
 	if (m_pressedS) dir -= forward;
 	if (m_pressedD) dir += right;
 
-	dir = XMVectorSetY(dir, 0.0f);
+	//dir = XMVectorSetY(dir, 0.0f);
 	dir = XMVector3Normalize(dir) * 0.1f;
 		
 	if (!XMVector3Equal(dir, XMVectorZero())) {
@@ -124,7 +124,7 @@ void Camera::Update(float dt)
 	}
 
 	// camera height is always fixed.
-	m_transform.position.y = 4.0f;
+	//m_transform.position.y = 4.0f;
 
 	if (m_dirty)
 	{

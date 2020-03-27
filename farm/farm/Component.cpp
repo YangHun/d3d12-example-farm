@@ -109,11 +109,6 @@ void Collider::Update(float dt)
 
 }
 
-void Collider::SetBound(const Bound& rhs)
-{
-	m_bound = rhs;
-}
-
 BoxCollider::BoxCollider(GameObject* object) :
 	Collider(object)
 {
@@ -145,7 +140,35 @@ void BoxCollider::SetBoundFromMesh(MeshDesc* desc)
 	bound.max.y = mesh->maxBound.y;
 	bound.max.z = mesh->maxBound.z;
 
+	XMFLOAT3 center = XMFLOAT3(
+		(bound.min.x + bound.max.x) / 2.0f,
+		(bound.min.y + bound.max.y) / 2.0f,
+		(bound.min.z + bound.max.z) / 2.0f);
+
 	SetBound(bound);
+	SetCenter(center);
+
+#ifdef COLLIDER_DEBUG
+
+	XMFLOAT3 length = XMFLOAT3(
+		(bound.max.x - bound.min.x),
+		(bound.max.y - bound.min.y),
+		(bound.max.z - bound.min.z));
+
+	if (m_pBox == nullptr) {
+		m_pBox = DirectXGame::GetCurrentScene()->Instantiate<GameObject>(
+			"BoxCollider",
+			Transform{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+			true,
+			E_RenderLayer::ColliderDebug);
+		m_pBox->SetParent(gameObject());
+		m_pBox->GetRenderer()->SetMesh("box");
+	}
+
+	m_pBox->SetTransform(Transform{ { center.x, center.y, center.z }, {0.0f, 0.0f, 0.0f}, {length.x, length.y, length.z} });
+
+
+#endif // COLLIDER_DEBUG
 }
 
 //-------------------- ui objects

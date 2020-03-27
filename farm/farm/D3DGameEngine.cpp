@@ -1038,13 +1038,15 @@ void D3DGameEngine::PopulateCommandList()
 	
 	// 현재 scene의 indexed instance를 그린다.
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
-	//DrawCurrentScene(E_RenderLayer::Opaque);
+	DrawCurrentScene(E_RenderLayer::Opaque);
 
 	m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
 	DrawCurrentScene(E_RenderLayer::Debug);
 
+#ifdef COLLIDER_DEBUG
 	m_commandList->SetPipelineState(m_pipelineStates["collider_debug"].Get());
-	DrawCurrentScene(E_RenderLayer::Opaque);
+	DrawCurrentScene(E_RenderLayer::ColliderDebug);
+#endif
 
 	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
 	DrawCurrentScene(E_RenderLayer::Sky);
@@ -1067,18 +1069,18 @@ void D3DGameEngine::PopulateCommandList()
 void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 {
 	auto scene = m_game.GetCurrentScene();
-	// todo: change iterating object to meshdesc
 	UINT layerID = static_cast<UINT>(layer);
-
-
 	auto meshes = Assets::GetMeshDesc();
 
 	for (auto mesh : meshes)
 	{
 		m_commandList->IASetVertexBuffers(0, 1, &mesh->vertexBufferView);
 		m_commandList->IASetIndexBuffer(&mesh->indexBufferView);
+#ifdef COLLIDER_DEBUG
+		m_commandList->IASetPrimitiveTopology( layer == E_RenderLayer::ColliderDebug? D3D_PRIMITIVE_TOPOLOGY_LINESTRIP : mesh->primitiveType);
+#else
 		m_commandList->IASetPrimitiveTopology(mesh->primitiveType);
-
+#endif
 		m_commandList->SetGraphicsRootShaderResourceView(0, m_instanceBuffers[mesh->id][layerID]->Resource()->GetGPUVirtualAddress());
 
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instanceCount[layerID], mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);

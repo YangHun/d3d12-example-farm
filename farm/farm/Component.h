@@ -118,7 +118,8 @@ public:
 	XMFLOAT3 GetCenter() const { return m_center; }
 
 protected:
-	void SetBound(const Bound& rhs);
+	void SetBound(const Bound& value) { m_bound = value;}
+	void SetCenter(const XMFLOAT3& value) { m_center = value; }
 
 private:
 	XMFLOAT3 m_center;
@@ -132,6 +133,12 @@ public:
 	void Start();
 	void Update(float dt);
 	void SetBoundFromMesh(MeshDesc* mesh);
+
+#ifdef COLLIDER_DEBUG
+private:
+	GameObject* m_pBox = nullptr;
+
+#endif // COLLIDER_DEBUG
 };
 
 

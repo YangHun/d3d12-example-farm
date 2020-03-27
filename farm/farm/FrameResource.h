@@ -10,6 +10,9 @@ enum class E_RenderLayer
 	Transparent,
 	Sky,
 	Debug,
+#ifdef COLLIDER_DEBUG
+	ColliderDebug,
+#endif
 	Count
 };
 

@@ -66,7 +66,6 @@ void BuildSceneObjects(Scene* scene)
 
 	}
 
-
 	// quad for debug shadow.
 	{
 		auto obj = scene->Instantiate<GameObject>(
@@ -170,17 +169,6 @@ void BuildSceneObjects(Scene* scene)
 	}
 
 	// harvesting crate.
-
-	
-	/*auto obj = scene->Instantiate<HarvestCrate>(
-		"CrateBox",
-		Transform{
-			{-5.0f, 0.0f, 15.0f},
-			{0.0f, XM_PI / 36.0f, 0.0f},
-			{1.0f, 1.0f, 1.0f}
-		},
-		true);*/
-
 	auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
 		"CrateBox",
 		Transform{
@@ -658,35 +646,114 @@ Assets::Assets()
 
 	// create default quad.
 	{
-	Mesh mesh;
-	float x = 0.0f;
-	float y = 0.0f;
-	float w = 1.0f;
-	float h = 1.0f;
-	float depth = 0.0f;
+		Mesh mesh;
+		float x = 0.0f;
+		float y = 0.0f;
+		float w = 1.0f;
+		float h = 1.0f;
+		float depth = 0.0f;
 
-	mesh.vertices = {
-		Vertex {{ x, y - h, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-		Vertex {{ x, y, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-		Vertex {{ x + w, y, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-		Vertex {{ x + w, y - h, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-	};
+		mesh.vertices = {
+			Vertex {{ x, y - h, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ x, y, depth }, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ x + w, y, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ x + w, y - h, depth }, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+		};
 
-	mesh.indices = {
-		0, 1, 2,
-		0, 2, 3
-	};
+		mesh.indices = {
+			0, 1, 2,
+			0, 2, 3
+		};
 
-	mesh.matIndex.push_back(0);
+		mesh.matIndex.push_back(0);
 
-	m_models["quad"] = mesh;
+		m_models["quad"] = mesh;
 
-	auto meshDesc = std::make_unique<MeshDesc>();
-	meshDesc->mesh = &m_models["quad"];
-	meshDesc->id = m_meshes.size();
-	meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+		auto meshDesc = std::make_unique<MeshDesc>();
+		meshDesc->mesh = &m_models["quad"];
+		meshDesc->id = m_meshes.size();
+		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
 
-	m_meshes["quad"] = std::move(meshDesc);
+		m_meshes["quad"] = std::move(meshDesc);
+	}
+
+	// create default box.
+	{
+		Mesh mesh;
+		float w = 0.5f;
+		float h = 0.5f;
+		float d = 0.5f;
+		mesh.vertices = 
+		{
+			Vertex{{-w, -h, -d}, {0.0f, 0.0f, -1.0}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{-w, +h, -d}, {0.0f, 0.0f, -1.0}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, +h, -d}, {0.0f, 0.0f, -1.0}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, -h, -d}, {0.0f, 0.0f, -1.0}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+
+			Vertex{{-w, -h, +d}, {0.0f, 0.0f, +1.0}, {1.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, -h, +d}, {0.0f, 0.0f, +1.0}, {0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, +h, +d}, {0.0f, 0.0f, +1.0}, {0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{-w, +h, +d}, {0.0f, 0.0f, +1.0}, {1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
+
+			Vertex{{-w, +h, -d}, {0.0f, 1.0f, 0.0}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{-w, +h, +d}, {0.0f, 1.0f, 0.0}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, +h, +d}, {0.0f, 1.0f, 0.0}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, +h, -d}, {0.0f, 1.0f, 0.0}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+
+			Vertex{{-w, -h, -d}, {0.0f, -1.0f, 0.0}, {1.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, -h, -d}, {0.0f, -1.0f, 0.0}, {0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{+w, -h, +d}, {0.0f, -1.0f, 0.0}, {0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
+			Vertex{{-w, -h, +d}, {0.0f, -1.0f, 0.0}, {1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
+
+			Vertex{{-w, -h, +d}, {-1.0f, 0.0f, 0.0}, {0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
+			Vertex{{-w, +h, +d}, {-1.0f, 0.0f, 0.0}, {0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+			Vertex{{-w, +h, -d}, {-1.0f, 0.0f, 0.0}, {1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+			Vertex{{-w, -h, -d}, {-1.0f, 0.0f, 0.0}, {1.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
+
+			Vertex{{+w, -h, -d}, {1.0f, 0.0f, 0.0}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+			Vertex{{+w, +h, -d}, {1.0f, 0.0f, 0.0}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+			Vertex{{+w, +h, +d}, {1.0f, 0.0f, 0.0}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+			Vertex{{+w, -h, +d}, {1.0f, 0.0f, 0.0}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+		};
+
+		/*mesh.indices =
+		{
+			0, 1, 2,
+			0, 2, 3,
+			4, 5, 6,
+			4, 6, 7,
+			8, 9, 10,
+			8, 10, 11,
+			12, 13, 14,
+			12, 14, 15,
+			16, 17, 18,
+			16, 18, 19,
+			20, 21, 22,
+			20, 22, 23
+		};*/
+
+		// D3D_PRIMITIVE_TOPOLOGY_LINESTRIP indices
+		// https://docs.microsoft.com/ko-kr/windows/uwp/graphics-concepts/primitive-topologies
+		mesh.indices =
+		{
+			0, 1, 2, 3,
+			12, 13, 14, 15,
+			19, 18, 17, 16,
+			7, 4, 5, 6,
+			21, 20, 23, 22,
+			9, 8, 11, 10
+		};
+
+		mesh.matIndex.push_back(0);
+
+		m_models["box"] = mesh;
+
+		auto meshDesc = std::make_unique<MeshDesc>();
+		meshDesc->mesh = &m_models["box"];
+		meshDesc->id = m_meshes.size();
+		meshDesc->indexCount = (UINT)(meshDesc->mesh->indices.size());
+
+		m_meshes["box"] = std::move(meshDesc);
 	}
 }
 
