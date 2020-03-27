@@ -285,7 +285,7 @@ void Scene::Update(float dt)
 		if (obj->IsActive()) obj->Update(dt);
 	}
 
-	// update object constant buffers.
+	// update instance buffers.
 	UpdateInstanceData();
 }
 

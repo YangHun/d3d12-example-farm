@@ -11,39 +11,71 @@ public:
 	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 
-	bool IsDirty() const 
+	bool IsDirty()  
 	{ 
-		bool parent = m_parent != nullptr ? m_parent->IsDirty() : false;
-		return parent | m_dirty; 
+		return m_dirty;
 	}
-	bool IsActive() const 
+	bool IsActive() 
 	{
 		bool parent = m_parent != nullptr ? m_parent->IsActive() : true;
-		return parent & m_active; 
+		return parent && m_active; 
 	}
 
-	UINT GetBufferID() const { return m_bufferId; }
+	UINT GetBufferID() { return m_bufferId; }
 
-	void SetDirty(bool value = true) { m_dirty = value; }
-	void SetActive(bool value) { 
+	void SetDirty(bool value = true) 
+	{ 
+		// 값이 true로 바뀔 경우, 자식의 Dirty flag를 true 처리.
+		m_dirty = value;
+		if (value == true)
+		{
+			for (auto& i : m_children) i->SetDirty(true);
+		}
+	}
+
+	void SetActive(bool value) 
+	{ 
 		m_active = value; 
 		SetDirty(true);
 	}
 	void SetBufferId(UINT value) { m_bufferId = value; }
 
-	void SetParent(Object* value) { 
+	void SetParent(Object* value) 
+	{ 
+		if (m_parent == value) return;
 		m_parent = value; 
+		value->SetChild(this);
 		SetDirty(true);
 	}
-	void DetachParent() { 
+	void DetachParent() 
+	{ 
+		if (m_parent == nullptr) return;
+		Object* _parent = m_parent;
 		m_parent = nullptr; 
+		_parent->DetachChild(this);
 		SetDirty(true);
+	}
+	
+	void SetChild(Object* value)
+	{
+		if (std::find(m_children.begin(), m_children.end(), value) != m_children.end()) return;
+		m_children.push_back(value);
+		value->SetParent(this);
+	}
+
+	void DetachChild(Object* value)
+	{
+		auto lookup = std::find(m_children.begin(), m_children.end(), value);
+		if (lookup == m_children.end()) return;
+		m_children.erase(lookup);
+		value->DetachParent();
 	}
 
 	Object* GetParentObject() { return m_parent; }
 
 private:
 	Object* m_parent;
+	std::vector<Object*> m_children;
 	bool m_active = true;
 	UINT m_bufferId = -1;
 	bool m_dirty = true;
@@ -135,6 +167,8 @@ public:
 	void SetBoundFromMesh(MeshDesc* mesh);
 
 #ifdef COLLIDER_DEBUG
+	GameObject* GetBoundLineObject() const { return m_pBox; }
+
 private:
 	GameObject* m_pBox = nullptr;
 
