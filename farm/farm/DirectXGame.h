@@ -72,10 +72,6 @@ private:
 	void UpdateInstanceData();
 	void AssignInstantiatedObjects();
 
-public: 
-	// object constant buffers for objects in current scene.
-	std::unique_ptr <UploadBuffer<ObjectConstantBuffer>> m_objConstantBuffers;
-
 private:
 	UINT m_id;
 
@@ -93,6 +89,7 @@ private:
 	std::vector<std::unique_ptr<UIObject>> m_allUIs;
 
 	Camera m_camera;
+	BoundingFrustum m_frustum;
 };
 
 static class Assets {
