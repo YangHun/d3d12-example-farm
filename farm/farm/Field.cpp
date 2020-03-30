@@ -7,6 +7,8 @@ Plant::Plant() :
 	m_timer(0.0f),
 	m_initScale(0.0f),
 	m_finalScale(0.005f),
+	m_initTransform({ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }),
+	m_finalTransform({ {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.01f, 0.01f, 0.01f} }),
 	m_state (E_STATE::PLANT_NONE)
 {
 	GetRenderer()->SetMesh("Assets/carrot.fbx");
@@ -15,7 +17,8 @@ Plant::Plant() :
 	//m_collider.SetBound(m_renderer.GetMeshDesc());
 
 	Transform t = GetTransform();
-	t.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
+	t.position = m_initTransform.position;
+	t.scale = m_initTransform.scale;
 	SetTransform(t);
 	
 	SetActive(false);
@@ -35,7 +38,8 @@ void Plant::Initialize()
 
 
 	Transform t = GetTransform();
-	t.scale = XMFLOAT3(m_initScale, m_initScale, m_initScale);
+	t.position.y = m_initTransform.position.y;
+	t.scale = m_initTransform.scale;
 	SetTransform(t);
 
 	SetActive(false);
@@ -52,9 +56,8 @@ void Plant::Update(float dt)
 			float scale = (m_timer / m_growTime);
 
 			Transform t = GetTransform();
-			t.scale = Math::Lerp(
-				XMFLOAT3(m_initScale, m_initScale, m_initScale),
-				XMFLOAT3(m_finalScale, m_finalScale, m_finalScale), scale);
+			t.position.y = Math::Lerp(m_initTransform.position.y, m_finalTransform.position.y, scale);
+			t.scale = Math::Lerp(m_initTransform.scale,	m_finalTransform.scale, scale);
 			SetTransform(t);
 
 			SetDirty();
@@ -132,11 +135,8 @@ void Field::Interact()
 	{
 		// 처음으로 식물을 심을 때, instantiate 한다			
 		m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>(E_RenderLayer::Opaque));
+		m_plant->SetParent(this);
 
-		Transform t = m_plant->GetTransform();
-		t.position = GetTransform().position;
-
-		m_plant->SetTransform(t);
 		m_plant->SetActive(false);
 	}
 	

@@ -4,11 +4,12 @@
 #include "Physics.h"
 
 GameObject::GameObject() :
-	m_transform (Transform{}),
+	m_transform(Transform{}),
 	m_pRenderer(std::make_unique<MeshRenderer>(this)),
 	m_pCollider(std::make_unique<BoxCollider>(this)),
 	m_layer(0),
-	m_culledLastFrame(true)
+	m_culledLastFrame(false),
+	m_culledNextFrame(false)
 {
 	
 }
@@ -23,6 +24,17 @@ void GameObject::Update(float dt)
 	m_pRenderer->Update(dt);
 }
 
+void GameObject::SetCullTested(bool result)
+{
+	m_culledLastFrame = m_culledNextFrame;
+	m_culledNextFrame = result;
+
+	for (auto child : GetChildren())
+	{
+		auto c = reinterpret_cast<GameObject*>(child);
+		c->SetCullTested(result);
+	}
+}
 XMMATRIX GameObject::GetWorldMatrix()
 {
 	XMMATRIX world = XMMATRIX(XMMatrixScaling(m_transform.scale.x, m_transform.scale.y, m_transform.scale.z)

@@ -73,6 +73,7 @@ public:
 	}
 
 	Object* GetParentObject() { return m_parent; }
+	std::vector<Object*> GetChildren() const { return m_children; }
 
 private:
 	Object* m_parent;
@@ -314,8 +315,10 @@ public:
 	BoxCollider* GetCollider() const { return m_pCollider.get(); }
 	
 	bool IsCullingEnabled() { return !m_pCollider->IsZero(); }
-	void SetCulled(bool value) { m_culledLastFrame = value; }
-	bool IsObjectCulled() { return m_culledLastFrame; }
+	bool IsCulledLastFrame() { return m_culledLastFrame; }
+	bool IsCulledNextFrame() { return m_culledNextFrame; }
+
+	void SetCullTested(bool result);
 
 private:
 	Transform m_transform;
@@ -329,6 +332,7 @@ private:
 	int m_layer;
 	UINT m_instanceID;
 
+	bool m_culledNextFrame;
 	bool m_culledLastFrame;
 };
 

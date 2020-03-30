@@ -215,13 +215,14 @@ void BuildSceneObjects(Scene* scene)
 				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
 					"Field_" + std::to_string(i * 10 + j),
 					Transform{
-						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+						{0.0f + (2.0f) * i, 0.0f, 0.0f + (2.0f) * j},
 						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
 					},
 					(i < activeNum) && (j < activeNum),
 					E_RenderLayer::Opaque));
 				obj->AddObserver(DirectXGame::GetPlayer());
 				obj->AddObserver(crate);
+				obj->GetRenderer()->SetMaterial("field-mat");
 			}
 		}
 	}
@@ -351,23 +352,32 @@ void Scene::AssignInstantiatedObjects()
 
 void Scene::UpdateInstanceData()
 {
+	// cull test
 	for (auto& obj : m_allObjects)
 	{
-		// active object 대상으로 cull test
-		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj.get()) : true;
+		// root object만 테스트
+		if (obj->GetParentObject() != nullptr) continue;
 		
+		// active object 대상으로 cull test
+		if (!obj->IsActive()) continue;
+		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj.get()) : true;
+		obj->SetCullTested(culltest);
+	}
+
+
+	for (auto& obj : m_allObjects)
+	{
 		// cull test 결과가 동일하고, dirty flag도 없다면 업데이트 하지 않는다.
-		if (!obj->IsDirty() && (obj->IsObjectCulled() == culltest)) continue;
+		if (!obj->IsDirty() && (obj->IsCulledLastFrame() == obj->IsCulledNextFrame())) continue;
 
 		InstanceData data;
 		XMStoreFloat4x4(&data.model, XMMatrixTranspose(obj->GetWorldMatrix()));
 		data.matIndex = obj->GetRenderer()->GetMaterialIndex();
 		data.layer = obj->GetLayer();		
-		data.active = (culltest && obj->IsActive());
+		data.active = obj->IsActive() && obj->IsCulledNextFrame();
 		
 		obj->GetRenderer()->AssignInstance(data);
-		obj->SetDirty(false);	
-		obj->SetCulled(culltest);
+		obj->SetDirty(false);
 	}
 }
 
@@ -432,13 +442,25 @@ Assets::Assets()
 		}
 	
 	
-		auto tex = std::make_unique<Texture>();
-		tex->name = "grass_tile";
-		tex->filePath = L"Textures/custom/grass_tile.dds";
-		tex->id = m_textures.size();
-		tex->type = E_TextureType::Texture2D;
-
-		m_textures[tex->name] = std::move(tex);
+		auto grass = std::make_unique<Texture>();
+		grass->name = "grass_tile";
+		grass->filePath = L"Textures/custom/grass_tile.dds";
+		grass->id = m_textures.size();
+		grass->type = E_TextureType::Texture2D;
+		m_textures[grass->name] = std::move(grass);
+	
+		auto dirt = std::make_unique<Texture>();
+		dirt->name = "dirt_tile";
+		dirt->filePath = L"Textures/custom/dirt_tile.dds";
+		dirt->id = m_textures.size();
+		dirt->type = E_TextureType::Texture2D;
+		m_textures[dirt->name] = std::move(dirt);
+		
+		auto mat = std::make_unique<Material>();
+		mat->name = "field-mat";
+		mat->diffuseMapIndex = m_textures["dirt_tile"]->id;
+		mat->bufferId = m_materials.size();
+		m_materials[mat->name] = std::move(mat);
 	}
 
 

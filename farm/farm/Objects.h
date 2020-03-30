@@ -30,6 +30,9 @@ private:
 	float m_lifeTime;
 	float m_growTime;
 	float m_timer;
+	
+	Transform m_initTransform;
+	Transform m_finalTransform;
 	float m_initScale;
 	float m_finalScale;
 
