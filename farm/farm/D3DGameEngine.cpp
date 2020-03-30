@@ -800,29 +800,33 @@ void D3DGameEngine::Update()
 		}
 	}
 
-	// rotate light
-	{
-		XMMATRIX R = XMMatrixRotationY(m_timer.DeltaTime() * 0.1f);
-		for (int i = 0; i < 3; ++i)
-		{
-			XMVECTOR dir = XMLoadFloat3(&m_BaseLightDirections[i]);
-			dir = XMVector3TransformNormal(dir, R);
-			XMStoreFloat3(&m_BaseLightDirections[i], dir);
-		}
-	}
+	//// rotate light
+	//{
+	//	XMMATRIX R = XMMatrixRotationY(m_timer.DeltaTime() * 0.1f);
+	//	for (int i = 0; i < 3; ++i)
+	//	{
+	//		XMVECTOR dir = XMLoadFloat3(&m_BaseLightDirections[i]);
+	//		dir = XMVector3TransformNormal(dir, R);
+	//		XMStoreFloat3(&m_BaseLightDirections[i], dir);
+	//	}
+	//}
 
 	// update shadow pass constant buffer.
 	{
 		auto shadowbuffer = m_shadowBuffer.get();
 		ShadowPassConstantBuffer cBuffer;
 		
-		float sceneRadius = max(25.0f, m_game.GetPlayer()->GetTransform().position.y);
+		float sceneRadius = max(30.0f, m_game.GetPlayer()->GetTransform().position.y);
 
 		// only the first directional light casts shadow.
-		//XMFLOAT3 pos = m_game.GetPlayer()->GetTransform().position;
+		
 		//XMVECTOR targetPos = XMLoadFloat3(&pos);
-		XMVECTOR targetPos = XMVectorZero();
-		XMVECTOR lightPos = -2.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]);
+		XMVECTOR targetPos = XMVectorAdd(
+			XMLoadFloat3(&m_game.GetCurrentScene()->GetCamera()->GetEyePosition()), 
+			sceneRadius * XMLoadFloat3(&m_game.GetCurrentScene()->GetCamera()->GetEyeDirection()));
+		targetPos = XMVectorSetY(targetPos, 0.0f); // target pos must be on xz-plane.
+
+		XMVECTOR lightPos = XMVectorSubtract(targetPos, 10.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]));
 		XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		XMMATRIX lightView = XMMatrixLookAtLH(lightPos, targetPos, lightUp);
 
@@ -878,7 +882,7 @@ void D3DGameEngine::Update()
 
 		cBuffer.fogColor = XMFLOAT4(62.0f / 255.0f, 79.0f / 255.0f, 66.0f / 255.0f, 1.0f);
 		cBuffer.fogStart = 5.0f;
-		cBuffer.fogRange = 50.0f;
+		cBuffer.fogRange = 30.0f;
 
 		mainbuffer->CopyData(0, cBuffer);
 	}
@@ -991,7 +995,7 @@ void D3DGameEngine::PopulateCommandList()
 		// bind texture heap to command queue
 		m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::Texture2DHeap), m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
-		m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
+		//m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
 		m_commandList->RSSetScissorRects(1, &m_shadowMap->GetRect());
 
 		// change state to depth_write.

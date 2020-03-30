@@ -24,6 +24,7 @@ public:
 	{
 		return m_u;
 	}
+	XMFLOAT3 GetEyeDirection() { return m_w; }
 	
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
