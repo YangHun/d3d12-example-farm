@@ -146,12 +146,6 @@ public:
 
 	virtual bool IsZero() = 0;
 
-	Bound GetBound() const { return m_bound; }
-	XMFLOAT3 GetCenter() const { return m_center; }
-
-private:
-	XMFLOAT3 m_center;
-	Bound m_bound;
 };
 
 class BoxCollider : public Collider
@@ -163,7 +157,7 @@ public:
 	void SetBound(const BoundingBox& value);
 	void SetCenter(const XMFLOAT3& value);
 
-	BoundingBox GetBound() { return m_bound; }
+	BoundingBox GetBoundBox() { return m_bound; }
 	bool IsZero();
 
 	void Start();
@@ -321,6 +315,12 @@ public:
 
 	MeshRenderer* GetRenderer() const { return m_pRenderer.get(); }
 	BoxCollider* GetCollider() const { return m_pCollider.get(); }
+
+
+	bool IsCullingEnabled() 
+	{ 
+		return !m_pCollider->IsZero(); 
+	}
 
 private:
 	Transform m_transform;

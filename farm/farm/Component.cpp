@@ -95,13 +95,13 @@ void MeshRenderer::SetMesh(std::string name)
 }
 
 Collider::Collider(GameObject* object) :
-	Component(object),
-	m_center(object->GetTransform().position)
+	Component(object)
 {
 }
 
 BoxCollider::BoxCollider(GameObject* object) :
-	Collider(object)
+	Collider(object),
+	m_bound({ 0.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 0.0f})
 {
 }
 
@@ -141,17 +141,15 @@ bool IsExist(const XMFLOAT3& value, const XMFLOAT3& floor, const XMFLOAT3& ceil)
 
 bool BoxCollider::IsZero()
 {
-	/*XMFLOAT3 center = m_bound.Center;
-	XMFLOAT3 extents = m_bound.Extents*/
 	XMFLOAT3 _c, _e;
 	
-	XMStoreFloat3(&_c, XMVectorEqual(XMLoadFloat3(&m_bound.Center), XMVectorZero()));
-	XMStoreFloat3(&_e, XMVectorEqual(XMLoadFloat3(&m_bound.Extents), XMVectorZero()));
+	XMStoreFloat3(&_c, XMVectorEqual(XMLoadFloat3(&m_bound.Center), DirectX::XMVectorZero()));
+	XMStoreFloat3(&_e, XMVectorEqual(XMLoadFloat3(&m_bound.Extents), DirectX::XMVectorZero()));
 
-	// XMVectorEqual() 결과값으로 요소가 동일할 경우 0xFFFFFFFF 반환
+	// XMVectorEqual() 결과값으로 요소가 동일하지 않을 경우, 0 반환
 	// https://docs.microsoft.com/en-us/windows/win32/api/directxmath/nf-directxmath-xmvectorgreaterorequal
-	return _c.x == 0xFFFFFFFF && _c.y == 0xFFFFFFFF && _c.z == 0xFFFFFFFF
-		&& _e.x == 0xFFFFFFFF && _e.y == 0xFFFFFFFF && _e.z == 0xFFFFFFFF;
+	return _c.x != 0.0f && _c.y != 0.0f && _c.z != 0.0f
+		&& _e.x != 0.0f && _e.y != 0.0f && _e.z != 0.0f;
 
 }
 

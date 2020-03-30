@@ -14,7 +14,7 @@ HarvestCrate::HarvestCrate() :
 
 	// Bound Àç¼³Á¤
 	//collider->SetCenter(localPivot);
-	auto bound = collider->GetBound();
+	auto bound = collider->GetBoundBox();
 	bound.Center.x = localPivot.x;
 	bound.Center.z = localPivot.z;
 	bound.Extents.z *= 0.4f;
