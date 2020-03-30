@@ -1,6 +1,7 @@
 #include "stdafx.h"
-#include "Component.h"
 #include "DirectXGame.h"
+#include "Component.h"
+#include "Physics.h"
 
 GameObject::GameObject() :
 	m_transform (Transform{}),
@@ -99,16 +100,6 @@ Collider::Collider(GameObject* object) :
 {
 }
 
-void Collider::Start()
-{
-
-}
-
-void Collider::Update(float dt)
-{
-
-}
-
 BoxCollider::BoxCollider(GameObject* object) :
 	Collider(object)
 {
@@ -130,80 +121,109 @@ void BoxCollider::SetBoundFromMesh(MeshDesc* desc)
 	if (desc == nullptr) return;
 	Mesh* mesh = desc->mesh;
 
-	Collider::Bound bound;
+	XMVECTOR _minBound = XMLoadFloat3(&mesh->minBound);
+	XMVECTOR _maxBound = XMLoadFloat3(&mesh->maxBound);
 
-	bound.min.x = mesh->minBound.x;
-	bound.min.y = mesh->minBound.y;
-	bound.min.z = mesh->minBound.z;
+	BoundingBox _bound;
 
-	bound.max.x = mesh->maxBound.x;
-	bound.max.y = mesh->maxBound.y;
-	bound.max.z = mesh->maxBound.z;
+	XMStoreFloat3(&_bound.Center, XMVectorAdd(_minBound, _maxBound) / 2.0f);
+	XMStoreFloat3(&_bound.Extents, XMVectorSubtract(_maxBound, _minBound) / 2.0f);
 
-	XMFLOAT3 center = XMFLOAT3(
-		(bound.min.x + bound.max.x) / 2.0f,
-		(bound.min.y + bound.max.y) / 2.0f,
-		(bound.min.z + bound.max.z) / 2.0f);
-
-	SetBound(bound);
-	SetCenter(center);
+	SetBound(_bound);
 }
 
-#ifdef COLLIDER_DEBUG
-
-void BoxCollider::SetBound(const Bound& value)
+bool IsExist(const XMFLOAT3& value, const XMFLOAT3& floor, const XMFLOAT3& ceil)
 {
-	XMFLOAT3 length = {
-		(value.max.x - value.min.x),
-		(value.max.y - value.min.y),
-		(value.max.z - value.min.z)
-	};
-	Collider::SetBound(value);
-	if (m_pBox == nullptr) {
-		m_pBox = DirectXGame::GetCurrentScene()->Instantiate<GameObject>(
-			"BoxCollider",
-			Transform{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
-			true,
-			E_RenderLayer::ColliderDebug);
+	return (value.x >= floor.x) && (value.x <= ceil.x)
+		&& (value.y >= floor.y) && (value.y <= ceil.y)
+		&& (value.z >= floor.z) && (value.z <= ceil.z);
+}
+
+bool BoxCollider::IsZero()
+{
+	/*XMFLOAT3 center = m_bound.Center;
+	XMFLOAT3 extents = m_bound.Extents*/
+	XMFLOAT3 _c, _e;
+	
+	XMStoreFloat3(&_c, XMVectorEqual(XMLoadFloat3(&m_bound.Center), XMVectorZero()));
+	XMStoreFloat3(&_e, XMVectorEqual(XMLoadFloat3(&m_bound.Extents), XMVectorZero()));
+
+
+	return _c.x == 0xFFFFFFFF && _c.y == 0xFFFFFFFF && _c.z == 0xFFFFFFFF
+		&& _e.x == 0xFFFFFFFF && _e.y == 0xFFFFFFFF && _e.z == 0xFFFFFFFF;
+
+}
+
+float BoxCollider::Pick(Ray ray)
+{
+	XMVECTOR _extent = XMLoadFloat3(&m_bound.Extents);
+	XMVECTOR _center = XMLoadFloat3(&m_bound.Center);
+
+	XMFLOAT3 _min, _max; 
+	XMStoreFloat3(&_min, XMVectorSubtract(_center, _extent));
+	XMStoreFloat3(&_max, XMVectorAdd(_center, _extent));
+
+	// base case : P가 bounding box 내부에 위치할 경우, true
+	if (IsExist(ray.position, _min, _max)) return 0.1f;
+
+	// AABB 체크
+	// 직선 상의 점은 _pos + k * _dir (k is constant) 로 나타낼 수 있다.
+	// x, y, z축의 최소/최대 값 bound와 직선이 만나는 6개의 점에 대한 k 값을 각각 구한다.
+	float v[6];
+	v[0] = (ray.direction.x != 0 ? ((_min.x - ray.position.x) / ray.direction.x) : FLT_MAX);
+	v[1] = (ray.direction.x != 0 ? ((_max.x - ray.position.x) / ray.direction.x) : FLT_MAX);
+	v[2] = (ray.direction.y != 0 ? ((_min.y - ray.position.y) / ray.direction.y) : FLT_MAX);
+	v[3] = (ray.direction.y != 0 ? ((_max.y - ray.position.y) / ray.direction.y) : FLT_MAX);
+	v[4] = (ray.direction.z != 0 ? ((_min.z - ray.position.z) / ray.direction.z) : FLT_MAX);
+	v[5] = (ray.direction.z != 0 ? ((_max.z - ray.position.z) / ray.direction.z) : FLT_MAX);
+
+	// near	: 축별로 P와 가까운 점 3개(x_near, y_near, z_near)의 k값 중 최대값
+	// far	: 축별로 P와 멀리 있는 점 3개(x_far, y_far, z_far)의 k값 중 최소값
+	float _near, _far;
+	_near = Max((v[0] < FLT_MAX ? 1.0f : -1.0f) * min(v[0], v[1]),
+		(v[2] < FLT_MAX ? 1.0f : -1.0f) * min(v[2], v[3]),
+		(v[4] < FLT_MAX ? 1.0f : -1.0f) * min(v[4], v[5]));
+	_far = Min(max(v[0], v[1]), max(v[2], v[3]), max(v[4], v[5]));
+
+	return ((_far >= 0) && (_near <= _far)) ? _near : FLT_MAX;
+}
+
+void BoxCollider::SetBound(const BoundingBox& value)
+{
+	m_bound = value;
+
+#ifdef COLLIDER_DEBUG
+	if (m_pBox == nullptr)
+	{
+		m_pBox = DirectXGame::GetCurrentScene()->Instantiate<GameObject>("collider", Transform{ {0.0f, 0.0f, 0.0}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} }, true, E_RenderLayer::ColliderDebug);
 		m_pBox->SetParent(gameObject());
 		m_pBox->GetRenderer()->SetMesh("box");
 	}
-
 	Transform t = m_pBox->GetTransform();
-	t.scale = { length.x, length.y, length.z };
+		
+	t.position = value.Center;
+		
+	XMVECTOR extents = XMLoadFloat3(&value.Extents);
+	XMStoreFloat3(&t.scale, extents * 2.0f);
+
 	m_pBox->SetTransform(t);
-
-
-
-	XMFLOAT3 center = {
-		(value.max.x + value.min.x) / 2.0f,
-		(value.max.y + value.min.y) / 2.0f,
-		(value.max.z + value.min.z) / 2.0f
-	};
-	BoxCollider::SetCenter(center);
+	
+#endif
 }
 
 void BoxCollider::SetCenter(const XMFLOAT3& value)
 {
-	Collider::SetCenter(value);
-	if (m_pBox == nullptr) {
-		m_pBox = DirectXGame::GetCurrentScene()->Instantiate<GameObject>(
-			"BoxCollider",
-			Transform{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
-			true,
-			E_RenderLayer::ColliderDebug);
-		m_pBox->SetParent(gameObject());
-		m_pBox->GetRenderer()->SetMesh("box");
+	m_bound.Center = value;
+
+#ifdef COLLIDER_DEBUG
+	if (m_pBox != nullptr)
+	{
+		Transform t = m_pBox->GetTransform();
+		t.position = value;
+		m_pBox->SetTransform(t);
 	}
-
-	Transform t = m_pBox->GetTransform();
-	t.position = { value.x, value.y, value.z };
-	m_pBox->SetTransform(t);
-
+#endif
 }
-
-#endif // COLLIDER_DEBUG
-
 
 //-------------------- ui objects
 

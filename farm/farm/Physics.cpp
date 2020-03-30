@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Physics.h"
 
-GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layerMask)
+GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layer)
 {
 	// generate the picking ray vector.
 	Ray ray = GeneratePickingRay(camera, screenX, screenY);
@@ -15,12 +15,11 @@ GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderL
 	float min_distance = FLT_MAX;
 
 
-
-	for (auto obj : scene->GetObjectsByLayer(layerMask))
+	for (auto obj : scene->GetObjectsByLayer(layer))
 	{
 		if (!obj->IsActive()) continue;
 		
-		if (obj->GetCollider()->isZero()) continue; // not have bounding box.
+		if (obj->GetCollider()->IsZero()) continue; // not have bounding box.
 		
 		// bounding box를 가진 object가 world transform을 가질 수 있으므로
 		// ray에 object의 (W)^-1 을 곱한 다음 충돌 여부를 체크한다.
@@ -42,7 +41,7 @@ GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderL
 			XMStoreFloat3(&_ray.position, _pos);
 		}
 
-		float distance = PickAABB(_ray, obj->GetCollider()->GetBound());
+		float distance = obj->GetCollider()->Pick(_ray);
 		if (distance < min_distance)
 		{
 			min_distance = distance;
@@ -88,7 +87,7 @@ float Physics::PickAABB(Ray ray, Collider::Bound bound)
 	return ((_far >= 0) && (_near <= _far))? _near : FLT_MAX;
 }
 
-Physics::Ray Physics::GeneratePickingRay(Camera* camera, int screenX, int screenY)
+Ray Physics::GeneratePickingRay(Camera* camera, int screenX, int screenY)
 {
 	// viewport space (2D)			--> normalized device space (3D)
 	XMVECTOR dir = XMLoadFloat2(&camera->ScreenToViewport(screenX, screenY));

@@ -83,21 +83,21 @@ void BuildSceneObjects(Scene* scene)
 	}
 
 
-	// plane to test shadow map.
-	{
-		auto obj = scene->Instantiate<GameObject>(
-			"plane",
-			Transform{
-				{0.0f, -0.5f, 0.0f},
-				{0.0f, 0.0f, 0.0f},
-				{20.0f, 1.0f, 20.0f}
-			},
-			true,
-			E_RenderLayer::Opaque);
+	//// plane to test shadow map.
+	//{
+	//	auto obj = scene->Instantiate<GameObject>(
+	//		"plane",
+	//		Transform{
+	//			{0.0f, -0.5f, 0.0f},
+	//			{0.0f, 0.0f, 0.0f},
+	//			{20.0f, 1.0f, 20.0f}
+	//		},
+	//		true,
+	//		E_RenderLayer::Opaque);
 
-		auto renderer = obj->GetRenderer();
-		renderer->SetMesh("plane");
-	}
+	//	auto renderer = obj->GetRenderer();
+	//	renderer->SetMesh("plane");
+	//}
 
 	// center aim.
 	{

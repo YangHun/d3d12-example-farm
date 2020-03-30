@@ -1,19 +1,16 @@
 #pragma once
 #include "DirectXGame.h"
-#include "Component.h"
-#include "Camera.h"
-#include <algorithm>
+
+struct Ray
+{
+	XMFLOAT3 direction;
+	XMFLOAT3 position;
+};
 
 class Physics
 {
-	struct Ray
-	{
-		XMFLOAT3 direction;
-		XMFLOAT3 position;
-	};
-
 public:
-	static GameObject* Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layerMask = E_RenderLayer::Opaque);
+	static GameObject* Raycast(Camera* camera, int screenX, int screenY, E_RenderLayer layer = E_RenderLayer::Opaque);
 
 private:
 	static Ray GeneratePickingRay(Camera* camera, int screenX, int screenY);

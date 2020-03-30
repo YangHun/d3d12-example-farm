@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Component.h"
+class Object;
+class GameObject;
 
 class Camera : public Observer
 {

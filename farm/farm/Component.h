@@ -4,6 +4,7 @@
 // 클래스 전방선언
 class GameObject;
 class UIObject;
+struct Ray;
 
 class Object
 {
@@ -139,21 +140,14 @@ public:
 	};
 
 	Collider(GameObject* object);
-	virtual void Start();
-	virtual void Update(float dt);
-	
-	bool isZero()
-	{
-		return (m_bound.min.x == 0.0f && m_bound.min.y == 0.0f && m_bound.min.z == 0.0f
-			&& m_bound.max.x == 0.0f && m_bound.max.y == 0.0f && m_bound.max.z == 0.0f);
-	}
+	virtual void Start() = 0;
+	virtual void Update(float dt) = 0;
+	virtual float Pick(Ray ray) = 0;
+
+	virtual bool IsZero() = 0;
 
 	Bound GetBound() const { return m_bound; }
 	XMFLOAT3 GetCenter() const { return m_center; }
-	
-	virtual void SetBound(const Bound& value) { m_bound = value; }
-	virtual void SetCenter(const XMFLOAT3& value) { m_center = value; }
-
 
 private:
 	XMFLOAT3 m_center;
@@ -164,22 +158,25 @@ class BoxCollider : public Collider
 {
 public:
 	BoxCollider(GameObject* object);
+
+	float Pick(Ray ray);
+	void SetBound(const BoundingBox& value);
+	void SetCenter(const XMFLOAT3& value);
+
+	BoundingBox GetBound() { return m_bound; }
+	bool IsZero();
+
 	void Start();
 	void Update(float dt);
 	void SetBoundFromMesh(MeshDesc* mesh);
 
-
 #ifdef COLLIDER_DEBUG
 	GameObject* GetBoundBoxObject() const { return m_pBox; }
 	
-	using Collider::SetBound;
-	void SetBound(const Bound& value) override;
-	
-	using Collider::SetCenter;
-	void SetCenter(const XMFLOAT3& value) override;
 
 private:
 	GameObject* m_pBox = nullptr;
+	BoundingBox m_bound;
 
 #endif // COLLIDER_DEBUG
 };

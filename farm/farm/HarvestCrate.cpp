@@ -13,9 +13,13 @@ HarvestCrate::HarvestCrate() :
 	collider->SetBoundFromMesh(GetRenderer()->meshDesc());	
 
 	// Bound Àç¼³Á¤
+	//collider->SetCenter(localPivot);
 	auto bound = collider->GetBound();
-	bound.max.x = -0.85;
-	bound.max.z = -2.9;
+	bound.Center.x = localPivot.x;
+	bound.Center.z = localPivot.z;
+	bound.Extents.z *= 0.4f;
+	bound.Extents.x *= 0.75f;
+	
 	collider->SetBound(bound);
 
 	for (int i = 0; i < m_size; ++i) {
