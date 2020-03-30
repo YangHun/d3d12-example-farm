@@ -366,12 +366,9 @@ void Scene::AssignInstantiatedObjects()
 
 void Scene::UpdateInstanceData()
 {
-	
-	
 	for (auto& obj : m_allObjects)
 	{
 		if (!obj->IsActive()) continue;
-
 		// active object 대상으로 cull test
 		bool culltest = m_camera.FrustumCullTest(obj.get());
 		

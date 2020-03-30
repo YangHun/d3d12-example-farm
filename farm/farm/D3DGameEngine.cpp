@@ -13,7 +13,7 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 {
 	CoInitialize(NULL);	//initialize COM to use Windows Imaging Component
 	m_timer.Reset();	
-
+	
 }
 
 void D3DGameEngine::Initialize()
@@ -732,6 +732,23 @@ void D3DGameEngine::Update()
 	m_timer.Tick();
 
 	WaitForPreviousFrame();
+
+	// update frame rate
+	{
+		static int frameCnt = 0;
+		static float elapsedTime = 0.0f;
+		frameCnt++;
+
+		if (m_timer.Time() - elapsedTime >= 1.0f)
+		{
+			float fps = static_cast<float>(frameCnt);
+			std::wstring title = L"fps: " + std::to_wstring(fps);
+			SetTitle(title.c_str());
+			
+			frameCnt = 0;
+			elapsedTime += 1.0f;
+		}
+	}
 
 	// update objects in scene.
 	auto scene = m_game.GetCurrentScene();

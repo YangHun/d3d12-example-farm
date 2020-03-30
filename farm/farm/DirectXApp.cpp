@@ -109,6 +109,12 @@ void DirectXApp::CreateDefaultBuffer(ID3D12Device* pDevice, ID3D12GraphicsComman
 
 }
 
+void DirectXApp::SetTitle(const WCHAR* str)
+{
+	m_title = str;
+	SetWindowText(Win32Application::GetHwnd(), str);
+}
+
 // Helper function for parsing any supplied command line args.
 _Use_decl_annotations_
 void DirectXApp::ParseCommandLineArgs(WCHAR* argv[], int argc)
