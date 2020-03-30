@@ -97,30 +97,6 @@ void BuildSceneObjects(Scene* scene)
 		obj->GetRenderer()->SetMesh("Assets/house.fbx");
 	}
 
-	// create fields
-	{
-		int activeNum = 50;
-
-		for (int i = 0; i < 20; ++i)
-		{
-			for (int j = 0; j < 50; ++j)
-			{
-				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
-					"Field_" + std::to_string(i * 10 + j),
-					Transform{
-						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
-						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
-					},
-					(i < activeNum) && (j < activeNum),
-					E_RenderLayer::Opaque));
-				obj->AddObserver(DirectXGame::GetPlayer());
-			}
-		}
-	}
-
-
-	return;
-
 
 	// plane to test shadow map.
 	{
@@ -207,39 +183,39 @@ void BuildSceneObjects(Scene* scene)
 		pillow->GetRenderer()->SetMesh("Assets/pillow.fbx");
 	}
 	
-	//// harvesting crate.
-	//auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
-	//	"CrateBox",
-	//	Transform{
-	//		{0.0f, 0.0f, 0.0f},
-	//		{0.0f, XM_PI / 36.0f, 0.0f},
-	//		{1.0f, 1.0f, 1.0f}
-	//	},
-	//	true,
-	//	E_RenderLayer::Opaque));
+	// harvesting crate.
+	auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
+		"CrateBox",
+		Transform{
+			{0.0f, 0.0f, 0.0f},
+			{0.0f, XM_PI / 36.0f, 0.0f},
+			{1.0f, 1.0f, 1.0f}
+		},
+		true,
+		E_RenderLayer::Opaque));
 	
 
-	//// create fields
-	//{
-	//	int activeNum = 50;
+	// create fields
+	{
+		int activeNum = 50;
 
-	//	for (int i = 0; i < 20; ++i)
-	//	{
-	//		for (int j = 0; j < 50; ++j)
-	//		{
-	//			auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
-	//				"Field_" + std::to_string(i * 10 + j),
-	//				Transform{
-	//					{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
-	//					{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
-	//				},
-	//				(i < activeNum) && (j < activeNum),
-	//				E_RenderLayer::Opaque));
-	//			obj->AddObserver(DirectXGame::GetPlayer());
-	//			obj->AddObserver(crate);
-	//		}
-	//	}
-	//}
+		for (int i = 0; i < 20; ++i)
+		{
+			for (int j = -25; j < 25; ++j)
+			{
+				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
+					"Field_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+					},
+					(i < activeNum) && (j < activeNum),
+					E_RenderLayer::Opaque));
+				obj->AddObserver(DirectXGame::GetPlayer());
+				obj->AddObserver(crate);
+			}
+		}
+	}
 
 }
 
@@ -368,8 +344,6 @@ void Scene::UpdateInstanceData()
 {
 	for (auto& obj : m_allObjects)
 	{
-		if (!obj->IsActive()) continue;
-		
 		// active object 대상으로 cull test
 		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj.get()) : true;
 		
