@@ -148,7 +148,8 @@ bool BoxCollider::IsZero()
 	XMStoreFloat3(&_c, XMVectorEqual(XMLoadFloat3(&m_bound.Center), XMVectorZero()));
 	XMStoreFloat3(&_e, XMVectorEqual(XMLoadFloat3(&m_bound.Extents), XMVectorZero()));
 
-
+	// XMVectorEqual() 결과값으로 요소가 동일할 경우 0xFFFFFFFF 반환
+	// https://docs.microsoft.com/en-us/windows/win32/api/directxmath/nf-directxmath-xmvectorgreaterorequal
 	return _c.x == 0xFFFFFFFF && _c.y == 0xFFFFFFFF && _c.z == 0xFFFFFFFF
 		&& _e.x == 0xFFFFFFFF && _e.y == 0xFFFFFFFF && _e.z == 0xFFFFFFFF;
 

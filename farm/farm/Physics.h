@@ -14,6 +14,8 @@ public:
 
 private:
 	static Ray GeneratePickingRay(Camera* camera, int screenX, int screenY);
+	
+	// deprecated.
 	static float PickAABB(Ray ray, Collider::Bound bound);
 };
 

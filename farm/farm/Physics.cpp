@@ -52,39 +52,40 @@ GameObject* Physics::Raycast(Camera* camera, int screenX, int screenY, E_RenderL
 	return hit;
 }	
 
+// deprecated.
 float Physics::PickAABB(Ray ray, Collider::Bound bound)
 {
-
-	XMFLOAT3 _dir = ray.direction;
-	XMFLOAT3 _pos = ray.position;
-
-	// base case : P가 bounding box 내부에 위치할 경우, true
-	if (IsExist(_pos.x, bound.min.x, bound.max.x) 
-		&& IsExist(_pos.y, bound.min.y, bound.max.y)
-		&& IsExist(_pos.z, bound.min.z, bound.max.z))
-		return true;
-
-	// AABB 체크
-	// 직선 상의 점은 _pos + k * _dir (k is constant) 로 나타낼 수 있다.
-	// x, y, z축의 최소/최대 값 bound와 직선이 만나는 6개의 점에 대한 k 값을 각각 구한다.
-	float v[6];
-	v[0] = (_dir.x != 0 ? ((bound.min.x - _pos.x) / _dir.x) : FLT_MAX);
-	v[1] = (_dir.x != 0 ? ((bound.max.x - _pos.x) / _dir.x) : FLT_MAX);
-	v[2] = (_dir.y != 0 ? ((bound.min.y - _pos.y) / _dir.y) : FLT_MAX);
-	v[3] = (_dir.y != 0 ? ((bound.max.y - _pos.y) / _dir.y) : FLT_MAX);
-	v[4] = (_dir.z != 0 ? ((bound.min.z - _pos.z) / _dir.z) : FLT_MAX);
-	v[5] = (_dir.z != 0 ? ((bound.max.z - _pos.z) / _dir.z) : FLT_MAX);
-
-	
-	// near	: 축별로 P와 가까운 점 3개(x_near, y_near, z_near)의 k값 중 최대값
-	// far	: 축별로 P와 멀리 있는 점 3개(x_far, y_far, z_far)의 k값 중 최소값
-	float _near, _far;
-	_near = Max((v[0] < FLT_MAX ? 1.0f : -1.0f) * min(v[0], v[1]), 
-		(v[2] < FLT_MAX ? 1.0f : -1.0f) * min(v[2], v[3]),
-		(v[4] < FLT_MAX ? 1.0f : -1.0f) * min(v[4], v[5]));
-	_far = Min( max(v[0], v[1]), max(v[2], v[3]), max(v[4], v[5]));
-
-	return ((_far >= 0) && (_near <= _far))? _near : FLT_MAX;
+//
+//	XMFLOAT3 _dir = ray.direction;
+//	XMFLOAT3 _pos = ray.position;
+//
+//	// base case : P가 bounding box 내부에 위치할 경우, true
+//	if (IsExist(_pos.x, bound.min.x, bound.max.x) 
+//		&& IsExist(_pos.y, bound.min.y, bound.max.y)
+//		&& IsExist(_pos.z, bound.min.z, bound.max.z))
+//		return true;
+//
+//	// AABB 체크
+//	// 직선 상의 점은 _pos + k * _dir (k is constant) 로 나타낼 수 있다.
+//	// x, y, z축의 최소/최대 값 bound와 직선이 만나는 6개의 점에 대한 k 값을 각각 구한다.
+//	float v[6];
+//	v[0] = (_dir.x != 0 ? ((bound.min.x - _pos.x) / _dir.x) : FLT_MAX);
+//	v[1] = (_dir.x != 0 ? ((bound.max.x - _pos.x) / _dir.x) : FLT_MAX);
+//	v[2] = (_dir.y != 0 ? ((bound.min.y - _pos.y) / _dir.y) : FLT_MAX);
+//	v[3] = (_dir.y != 0 ? ((bound.max.y - _pos.y) / _dir.y) : FLT_MAX);
+//	v[4] = (_dir.z != 0 ? ((bound.min.z - _pos.z) / _dir.z) : FLT_MAX);
+//	v[5] = (_dir.z != 0 ? ((bound.max.z - _pos.z) / _dir.z) : FLT_MAX);
+//
+//	
+//	// near	: 축별로 P와 가까운 점 3개(x_near, y_near, z_near)의 k값 중 최대값
+//	// far	: 축별로 P와 멀리 있는 점 3개(x_far, y_far, z_far)의 k값 중 최소값
+//	float _near, _far;
+//	_near = Max((v[0] < FLT_MAX ? 1.0f : -1.0f) * min(v[0], v[1]), 
+//		(v[2] < FLT_MAX ? 1.0f : -1.0f) * min(v[2], v[3]),
+//		(v[4] < FLT_MAX ? 1.0f : -1.0f) * min(v[4], v[5]));
+//	_far = Min( max(v[0], v[1]), max(v[2], v[3]), max(v[4], v[5]));
+//
+//	return ((_far >= 0) && (_near <= _far))? _near : FLT_MAX;
 }
 
 Ray Physics::GeneratePickingRay(Camera* camera, int screenX, int screenY)
