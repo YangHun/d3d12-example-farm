@@ -157,13 +157,15 @@ public:
 	void Update(float dt);
 	void SetBoundFromMesh(MeshDesc* mesh);
 
+private:
+	BoundingBox m_bound;
+
 #ifdef COLLIDER_DEBUG
 	GameObject* GetBoundBoxObject() const { return m_pBox; }
 	
 
 private:
 	GameObject* m_pBox = nullptr;
-	BoundingBox m_bound;
 
 #endif // COLLIDER_DEBUG
 };

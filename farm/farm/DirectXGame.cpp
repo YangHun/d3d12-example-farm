@@ -82,6 +82,32 @@ void BuildSceneObjects(Scene* scene)
 		obj->GetRenderer()->SetMaterial("default-mat");
 	}
 
+	// a table and a note.
+	{
+		auto obj = reinterpret_cast<QuestTable*>(scene->Instantiate<QuestTable>(
+			"Table",
+			Transform{
+				{-8.0f, 1.1f, 1.6f},
+				{0.0f, 0.0f, 0.0f},
+				{0.03f, 0.02f, 0.03f}
+			},
+			true,
+			E_RenderLayer::Opaque));
+
+		auto ui = reinterpret_cast<QuestInfo*>(scene->Instantiate<QuestInfo>("quest-info"));
+		obj->AddObserver(ui);
+		obj->AddObserver(scene->GetCamera());
+		obj->AddObserver(DirectXGame::GetPlayer());
+	
+		auto note = scene->Instantiate<GameObject>(
+			"note",
+			Transform{ {-8.3f, 2.5f, 2.2f}, {0.0f, 0.3f, 0.0f}, {0.02f, 0.02f, 0.02f} },
+			true,
+			E_RenderLayer::Opaque);
+		note->GetRenderer()->SetMesh("Assets/Pen and Notepad.fbx");
+		note->GetRenderer()->SetMaterial("note-mat");
+	}
+	
 	// a house.
 	{
 		auto obj = scene->Instantiate<GameObject>(
@@ -133,38 +159,7 @@ void BuildSceneObjects(Scene* scene)
 		renderer->SetRect(Rect{ 640 - size,  360 - size, 640 + size , 360 + size });
 	}
 
-	// a house.
-	{
-		auto obj = scene->Instantiate<GameObject>(
-			"House",
-			Transform{
-				{-12.5f, 0.0f, 5.0f},
-				{0.0f, XM_PI / 2.0f, 0.0f},
-				{0.2f, 0.2f, 0.2f}
-			},
-			true,
-			E_RenderLayer::Opaque);
-
-		obj->GetRenderer()->SetMesh("Assets/house.fbx");
-	}
-
-	// a table.
-	{
-		auto obj = reinterpret_cast<QuestTable*>(scene->Instantiate<QuestTable>(
-			"Table",
-			Transform{
-				{-8.0f, 1.1f, 1.6f},
-				{0.0f, 0.0f, 0.0f},
-				{0.03f, 0.02f, 0.03f}
-			},
-			true,
-			E_RenderLayer::Opaque));
-
-		auto ui = reinterpret_cast<QuestInfo*>(scene->Instantiate<QuestInfo>("quest-info"));
-		obj->AddObserver(ui);
-		obj->AddObserver(scene->GetCamera());
-		obj->AddObserver(DirectXGame::GetPlayer());
-	}
+	
 
 	// a bed and a pillow.
 	{
@@ -345,6 +340,8 @@ void BuildSceneObjects(Scene* scene)
 		}
 	}
 
+	
+
 }
 
 void DirectXGame::OnKeyDown(UINT8 key)
@@ -403,8 +400,8 @@ void Scene::BuildObject()
 
 	// init camera
 	{
-		m_camera.SetPosition(XMFLOAT3(-5.0f, 5.0f, -6.0f));
-		m_camera.SetRotation(XMFLOAT3(30.0f, 45.0f, 0.0f));
+		m_camera.SetPosition(XMFLOAT3(-15.0f, 5.0f, 5.0f));
+		m_camera.SetRotation(XMFLOAT3(30.0f, 90.0f, 0.0f));
 		m_camera.SetFrustum(XM_PI * 0.25f);
 	}
 }
@@ -533,14 +530,14 @@ Assets::Assets()
 	// Load meshes with textures.
 	{
 		std::vector<std::string> fbxName = {
+			"Assets/Pen and Notepad.fbx",
 			"Assets/pillow.fbx",
 			"Assets/bed.fbx",
 			"Assets/table.fbx",
-			"Assets/plant.fbx",
 			"Assets/house.fbx",
 			"Assets/carrot.fbx",
 			"Assets/cratebox.fbx",
-			"Assets/tree.fbx"
+			"Assets/tree.fbx",
 		};
 
 		FbxLoader loader = FbxLoader(&Assets::m_textures, &Assets::m_materials);
@@ -574,12 +571,28 @@ Assets::Assets()
 		dirt->id = m_textures.size();
 		dirt->type = E_TextureType::Texture2D;
 		m_textures[dirt->name] = std::move(dirt);
-		
+
 		auto field_mat = std::make_unique<Material>();
 		field_mat->name = "field-mat";
 		field_mat->diffuseMapIndex = m_textures["dirt_tile"]->id;
 		field_mat->bufferId = m_materials.size();
 		m_materials[field_mat->name] = std::move(field_mat);
+
+
+		auto note = std::make_unique<Texture>();
+		note->name = "note";
+		note->filePath = L"Textures/custom/Notepad_diffuse.dds";
+		note->id = m_textures.size();
+		note->type = E_TextureType::Texture2D;
+		m_textures[note->name] = std::move(note);
+
+		auto note_mat = std::make_unique<Material>();
+		note_mat->name = "note-mat";
+		note_mat->diffuseMapIndex = m_textures["note"]->id;
+		note_mat->bufferId = m_materials.size();
+		m_materials[note_mat->name] = std::move(note_mat);
+
+
 
 		auto tree_mat = std::make_unique<Material>();
 		tree_mat->name = "tree-mat";
@@ -604,7 +617,7 @@ Assets::Assets()
 			"cross-aim",
 			"default-black",
 			"default-white",
-			"scroll",
+			"paper",
 		};
 		
 		std::vector<std::wstring> imgPath
@@ -612,7 +625,7 @@ Assets::Assets()
 			L"Sprites/aim.png",
 			L"Sprites/default/black.jpg",
 			L"Sprites/default/white.jpg",
-			L"Sprites/scroll.png",
+			L"Sprites/paper.png",
 		};
 
 		for (UINT i = 0; i < imgName.size(); ++i)
