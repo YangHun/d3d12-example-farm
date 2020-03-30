@@ -25,15 +25,3 @@ FrameResource::~FrameResource()
 	m_cbvUploadHeap->Unmap(0, nullptr);
 	m_pConstantBuffers = nullptr;
 }
-
-void FrameResource::PopulateCommandList()
-{
-
-}
-
-void XM_CALLCONV UpdateConstantBuffers(FXMMATRIX view, CXMMATRIX proj)
-{
-	XMFLOAT4 mvp;
-
-
-}

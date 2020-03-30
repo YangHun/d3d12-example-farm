@@ -107,7 +107,7 @@ float4 PSMain(PSInput input) : SV_TARGET
     for (i = 0; i < 3; ++i)
     {
         float3 l = -gLights[i].direction.xyz; // directional light
-        float3 d = saturate(dot(l, input.normal)) * gLights[i].strength.xyz;
+        float3 d = max(dot(l, input.normal), 0.0f) * gLights[i].strength.xyz;
         d *= shadowFactor[i];
         diffuse += d;
     }

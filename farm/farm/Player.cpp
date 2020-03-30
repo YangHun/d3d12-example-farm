@@ -10,11 +10,6 @@ Player::Player()
 
 }
 
-void Player::Start()
-{
-
-}
-
 void Player::Update(float dt)
 {
 	

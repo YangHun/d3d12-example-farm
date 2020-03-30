@@ -7,11 +7,6 @@ Bed::Bed() : GameObject()
 	GetCollider()->SetBoundFromMesh(GetRenderer()->meshDesc());
 }
 
-void Bed::Start()
-{
-
-}
-
 void Bed::Update(float dt)
 {
 

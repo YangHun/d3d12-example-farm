@@ -8,11 +8,6 @@ QuestTable::QuestTable()
 	GetCollider()->SetBoundFromMesh(GetRenderer()->meshDesc());
 }
 
-void QuestTable::Start()
-{
-
-}
-
 void QuestTable::Update(float dt)
 {
 

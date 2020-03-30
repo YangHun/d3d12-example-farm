@@ -882,7 +882,7 @@ void D3DGameEngine::Update()
 
 		cBuffer.fogColor = XMFLOAT4(62.0f / 255.0f, 79.0f / 255.0f, 66.0f / 255.0f, 1.0f);
 		cBuffer.fogStart = 5.0f;
-		cBuffer.fogRange = 30.0f;
+		cBuffer.fogRange = 50.0f;
 
 		mainbuffer->CopyData(0, cBuffer);
 	}

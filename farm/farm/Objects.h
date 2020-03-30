@@ -15,7 +15,6 @@ public:
 	};
 
 	Plant();
-	void Start();
 	void Update(float dt);
 
 	E_STATE GetCurrentState() const { return m_state; }
@@ -43,7 +42,6 @@ class Field : public GameObject, public Subject
 {
 public:
 	Field();
-	void Start();
 	void Update(float dt);
 
 	void Interact();
@@ -57,18 +55,23 @@ class Bed : public GameObject
 {
 public:
 	Bed();
-	void Start();
 	void Update(float dt);
 
 	void Interact();
 
 };
 
+class Tree : public GameObject
+{
+public:
+	Tree();
+	void Update(float dt);
+};
+
 class Player : public GameObject, public Observer
 {
 public:
 	Player();
-	void Start();
 	void Update(float dt);
 
 	void OnNotify(Object* object, E_Event event) override;
@@ -107,14 +110,13 @@ class HarvestCrate : public GameObject, public Observer
 public:
 	HarvestCrate();
 
-	void Start();
 	void Update(float dt);
 	void OnNotify(Object* object, E_Event event) override;
 
 	bool IsEmpty() { return m_count < 1; }
 
 	void Increase(int value);
-	void MoveNearObject(Transform transform);
+	void MoveNearObject(GameObject* object);
 
 private:
 	int m_count;
@@ -136,7 +138,6 @@ class QuestTable : public GameObject, public Subject
 public:
 	QuestTable();
 
-	void Start();
 	void Update(float dt) override;
 
 	void Interact();
@@ -147,7 +148,6 @@ class InventorySlot : public UIObject
 public:
 	InventorySlot();
 
-	void Start();
 	void Update(float dt);
 
 private:
@@ -159,7 +159,6 @@ class Inventory : public UIObject, public Observer
 public:
 	Inventory();
 
-	void Start();
 	void Update(float dt);
 
 	void Draw(ID2D1DeviceContext2* pDeviceContext) override;
@@ -175,7 +174,6 @@ class QuestInfo : public UIObject, public Observer
 public:
 	QuestInfo();
 
-	void Start();
 	void Update(float dt);
 	void Draw(ID2D1DeviceContext2* pDeviceContext) override;
 	void OnNotify(Object* object, E_Event event) override;

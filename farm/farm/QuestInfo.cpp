@@ -15,15 +15,12 @@ QuestInfo::QuestInfo()
 	layout->SetRect(layoutRect);
 
 	auto text = GetUIText();
-	text->SetTextDesc("black");
+	text->SetTextDesc("black-center");
 	text->SetRect(Rect{ layoutRect.left + 50.0f, layoutRect.top + 20.0f, layoutRect.right - 50.0f, layoutRect.bottom - 20.0f });
-	text->SetText(L"당근 한 박스가 급하게 필요해.\n 품질은 상관 없고, 개수만 맞춰 주면 돼.\n갈아버릴 거거든.\n\n촉박한 만큼, 추가금을 얹지.\n가능하겠나?");
+	text->SetText(L"Roses are red,\n\nViolets are blue,\n\nSugar is sweet,\n\nAnd so are you.");
 
 	SetActive(false);
 }
-
-void QuestInfo::Start()
-{}
 
 void QuestInfo::Update(float dt)
 {}

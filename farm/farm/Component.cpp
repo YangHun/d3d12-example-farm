@@ -14,11 +14,6 @@ GameObject::GameObject() :
 	
 }
 
-void GameObject::Start()
-{
-	// Do I really need this method or not?
-}
-
 void GameObject::Update(float dt)
 {
 	m_pRenderer->Update(dt);
@@ -53,10 +48,6 @@ Component::Component(GameObject* object) :
 }
 
 MeshRenderer::MeshRenderer(GameObject* object) : Component(object)
-{
-}
-
-void MeshRenderer::Start()
 {
 }
 
@@ -124,12 +115,6 @@ BoxCollider::BoxCollider(GameObject* object) :
 	Collider(object),
 	m_bound({ 0.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 0.0f})
 {
-}
-
-
-void BoxCollider::Start()
-{
-
 }
 
 void BoxCollider::Update(float dt)
@@ -254,11 +239,6 @@ UIObject::UIObject() :
 
 }
 
-void UIObject::Start()
-{
-
-}
-
 void UIObject::Update(float dt)
 {
 
@@ -281,9 +261,6 @@ SpriteRenderer::SpriteRenderer(UIObject* object) : UIComponent(object),
 {
 
 }
-
-void SpriteRenderer::Start()
-{}
 
 void SpriteRenderer::Update(float dt)
 {}
@@ -331,11 +308,6 @@ void UIText::SetTextDesc(std::string name)
 	auto lookup = Assets::m_texts.find(name);
 	if (lookup != Assets::m_texts.end()) m_pDesc = lookup->second.get();
 	else m_pDesc = nullptr;
-}
-
-void UIText::Start()
-{
-
 }
 
 void UIText::Update(float dt)

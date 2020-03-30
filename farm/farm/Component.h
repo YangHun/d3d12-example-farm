@@ -9,7 +9,6 @@ struct Ray;
 class Object
 {
 public:
-	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 
 	bool IsDirty()  
@@ -88,7 +87,6 @@ class Component
 public:
 	Component(GameObject* object);
 
-	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 
 	GameObject* gameObject() const { return m_pObject; }
@@ -101,7 +99,6 @@ class MeshRenderer : public Component
 {
 public:
 	MeshRenderer(GameObject* object);
-	void Start();
 	void Update(float dt);
 
 	void SetMesh(std::string name);
@@ -138,7 +135,6 @@ public:
 	};
 
 	Collider(GameObject* object);
-	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 	virtual float Pick(Ray ray) = 0;
 
@@ -158,7 +154,6 @@ public:
 	BoundingBox GetBoundBox() { return m_bound; }
 	bool IsZero();
 
-	void Start();
 	void Update(float dt);
 	void SetBoundFromMesh(MeshDesc* mesh);
 
@@ -179,7 +174,6 @@ class UIComponent
 public:
 	UIComponent(UIObject* object);
 
-	virtual void Start() = 0;
 	virtual void Update(float dt) = 0;
 
 	virtual void Draw(ID2D1DeviceContext2*) = 0;
@@ -196,7 +190,6 @@ class UIText : public UIComponent
 public:
 	UIText(UIObject* object);
 
-	void Start();
 	void Update(float dt);
 
 	void Draw(ID2D1DeviceContext2* pDeviceContext);
@@ -220,7 +213,6 @@ class SpriteRenderer : public UIComponent
 {
 public:
 	SpriteRenderer(UIObject* object);
-	void Start();
 	void Update(float dt);
 
 	void Draw(ID2D1DeviceContext2* pDeviceContext);
@@ -290,7 +282,6 @@ class GameObject : public Object
 public:
 	GameObject();
 
-	virtual void Start();
 	virtual void Update(float dt);
 
 	XMMATRIX GetWorldMatrix();
@@ -341,7 +332,6 @@ class UIObject : public Object
 public:
 	UIObject();
 
-	virtual void Start();
 	virtual void Update(float dt);
 
 	virtual void Draw(ID2D1DeviceContext2* pDeviceContext);
@@ -353,8 +343,6 @@ public:
 	UIText* GetUIText() const { return m_pText.get(); }
 
 private:
-	//Transform m_transform;
-
 	std::unique_ptr<SpriteRenderer> m_pSprite;
 	std::unique_ptr<UIText> m_pText;
 

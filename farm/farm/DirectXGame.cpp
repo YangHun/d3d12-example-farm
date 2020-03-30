@@ -208,9 +208,9 @@ void BuildSceneObjects(Scene* scene)
 	{
 		int activeNum = 50;
 
-		for (int i = 0; i < 20; ++i)
+		for (int i = 0; i < 18; ++i)
 		{
-			for (int j = -25; j < 25; ++j)
+			for (int j = -18; j < 18; ++j)
 			{
 				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
 					"Field_" + std::to_string(i * 10 + j),
@@ -218,12 +218,130 @@ void BuildSceneObjects(Scene* scene)
 						{0.0f + (2.0f) * i, 0.0f, 0.0f + (2.0f) * j},
 						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
 					},
-					(i < activeNum) && (j < activeNum),
+					(i != 0 && j != 0),
 					E_RenderLayer::Opaque));
 				obj->AddObserver(DirectXGame::GetPlayer());
 				obj->AddObserver(crate);
 				obj->GetRenderer()->SetMaterial("field-mat");
 			}
+		}
+	}
+
+	// create trees (field side)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = -22; j < 22; ++j)
+			{
+				if ((i + j) % 3 != 0) continue;
+
+				float scale = Random::Range(1.0f, 1.5f);
+
+				scene->Instantiate<Tree>(
+					"Tree_" + std::to_string(i * 10 + j),
+					Transform{
+						{40.0f + (2.0f) * i, 2.0f, 0.0f + (2.0f) * j},
+						{0.0f, 0.0f, 0.0f}, {0.01f * scale, 0.01f * scale, 0.01f * scale}
+					},
+					true,
+					E_RenderLayer::Opaque);
+			}
+		}
+
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = -2; j < 20; ++j)
+			{
+				if ((i + j) % 3 != 0) continue;
+
+				float scale = Random::Range(1.0f, 1.5f);
+
+				scene->Instantiate<Tree>(
+					"Tree_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.0f) * j, 2.0f, 40.0f + (2.0f) * i},
+						{0.0f, 0.0f, 0.0f}, {0.01f * scale, 0.01f * scale, 0.01f * scale}
+					},
+					true,
+					E_RenderLayer::Opaque);
+				scene->Instantiate<Tree>(
+					"Tree_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.0f) * j, 2.0f, -42.0f - (2.0f) * i},
+						{0.0f, 0.0f, 0.0f}, {0.01f * scale, 0.01f * scale, 0.01f * scale}
+					},
+					true,
+					E_RenderLayer::Opaque);
+			}
+		}
+
+	}
+
+	// create trees (house side)
+	{
+		int radius = 13;
+
+		for (int i = -20; i < 0; ++i)
+		{
+			for (int j = -22; j < 22; ++j)
+			{
+				if (i * i + j * j < radius * radius) continue;
+				if ((i * i + j * j) % (std::abs(j) + 1) >= std::abs(j) / 4) continue;
+				if (i == -1 && j % 5 != 0) continue;
+
+				float scale = Random::Range(1.0f, 1.5f);
+
+				scene->Instantiate<Tree>(
+					"Tree_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.0f) * i, 2.0f, 0.0f + (2.0f) * j},
+						{0.0f, 0.0f, 0.0f}, {0.01f * scale, 0.01f * scale, 0.01f * scale}
+					},
+					true,
+					E_RenderLayer::Opaque);
+			}
+		}
+	}
+
+	// create trees (out bound)
+	{
+		for (int i = -25; i < 25; ++i)
+		{
+			scene->Instantiate<Tree>(
+					"tree_bound",
+					Transform{
+						{50.0f, 2.0f, 0.0f + (2.0f) * i},
+						{0.0f, 0.0f, 0.0f}, {0.013f, 0.013f, 0.013f}
+					},
+					true,
+					E_RenderLayer::Opaque);
+			
+			scene->Instantiate<Tree>(
+				"tree_bound",
+				Transform{
+					{-50.0f, 2.0f, 0.0f + (2.0f) * i},
+					{0.0f, 0.0f, 0.0f}, {0.013f, 0.013f, 0.013f}
+				},
+				true,
+				E_RenderLayer::Opaque);
+
+			scene->Instantiate<Tree>(
+				"tree_bound",
+				Transform{
+					{0.0f + (2.0f) * i, 2.0f, 50.0f},
+					{0.0f, 0.0f, 0.0f}, {0.013f, 0.013f, 0.013f}
+				},
+				true,
+				E_RenderLayer::Opaque);
+
+			scene->Instantiate<Tree>(
+				"tree_bound",
+				Transform{
+					{0.0f + (2.0f) * i, 2.0f, -50.0f},
+					{0.0f, 0.0f, 0.0f}, {0.013f, 0.013f, 0.013f}
+				},
+				true,
+				E_RenderLayer::Opaque);
 		}
 	}
 
@@ -421,7 +539,8 @@ Assets::Assets()
 			"Assets/plant.fbx",
 			"Assets/house.fbx",
 			"Assets/carrot.fbx",
-			"Assets/cratebox.fbx"
+			"Assets/cratebox.fbx",
+			"Assets/tree.fbx"
 		};
 
 		FbxLoader loader = FbxLoader(&Assets::m_textures, &Assets::m_materials);
@@ -456,11 +575,32 @@ Assets::Assets()
 		dirt->type = E_TextureType::Texture2D;
 		m_textures[dirt->name] = std::move(dirt);
 		
-		auto mat = std::make_unique<Material>();
-		mat->name = "field-mat";
-		mat->diffuseMapIndex = m_textures["dirt_tile"]->id;
-		mat->bufferId = m_materials.size();
-		m_materials[mat->name] = std::move(mat);
+		auto field_mat = std::make_unique<Material>();
+		field_mat->name = "field-mat";
+		field_mat->diffuseMapIndex = m_textures["dirt_tile"]->id;
+		field_mat->bufferId = m_materials.size();
+		m_materials[field_mat->name] = std::move(field_mat);
+
+		auto tree_mat = std::make_unique<Material>();
+		tree_mat->name = "tree-mat";
+		tree_mat->diffuseMapIndex = 0;
+		tree_mat->diffuseColor = { 76.0f / 255.0f, 135.0f / 255.0f, 27.0f / 255.0f };
+		tree_mat->bufferId = m_materials.size();
+		m_materials[tree_mat->name] = std::move(tree_mat);
+
+		auto uvTest = std::make_unique<Texture>();
+		uvTest->name = "uvTest";
+		uvTest->filePath = L"Textures/uvTest.dds";
+		uvTest->id = m_textures.size();
+		uvTest->type = E_TextureType::Texture2D;
+		m_textures[uvTest->name] = std::move(uvTest);
+
+		auto carrot_mat = std::make_unique<Material>();
+		carrot_mat->name = "carrot-mat";
+		carrot_mat->diffuseMapIndex = 0;
+		carrot_mat->diffuseColor = { 254.0f / 255.0f, 162.0f / 255.0f, 23.0f / 255.0f };
+		carrot_mat->bufferId = m_materials.size();
+		m_materials[carrot_mat->name] = std::move(carrot_mat);
 	}
 
 
@@ -516,11 +656,18 @@ Assets::Assets()
 
 	// create default text brushes.
 	{
-		auto text = std::make_unique<TextDesc>();
-		text->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
-		text->fontSize = 20;
-		text->id = m_texts.size();
-		m_texts["black"] = std::move(text);
+		auto lead = std::make_unique<TextDesc>();
+		lead->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		lead->fontSize = 20;
+		lead->id = m_texts.size();
+		m_texts["black-leading"] = std::move(lead);
+
+		auto center = std::make_unique<TextDesc>();
+		center->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		center->textAlignment = DWRITE_TEXT_ALIGNMENT_CENTER;
+		center->fontSize = 20;
+		center->id = m_texts.size();
+		m_texts["black-center"] = std::move(center);
 	}
 
 	// create default triangle

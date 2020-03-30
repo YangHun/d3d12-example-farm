@@ -43,8 +43,8 @@ class Random
 public:
 	static bool Boolean()
 	{
-		std::random_device rn;
-		std::mt19937_64 rnd(rn());
+		static std::random_device rn;
+		static std::mt19937_64 rnd(rn());
 
 		std::uniform_int_distribution<int> range(0, 1);
 
@@ -53,8 +53,8 @@ public:
 
 	static int Range(int floor, int ceil)
 	{
-		std::random_device rn;
-		std::mt19937_64 rnd(rn());
+		static std::random_device rn;
+		static std::mt19937_64 rnd(rn());
 
 		std::uniform_int_distribution<int> range(floor, ceil);
 
@@ -62,8 +62,8 @@ public:
 	}
 	static float Range(float floor, float ceil)
 	{
-		std::random_device rn;
-		std::mt19937_64 rnd(rn());
+		static std::random_device rn;
+		static std::mt19937_64 rnd(rn());
 
 		std::uniform_real_distribution<float> range(floor, ceil);
 

@@ -13,7 +13,6 @@ HarvestCrate::HarvestCrate() :
 	collider->SetBoundFromMesh(GetRenderer()->meshDesc());	
 
 	// Bound Àç¼³Á¤
-	//collider->SetCenter(localPivot);
 	auto bound = collider->GetBoundBox();
 	bound.Center.x = localPivot.x;
 	bound.Center.z = localPivot.z;
@@ -34,6 +33,7 @@ HarvestCrate::HarvestCrate() :
 			E_RenderLayer::Opaque);
 		obj->SetParent(this);
 		obj->GetRenderer()->SetMesh("Assets/carrot.fbx");
+		obj->GetRenderer()->SetMaterial("carrot-mat");
 		m_crops.push_back(obj);
 	}
 }
@@ -46,16 +46,13 @@ void HarvestCrate::OnNotify(Object* object, E_Event event)
 	{
 		if (m_count < m_size) {
 			Increase(1);
-			MoveNearObject(reinterpret_cast<GameObject*>(object)->GetTransform());
+			MoveNearObject(reinterpret_cast<GameObject*>(object));
 		}
 
 		return;
 	}
 	}
 }
-
-void HarvestCrate::Start()
-{}
 
 void HarvestCrate::Update(float dt)
 {
@@ -76,12 +73,16 @@ void HarvestCrate::Increase(int value)
 	m_changed = true;
 }
 
-void HarvestCrate::MoveNearObject(Transform transform)
+void HarvestCrate::MoveNearObject(GameObject* object)
 {
 	XMFLOAT3 right = DirectXGame::GetCurrentScene()->GetCamera()->GetRightVector();
 
-	Transform t;
-	t.position = transform.position;
+
+	Transform t = GetTransform();
+	XMMATRIX world = object->GetWorldMatrix();
+	 
+	XMStoreFloat3(&t.position, XMVector3Transform(XMLoadFloat3(&object->GetTransform().position), world));
+
 	t.position.x -= localPivot.x;
 	t.position.y = 0.0f;
 	t.position.z -= localPivot.z;

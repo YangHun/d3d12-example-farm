@@ -85,9 +85,7 @@ class FrameResource
 public:
 	FrameResource(ID3D12Device* pDevice);
 	~FrameResource();
-
-	void PopulateCommandList();
-
+	
 public:
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12Resource> m_cbvUploadHeap;

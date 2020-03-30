@@ -12,24 +12,20 @@ Plant::Plant() :
 	m_state (E_STATE::PLANT_NONE)
 {
 	GetRenderer()->SetMesh("Assets/carrot.fbx");
+	GetRenderer()->SetMaterial("carrot-mat");
 
-	//m_collider = BoxCollider(this);
-	//m_collider.SetBound(m_renderer.GetMeshDesc());
+	float random = Random::Range(0.0f, 0.5f);
+	m_finalTransform.scale = { random * 0.001f + 0.01f , random * 0.001f + 0.01f , random * 0.001f + 0.01f };
+	m_finalTransform.position.y = random * -0.5f - 1.0f;
 
 	Transform t = GetTransform();
 	t.position = m_initTransform.position;
+	t.rotation.y = XM_PIDIV4 * random;
 	t.scale = m_initTransform.scale;
-	SetTransform(t);
-	
+	SetTransform(t);	
+
 	SetActive(false);
 }
-
-
-void Plant::Start()
-{
-
-}
-
 
 void Plant::Initialize()
 {
@@ -37,14 +33,18 @@ void Plant::Initialize()
 	m_state = E_STATE::PLANT_NONE;
 
 
+	float random = Random::Range(0.0f, 0.5f);
+	m_finalTransform.scale = { random * 0.001f + 0.01f , random * 0.001f + 0.01f , random * 0.001f + 0.01f };
+	m_finalTransform.position.y = random * -0.5f - 1.0f;
+
 	Transform t = GetTransform();
 	t.position.y = m_initTransform.position.y;
+	t.rotation.y = XM_PIDIV4 * random;
 	t.scale = m_initTransform.scale;
 	SetTransform(t);
 
+
 	SetActive(false);
-
-
 }
 
 void Plant::Update(float dt)
@@ -84,7 +84,7 @@ void Plant::UpdateState()
 	}
 	case E_STATE::PLANT_READY_TO_HARVEST:
 	{
-		if (m_timer >= m_lifeTime) m_state = E_STATE::PLANT_DEAD;
+		//if (m_timer >= m_lifeTime) m_state = E_STATE::PLANT_DEAD;
 		return;
 	}
 	case E_STATE::PLANT_NONE:
@@ -119,11 +119,6 @@ Field::Field() : GameObject()
 	SetTag("Field");
 }
 
-void Field::Start()
-{
-
-}
-
 void Field::Update(float dt)
 {
 	
@@ -155,3 +150,23 @@ void Field::Interact()
 	}		
 	
 }
+
+Tree::Tree() : GameObject()
+{
+	GetRenderer()->SetMesh("Assets/tree.fbx");
+	GetRenderer()->SetMaterial("tree-mat");
+	GetCollider()->SetBoundFromMesh(GetRenderer()->meshDesc());
+
+	// change bound value manually
+	auto bound = GetCollider()->GetBoundBox();
+	XMFLOAT3 extent = bound.Extents;
+	extent.x *= 2.0f;
+	extent.z *= 2.0f;
+	bound.Extents = extent;
+
+	GetCollider()->SetBound(bound);
+	
+}
+
+void Tree::Update(float dt)
+{}

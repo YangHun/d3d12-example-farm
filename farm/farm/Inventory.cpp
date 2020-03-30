@@ -8,9 +8,6 @@ InventorySlot::InventorySlot()
 	renderer->SetSprite("white");
 }
 
-void InventorySlot::Start()
-{}
-
 void InventorySlot::Update(float dt)
 {
 
@@ -43,11 +40,6 @@ Inventory::Inventory()
 	}
 
 	SetActive(false);
-}
-
-void Inventory::Start()
-{
-
 }
 
 void Inventory::Update(float dt)
