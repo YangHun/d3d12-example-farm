@@ -588,13 +588,6 @@ Assets::Assets()
 		tree_mat->bufferId = m_materials.size();
 		m_materials[tree_mat->name] = std::move(tree_mat);
 
-		auto uvTest = std::make_unique<Texture>();
-		uvTest->name = "uvTest";
-		uvTest->filePath = L"Textures/uvTest.dds";
-		uvTest->id = m_textures.size();
-		uvTest->type = E_TextureType::Texture2D;
-		m_textures[uvTest->name] = std::move(uvTest);
-
 		auto carrot_mat = std::make_unique<Material>();
 		carrot_mat->name = "carrot-mat";
 		carrot_mat->diffuseMapIndex = 0;
