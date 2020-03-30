@@ -369,8 +369,9 @@ void Scene::UpdateInstanceData()
 	for (auto& obj : m_allObjects)
 	{
 		if (!obj->IsActive()) continue;
+		
 		// active object 대상으로 cull test
-		bool culltest = m_camera.FrustumCullTest(obj.get());
+		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj.get()) : true;
 		
 		// cull test 결과가 동일하고, dirty flag도 없다면 업데이트 하지 않는다.
 		if (!obj->IsDirty() && (obj->IsObjectCulled() == culltest)) continue;
@@ -380,7 +381,7 @@ void Scene::UpdateInstanceData()
 		data.matIndex = obj->GetRenderer()->GetMaterialIndex();
 		data.layer = obj->GetLayer();		
 		data.active = (culltest && obj->IsActive());
-
+		
 		obj->GetRenderer()->AssignInstance(data);
 		obj->SetDirty(false);	
 		obj->SetCulled(culltest);

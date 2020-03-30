@@ -51,15 +51,13 @@ bool Camera::FrustumCullTest(GameObject* obj)
 	BoundingFrustum localSpaceFrustum;
 	m_frustum.Transform(localSpaceFrustum, viewToLocal);
 
-	return !obj->IsCullingEnabled()
-		|| (localSpaceFrustum.Contains(obj->GetCollider()->GetBoundBox()) != DirectX::DISJOINT);
+	return (localSpaceFrustum.Contains(obj->GetCollider()->GetBoundBox()) != DirectX::DISJOINT);
 }
 
 void Camera::SetPosition(XMFLOAT3 position)
 {
 	m_transform.position = position;
 	m_dirty = true;
-	//CalculateCameraAxis();
 }
 
 void Camera::SetRotation(XMFLOAT3 euler)
@@ -70,14 +68,12 @@ void Camera::SetRotation(XMFLOAT3 euler)
 		euler.z / 180.0f * XM_PI
 	};
 	m_dirty = true;
-	//CalculateCameraAxis();
 }
 
-void Camera::SetTransform(Transform* transform)
+void Camera::SetTransform(const Transform& transform)
 {
-	m_transform = *transform;
+	m_transform = transform;
 	m_dirty = true;
-	//CalculateCameraAxis();
 }
 
 XMMATRIX Camera::GetProjectionMatrix() 
@@ -121,28 +117,6 @@ XMMATRIX Camera::GetViewMatrix()
 
 void Camera::Update(float dt)
 {
-	
-	XMVECTOR dir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR forward = XMLoadFloat3(&m_w);
-	XMVECTOR right = XMLoadFloat3(&m_u);
-	
-	if (m_pressedW) dir += forward;
-	if (m_pressedA) dir -= right;
-	if (m_pressedS) dir -= forward;
-	if (m_pressedD) dir += right;
-
-	//dir = XMVectorSetY(dir, 0.0f);
-	dir = XMVector3Normalize(dir) * 0.1f;
-		
-	if (!XMVector3Equal(dir, XMVectorZero())) {
-		XMFLOAT3 pos;
-		XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
-		m_transform.position = pos;
-	}
-
-	// camera height is always fixed.
-	m_transform.position.y = 4.0f;
-	
 	if (m_dirty)
 	{
 		if (!m_lockRotation) {
@@ -152,11 +126,28 @@ void Camera::Update(float dt)
 			m_transform.rotation.x = m_transform.rotation.x - dy;
 		}
 		CalculateCameraAxis();
+		m_dirty = false;
 	}
-	
 
-	m_dirty = false;
 	
+	XMVECTOR dir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR forward = XMLoadFloat3(&m_w);
+	XMVECTOR right = XMLoadFloat3(&m_u);
+	
+	if (m_pressedW) dir += forward;
+	if (m_pressedA) dir -= right;
+	if (m_pressedS) dir -= forward;
+	if (m_pressedD) dir += right;
+			
+	if (!XMVector3Equal(dir, XMVectorZero())) {
+		dir = XMVector3Normalize(dir) * 0.2f;
+		XMFLOAT3 pos;
+		XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
+		m_transform.position = pos;
+	}
+
+	// camera height is always fixed.
+	m_transform.position.y = 4.0f;
 }
 
 
