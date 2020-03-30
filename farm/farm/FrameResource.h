@@ -74,7 +74,9 @@ struct ShadowPassConstantBuffer
 
 struct MaterialBuffer
 {
+	XMFLOAT4X4 textureTile;
 	XMFLOAT3 diffuseColor;
+	float pad0;
 	UINT diffuseMapIndex;
 };
 

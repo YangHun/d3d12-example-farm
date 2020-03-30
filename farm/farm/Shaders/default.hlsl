@@ -46,10 +46,11 @@ PSInput VSMain(VSInput input, uint instanceID : SV_InstanceID)
     shadowpos = mul(shadowpos, gNormalizedDevice);
     result.shadowPos = shadowpos;
      
+    float4x4 tile = gMaterials[result.matIndex].textureTile;
+    
     result.position = mul(worldpos, gViewProj);
-
     result.normal = mul(float4(input.normal, 0.0f), world).xyz;
-    result.uv = input.uv;
+    result.uv = mul(float4(input.uv, 0.0f, 1.0f), tile).xy;
     result.tangent = input.tangent;
     
     return result;

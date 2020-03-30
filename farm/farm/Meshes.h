@@ -73,6 +73,11 @@ struct Material
 	std::string name;
 	UINT diffuseMapIndex;
 	XMFLOAT3 diffuseColor = { 1.0f, 1.0f, 1.0f };
+	XMFLOAT4X4 textureTile = XMFLOAT4X4 { 
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f};
 	bool dirty = true;
 };
 

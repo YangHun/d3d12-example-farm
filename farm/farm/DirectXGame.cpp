@@ -103,17 +103,26 @@ void BuildSceneObjects(Scene* scene)
 		auto obj = scene->Instantiate<GameObject>(
 			"plane",
 			Transform{
-				{0.0f, -0.5f, 0.0f},
+				{0.0f, -0.05f, 0.0f},
 				{0.0f, 0.0f, 0.0f},
-				{20.0f, 1.0f, 20.0f}
+				{50.0f, 1.0f, 50.0f}
 			},
 			true,
 			E_RenderLayer::Opaque);
 
 		auto renderer = obj->GetRenderer();
 		renderer->SetMesh("plane");
+		
+		Material mat = {
+			0,
+			"grass",
+			Assets::m_textures["grass_tile"]->id
+		};
+		XMStoreFloat4x4(&mat.textureTile, XMMatrixScaling(10.0, 10.0f, 1.0f));
+		
+		renderer->SetMaterial(mat);
 	}
-
+	
 	// center aim.
 	{
 		auto obj = scene->Instantiate<UIObject>("cross-aim");
@@ -393,7 +402,7 @@ Assets::Assets()
 	}
 
 
-	// Load meshes and textures.
+	// Load meshes with textures.
 	{
 		std::vector<std::string> fbxName = {
 			"Assets/pillow.fbx",
@@ -421,6 +430,15 @@ Assets::Assets()
 				m_meshes[a] = std::move(meshDesc);
 			}
 		}
+	
+	
+		auto tex = std::make_unique<Texture>();
+		tex->name = "grass_tile";
+		tex->filePath = L"Textures/custom/grass_tile.dds";
+		tex->id = m_textures.size();
+		tex->type = E_TextureType::Texture2D;
+
+		m_textures[tex->name] = std::move(tex);
 	}
 
 
@@ -519,9 +537,9 @@ Assets::Assets()
 		Mesh mesh;
 		mesh.vertices = {
 			Vertex {{ -1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ -1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ 1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			Vertex {{ 1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ -1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ 1.0f, 0.0f, 1.0f }, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+			Vertex {{ 1.0f, 0.0f, -1.0f }, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 		};
 
 		mesh.indices = {

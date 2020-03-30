@@ -8,14 +8,15 @@ struct Light
 
 struct Material
 {
+    float4x4 textureTile;
     float3 diffuseColor;
+    float pad0;
     uint diffuseMapIndex;
 };
 
 struct Instance
 {
     float4x4 World;
-    
     uint MatIndex;
     uint pad0;
     uint pad1;

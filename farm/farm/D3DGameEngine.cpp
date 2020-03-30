@@ -755,7 +755,7 @@ void D3DGameEngine::Update()
 	scene->Update(m_timer.DeltaTime());
 
 	// update instance buffer
-	// meshdesc에 저장된 instanceBuffer 데이터를 upload buffer로 올린다.
+	// meshdesc에 저장된 instance Buffer 데이터를 upload buffer로 올린다.
 	{
 		auto meshes = Assets::GetMeshDesc();
 		for (auto& m : meshes)
@@ -788,6 +788,8 @@ void D3DGameEngine::Update()
 			if (mat->dirty)
 			{
 				MaterialBuffer material;
+
+				XMStoreFloat4x4(&material.textureTile, XMMatrixTranspose(XMLoadFloat4x4(&mat->textureTile)));
 				material.diffuseMapIndex = mat->diffuseMapIndex;
 				material.diffuseColor = mat->diffuseColor;
 
@@ -814,7 +816,7 @@ void D3DGameEngine::Update()
 		auto shadowbuffer = m_shadowBuffer.get();
 		ShadowPassConstantBuffer cBuffer;
 		
-		float sceneRadius = max(50.0f, m_game.GetPlayer()->GetTransform().position.y);
+		float sceneRadius = max(25.0f, m_game.GetPlayer()->GetTransform().position.y);
 
 		// only the first directional light casts shadow.
 		//XMFLOAT3 pos = m_game.GetPlayer()->GetTransform().position;
@@ -874,7 +876,7 @@ void D3DGameEngine::Update()
 
 		cBuffer.eye = XMFLOAT4(e.x, e.y, e.z, 1.0f);
 
-		cBuffer.fogColor = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+		cBuffer.fogColor = XMFLOAT4(62.0f / 255.0f, 79.0f / 255.0f, 66.0f / 255.0f, 1.0f);
 		cBuffer.fogStart = 5.0f;
 		cBuffer.fogRange = 50.0f;
 
