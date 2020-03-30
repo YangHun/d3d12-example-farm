@@ -800,16 +800,16 @@ void D3DGameEngine::Update()
 		}
 	}
 
-	//// rotate light
-	//{
-	//	XMMATRIX R = XMMatrixRotationY(m_timer.DeltaTime() * 0.1f);
-	//	for (int i = 0; i < 3; ++i)
-	//	{
-	//		XMVECTOR dir = XMLoadFloat3(&m_BaseLightDirections[i]);
-	//		dir = XMVector3TransformNormal(dir, R);
-	//		XMStoreFloat3(&m_BaseLightDirections[i], dir);
-	//	}
-	//}
+	// rotate light
+	{
+		XMMATRIX R = XMMatrixRotationY(m_timer.DeltaTime() * 0.1f);
+		for (int i = 0; i < 3; ++i)
+		{
+			XMVECTOR dir = XMLoadFloat3(&m_BaseLightDirections[i]);
+			dir = XMVector3TransformNormal(dir, R);
+			XMStoreFloat3(&m_BaseLightDirections[i], dir);
+		}
+	}
 
 	// update shadow pass constant buffer.
 	{
@@ -823,7 +823,7 @@ void D3DGameEngine::Update()
 		//XMVECTOR targetPos = XMLoadFloat3(&pos);
 		XMVECTOR targetPos = XMVectorAdd(
 			XMLoadFloat3(&m_game.GetCurrentScene()->GetCamera()->GetEyePosition()), 
-			sceneRadius * XMLoadFloat3(&m_game.GetCurrentScene()->GetCamera()->GetEyeDirection()));
+			sceneRadius / 2.0f * XMLoadFloat3(&m_game.GetCurrentScene()->GetCamera()->GetEyeDirection()));
 		targetPos = XMVectorSetY(targetPos, 0.0f); // target pos must be on xz-plane.
 
 		XMVECTOR lightPos = XMVectorSubtract(targetPos, 10.0f * sceneRadius * XMLoadFloat3(&m_BaseLightDirections[0]));
@@ -995,7 +995,7 @@ void D3DGameEngine::PopulateCommandList()
 		// bind texture heap to command queue
 		m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::Texture2DHeap), m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 
-		//m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
+		m_commandList->RSSetViewports(1, &m_shadowMap->GetViewport());
 		m_commandList->RSSetScissorRects(1, &m_shadowMap->GetRect());
 
 		// change state to depth_write.
