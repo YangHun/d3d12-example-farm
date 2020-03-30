@@ -108,14 +108,12 @@ public:
 	MeshDesc* meshDesc() const { return m_mesh; }
 
 	void SetMaterial(std::string name);
-	void SetMaterial(std::string name, std::unique_ptr<Material> pMaterial);
+	void SetMaterial(const Material& material);
 
 	UINT GetMaterialIndex() const
 	{
-		if (m_mesh == nullptr) return 0;
-		if (m_mesh->mesh == nullptr) return 0;
-		if (m_mesh->mesh->matIndex.size() < 1) return 0;
-		return m_material->bufferId;
+		if (m_material != nullptr) return m_material->bufferId;
+		return 0;
 	}
 
 	Material* GetMaterial();

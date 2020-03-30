@@ -59,10 +59,18 @@ Material* MeshRenderer::GetMaterial()
 	return m_material;
 }
 
-void MeshRenderer::SetMaterial(std::string name, std::unique_ptr<Material> pMaterial)
+void MeshRenderer::SetMaterial(const Material& material)
 {
-	m_material = pMaterial.get();
-	Assets::m_materials[name] = std::move(pMaterial);
+	auto mat = std::make_unique<Material>(material);
+	std::string name = mat->name;
+
+	if (Assets::m_materials.find(name) == Assets::m_materials.end())
+	{
+		mat->bufferId = Assets::m_materials.size();
+	}
+
+	m_material = mat.get();
+	Assets::m_materials[name] = std::move(mat);
 }
 
 void MeshRenderer::SetMaterial(std::string name)
