@@ -797,7 +797,7 @@ void D3DGameEngine::Update()
 		auto shadowbuffer = m_shadowBuffer.get();
 		ShadowPassConstantBuffer cBuffer;
 		
-		float sceneRadius = max(25.0f, m_game.GetPlayer()->GetTransform().position.y);
+		float sceneRadius = max(50.0f, m_game.GetPlayer()->GetTransform().position.y);
 
 		// only the first directional light casts shadow.
 		//XMFLOAT3 pos = m_game.GetPlayer()->GetTransform().position;

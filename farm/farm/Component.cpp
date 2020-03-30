@@ -7,7 +7,8 @@ GameObject::GameObject() :
 	m_transform (Transform{}),
 	m_pRenderer(std::make_unique<MeshRenderer>(this)),
 	m_pCollider(std::make_unique<BoxCollider>(this)),
-	m_layer(0)
+	m_layer(0),
+	m_culledLastFrame(true)
 {
 	
 }

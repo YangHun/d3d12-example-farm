@@ -32,6 +32,8 @@ public:
 
 	void ResetMousePos(POINT point);
 
+	bool FrustumCullTest(GameObject* target);
+
 	XMFLOAT2 ScreenToViewport(int x, int y);
 
 	float GetWidth() { return m_pViewport == nullptr ? 0 : m_pViewport->Width; }
@@ -70,6 +72,7 @@ private:
 	CD3DX12_VIEWPORT* m_pViewport;
 
 	bool m_lockRotation = false;
+	BoundingFrustum m_frustum;
 
 public:
 	GameObject* picked = nullptr;

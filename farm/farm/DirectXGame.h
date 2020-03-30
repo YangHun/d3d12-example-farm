@@ -89,7 +89,6 @@ private:
 	std::vector<std::unique_ptr<UIObject>> m_allUIs;
 
 	Camera m_camera;
-	BoundingFrustum m_frustum;
 };
 
 static class Assets {

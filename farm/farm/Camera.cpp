@@ -38,6 +38,21 @@ void Camera::SetFrustum(float fov, float nearz, float farz)
 	m_fov = fov;
 	m_near = nearz;
 	m_far = farz;
+
+	BoundingFrustum::CreateFromMatrix(m_frustum, GetProjectionMatrix());
+}
+
+bool Camera::FrustumCullTest(GameObject* obj)
+{
+	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(GetViewMatrix()), GetViewMatrix());
+	XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(obj->GetWorldMatrix()), obj->GetWorldMatrix());
+	XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+	BoundingFrustum localSpaceFrustum;
+	m_frustum.Transform(localSpaceFrustum, viewToLocal);
+
+	return !obj->IsCullingEnabled()
+		|| (localSpaceFrustum.Contains(obj->GetCollider()->GetBoundBox()) != DirectX::DISJOINT);
 }
 
 void Camera::SetPosition(XMFLOAT3 position)
@@ -96,6 +111,7 @@ XMMATRIX Camera::GetViewMatrix()
 	XMVECTOR eye = XMLoadFloat3(&m_transform.position);
 	XMVECTOR forward = XMLoadFloat3(&m_w);
 	XMVECTOR up = XMLoadFloat3(&m_up);
+	//XMVECTOR up = XMLoadFloat3(&m_v);
 
 	return XMMatrixLookAtLH(
 		eye,
@@ -105,6 +121,7 @@ XMMATRIX Camera::GetViewMatrix()
 
 void Camera::Update(float dt)
 {
+	
 	XMVECTOR dir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	XMVECTOR forward = XMLoadFloat3(&m_w);
 	XMVECTOR right = XMLoadFloat3(&m_u);
@@ -120,12 +137,12 @@ void Camera::Update(float dt)
 	if (!XMVector3Equal(dir, XMVectorZero())) {
 		XMFLOAT3 pos;
 		XMStoreFloat3(&pos, XMLoadFloat3(&m_transform.position) + dir);
-		SetPosition(pos);
+		m_transform.position = pos;
 	}
 
 	// camera height is always fixed.
-	//m_transform.position.y = 4.0f;
-
+	m_transform.position.y = 4.0f;
+	
 	if (m_dirty)
 	{
 		if (!m_lockRotation) {
@@ -134,10 +151,12 @@ void Camera::Update(float dt)
 			m_transform.rotation.y = m_transform.rotation.y + dx;
 			m_transform.rotation.x = m_transform.rotation.x - dy;
 		}
-
 		CalculateCameraAxis();
-		m_dirty = false;
 	}
+	
+
+	m_dirty = false;
+	
 }
 
 
@@ -177,6 +196,7 @@ void Camera::OnKeyDown(WPARAM key)
 		m_pressedD = true;
 		break;
 	}
+	//m_dirty = true;
 }
 
 void Camera::OnKeyUp(WPARAM key)

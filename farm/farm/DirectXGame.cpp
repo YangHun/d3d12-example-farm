@@ -82,22 +82,61 @@ void BuildSceneObjects(Scene* scene)
 		obj->GetRenderer()->SetMaterial("default-mat");
 	}
 
+	// a house.
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"House",
+			Transform{
+				{-12.5f, 0.0f, 5.0f},
+				{0.0f, XM_PI / 2.0f, 0.0f},
+				{0.2f, 0.2f, 0.2f}
+			},
+			true,
+			E_RenderLayer::Opaque);
 
-	//// plane to test shadow map.
-	//{
-	//	auto obj = scene->Instantiate<GameObject>(
-	//		"plane",
-	//		Transform{
-	//			{0.0f, -0.5f, 0.0f},
-	//			{0.0f, 0.0f, 0.0f},
-	//			{20.0f, 1.0f, 20.0f}
-	//		},
-	//		true,
-	//		E_RenderLayer::Opaque);
+		obj->GetRenderer()->SetMesh("Assets/house.fbx");
+	}
 
-	//	auto renderer = obj->GetRenderer();
-	//	renderer->SetMesh("plane");
-	//}
+	// create fields
+	{
+		int activeNum = 50;
+
+		for (int i = 0; i < 20; ++i)
+		{
+			for (int j = 0; j < 50; ++j)
+			{
+				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
+					"Field_" + std::to_string(i * 10 + j),
+					Transform{
+						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+					},
+					(i < activeNum) && (j < activeNum),
+					E_RenderLayer::Opaque));
+				obj->AddObserver(DirectXGame::GetPlayer());
+			}
+		}
+	}
+
+
+	return;
+
+
+	// plane to test shadow map.
+	{
+		auto obj = scene->Instantiate<GameObject>(
+			"plane",
+			Transform{
+				{0.0f, -0.5f, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{20.0f, 1.0f, 20.0f}
+			},
+			true,
+			E_RenderLayer::Opaque);
+
+		auto renderer = obj->GetRenderer();
+		renderer->SetMesh("plane");
+	}
 
 	// center aim.
 	{
@@ -167,40 +206,40 @@ void BuildSceneObjects(Scene* scene)
 
 		pillow->GetRenderer()->SetMesh("Assets/pillow.fbx");
 	}
-
-	// harvesting crate.
-	auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
-		"CrateBox",
-		Transform{
-			{0.0f, 0.0f, 0.0f},
-			{0.0f, XM_PI / 36.0f, 0.0f},
-			{1.0f, 1.0f, 1.0f}
-		},
-		true,
-		E_RenderLayer::Opaque));
+	
+	//// harvesting crate.
+	//auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
+	//	"CrateBox",
+	//	Transform{
+	//		{0.0f, 0.0f, 0.0f},
+	//		{0.0f, XM_PI / 36.0f, 0.0f},
+	//		{1.0f, 1.0f, 1.0f}
+	//	},
+	//	true,
+	//	E_RenderLayer::Opaque));
 	
 
-	// create fields
-	{
-		int activeNum = 50;
+	//// create fields
+	//{
+	//	int activeNum = 50;
 
-		for (int i = 0; i < 20; ++i)
-		{
-			for (int j = 0; j < 50; ++j)
-			{
-				auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
-					"Field_" + std::to_string(i * 10 + j),
-					Transform{
-						{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
-						{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
-					},
-					(i < activeNum) && (j < activeNum),
-					E_RenderLayer::Opaque));
-				obj->AddObserver(DirectXGame::GetPlayer());
-				obj->AddObserver(crate);
-			}
-		}
-	}
+	//	for (int i = 0; i < 20; ++i)
+	//	{
+	//		for (int j = 0; j < 50; ++j)
+	//		{
+	//			auto obj = reinterpret_cast<Field*>(scene->Instantiate<Field>(
+	//				"Field_" + std::to_string(i * 10 + j),
+	//				Transform{
+	//					{0.0f + (2.1f) * i, 0.0f, 0.0f + (2.1f) * j},
+	//					{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+	//				},
+	//				(i < activeNum) && (j < activeNum),
+	//				E_RenderLayer::Opaque));
+	//			obj->AddObserver(DirectXGame::GetPlayer());
+	//			obj->AddObserver(crate);
+	//		}
+	//	}
+	//}
 
 }
 
@@ -327,19 +366,27 @@ void Scene::AssignInstantiatedObjects()
 
 void Scene::UpdateInstanceData()
 {
-
+	
+	
 	for (auto& obj : m_allObjects)
 	{
-		if (!obj->IsDirty()) continue;
+		if (!obj->IsActive()) continue;
+
+		// active object 대상으로 cull test
+		bool culltest = m_camera.FrustumCullTest(obj.get());
+		
+		// cull test 결과가 동일하고, dirty flag도 없다면 업데이트 하지 않는다.
+		if (!obj->IsDirty() && (obj->IsObjectCulled() == culltest)) continue;
 
 		InstanceData data;
 		XMStoreFloat4x4(&data.model, XMMatrixTranspose(obj->GetWorldMatrix()));
 		data.matIndex = obj->GetRenderer()->GetMaterialIndex();
-		data.layer = obj->GetLayer();
-		data.active = obj->IsActive();
+		data.layer = obj->GetLayer();		
+		data.active = (culltest && obj->IsActive());
 
 		obj->GetRenderer()->AssignInstance(data);
-		obj->SetDirty(false);
+		obj->SetDirty(false);	
+		obj->SetCulled(culltest);
 	}
 }
 

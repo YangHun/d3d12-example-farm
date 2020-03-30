@@ -121,7 +121,6 @@ public:
 	Material* GetMaterial();
 
 	void AssignInstance(const InstanceData& data);
-	//void UpdateInstance(const InstanceData& data);
 
 private:
 	MeshDesc* m_mesh = nullptr;
@@ -315,12 +314,10 @@ public:
 
 	MeshRenderer* GetRenderer() const { return m_pRenderer.get(); }
 	BoxCollider* GetCollider() const { return m_pCollider.get(); }
-
-
-	bool IsCullingEnabled() 
-	{ 
-		return !m_pCollider->IsZero(); 
-	}
+	
+	bool IsCullingEnabled() { return !m_pCollider->IsZero(); }
+	void SetCulled(bool value) { m_culledLastFrame = value; }
+	bool IsObjectCulled() { return m_culledLastFrame; }
 
 private:
 	Transform m_transform;
@@ -333,6 +330,8 @@ private:
 
 	int m_layer;
 	UINT m_instanceID;
+
+	bool m_culledLastFrame;
 };
 
 class UIObject : public Object
