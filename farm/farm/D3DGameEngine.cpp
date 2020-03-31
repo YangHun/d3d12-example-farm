@@ -915,6 +915,33 @@ void D3DGameEngine::Destroy()
 
 void D3DGameEngine::OnKeyDown(UINT8 key) 
 {
+	// debug handling
+	if (GetKeyState(key) & 0x8000)
+	{
+		switch (key)
+		{
+		case 'Z':
+		{
+			m_debugShadowMap = !m_debugShadowMap;
+			break;
+		}
+
+		case 'X':
+		{
+			m_debugLog = !m_debugLog;
+			break;
+		}
+
+#ifdef COLLIDER_DEBUG
+		case 'C':
+		{
+			m_debugCollider = !m_debugCollider;
+			break;
+		}
+#endif
+		}
+	}
+
 	m_game.OnKeyDown(key);
 }
 
@@ -1052,12 +1079,18 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
 	DrawCurrentScene(E_RenderLayer::Opaque);
 
-	m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
-	DrawCurrentScene(E_RenderLayer::Debug);
+	if (m_debugShadowMap)
+	{
+		m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
+		DrawCurrentScene(E_RenderLayer::Debug);
+	}
 
-#ifdef COLLIDER_DEBUG
-	m_commandList->SetPipelineState(m_pipelineStates["collider_debug"].Get());
-	DrawCurrentScene(E_RenderLayer::ColliderDebug);
+#ifdef COLLIDER_DEBUG	
+	if (m_debugCollider)
+	{
+		m_commandList->SetPipelineState(m_pipelineStates["collider_debug"].Get());
+		DrawCurrentScene(E_RenderLayer::ColliderDebug);
+	}
 #endif
 
 	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
@@ -1134,33 +1167,37 @@ void D3DGameEngine::DrawCurrentUI()
 		obj->Draw(m_d2dDeviceContext.Get());
 	}
 
-	// Render text over D3D12 using D2D via the 11On12 device.
-	D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
-	
-	
-	std::wstring info = m_game.GetCurrentScene()->GetCamera()->PrintInformation()
-		+ m_game.GetPlayer()->PrintPlayerInfo();
-	
-	//static const WCHAR text[] = info.c_str();
-	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
 
-	m_d2dDeviceContext->DrawTextW(
-		info.c_str(),
-		info.size(),
-		m_textFormat.Get(),
-		&textRect,
-		m_textBrush.Get()
-	);
+	if (m_debugLog)
+	{
+		// Render text over D3D12 using D2D via the 11On12 device.
+		D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
 
-	// Render text over D3D12 using D2D via the 11On12 device.
-	static const WCHAR text2[] = L"Hello ~ :)";
-	D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height/ 2.0f);
 
-	m_d2dDeviceContext->DrawTextW(
-		text2,
-		_countof(text2) - 1,
-		m_textFormat.Get(),
-		&textRect2,
-		m_textBrush.Get()
-	);
+		std::wstring info = m_game.GetCurrentScene()->GetCamera()->PrintInformation()
+			+ m_game.GetPlayer()->PrintPlayerInfo();
+
+		//static const WCHAR text[] = info.c_str();
+		D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
+
+		m_d2dDeviceContext->DrawTextW(
+			info.c_str(),
+			info.size(),
+			m_textFormat.Get(),
+			&textRect,
+			m_textBrush.Get()
+		);
+
+		// Render text over D3D12 using D2D via the 11On12 device.
+		static const WCHAR text2[] = L"Hello ~ :)";
+		D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height / 2.0f);
+
+		m_d2dDeviceContext->DrawTextW(
+			text2,
+			_countof(text2) - 1,
+			m_textFormat.Get(),
+			&textRect2,
+			m_textBrush.Get()
+		);
+	}
 }

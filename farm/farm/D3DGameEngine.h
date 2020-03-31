@@ -131,5 +131,9 @@ private:
 
 	UINT m_4xMsaaQuality = 0;
 
-
+	bool m_debugShadowMap = false;
+	bool m_debugLog = false;
+#ifdef COLLIDER_DEBUG
+	bool m_debugCollider = false;
+#endif
 };
