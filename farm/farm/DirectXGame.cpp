@@ -188,16 +188,8 @@ void BuildSceneObjects(Scene* scene)
 	}
 	
 	// harvesting crate.
-	auto crate = reinterpret_cast<HarvestCrate*>(scene->Instantiate<HarvestCrate>(
-		"CrateBox",
-		Transform{
-			{0.0f, 0.0f, 0.0f},
-			{0.0f, XM_PI / 36.0f, 0.0f},
-			{1.0f, 1.0f, 1.0f}
-		},
-		true,
-		E_RenderLayer::Opaque));
-	
+	auto crate = reinterpret_cast<CrateManager*>(scene->Instantiate<CrateManager>());
+
 
 	// create fields
 	{

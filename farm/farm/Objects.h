@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include <queue>
 
 class Plant : public GameObject
 {
@@ -120,15 +121,14 @@ private:
 };
 
 
-class HarvestCrate : public GameObject, public Observer
+class HarvestCrate : public GameObject
 {
 public:
 	HarvestCrate();
 
 	void Update(float dt);
-	void OnNotify(Object* object, E_Event event) override;
-
 	bool IsEmpty() { return m_count < 1; }
+	bool IsFull() { return m_count >= m_size; }
 
 	void Increase(int value);
 	void MoveNearObject(GameObject* object);
@@ -147,6 +147,26 @@ private:
 
 	const XMFLOAT3 localPivot = { -1.8f, 0.0f, -3.8f };
 };
+
+class CrateManager : public Object, public Observer
+{
+public:
+	CrateManager();
+	void Update(float dt);
+
+	void OnNotify(Object* object, E_Event event) override;
+
+private:
+	HarvestCrate* Spawn(Transform transform);
+	void Stack(HarvestCrate* target);
+
+private:
+	std::queue<GameObject*> m_pool;
+	HarvestCrate* m_current;
+	Transform m_spawnPoint;
+	int m_spawnCount;
+};
+
 
 class QuestTable : public GameObject, public Subject
 {

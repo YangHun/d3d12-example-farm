@@ -38,21 +38,6 @@ HarvestCrate::HarvestCrate() :
 	}
 }
 
-void HarvestCrate::OnNotify(Object* object, E_Event event)
-{
-	switch (event)
-	{
-	case E_Event::FIELD_INTERACT_PLANT_HARVEST:
-	{
-		if (m_count < m_size) {
-			Increase(1);
-			MoveNearObject(reinterpret_cast<GameObject*>(object));
-		}
-
-		return;
-	}
-	}
-}
 
 void HarvestCrate::Update(float dt)
 {
@@ -79,9 +64,12 @@ void HarvestCrate::MoveNearObject(GameObject* object)
 
 
 	Transform t = GetTransform();
+	Transform objTransform = object->GetTransform();
+
 	XMMATRIX world = object->GetWorldMatrix();
+	XMVECTOR pos = XMLoadFloat3(&objTransform.position);
 	 
-	XMStoreFloat3(&t.position, XMVector3Transform(XMLoadFloat3(&object->GetTransform().position), world));
+	XMStoreFloat3(&t.position, XMVector3Transform(pos, world));
 
 	t.position.x -= localPivot.x;
 	t.position.y = 0.0f;
@@ -94,4 +82,80 @@ void HarvestCrate::MoveNearObject(GameObject* object)
 	t.rotation.y = XM_PI / 36.0f * (Random::Boolean() ? 1.0f : -1.0f);
 	
 	SetTransform(t);
+}
+
+CrateManager::CrateManager() :
+	Object(),
+	m_spawnCount(0),
+	m_current(nullptr),
+	m_spawnPoint(Transform{
+			{0.0f, 0.0f, 0.0f},
+			{0.0f, XM_PI / 36.0f, 0.0f},
+			{1.0f, 1.0f, 1.0f}})
+{
+	for (size_t i = 0; i < 10; ++i)
+	{
+		auto obj = DirectXGame::GetCurrentScene()->Instantiate<HarvestCrate>(
+			"Crate_" + std::to_string(i),
+			Transform{},
+			false,
+			E_RenderLayer::Opaque);
+		m_pool.push(reinterpret_cast<GameObject*>(obj));
+	}
+
+	m_current = Spawn(m_spawnPoint);
+}
+
+void CrateManager::Update(float dt)
+{
+
+}
+
+void CrateManager::OnNotify(Object* object, E_Event event)
+{
+	switch (event)
+	{
+	case E_Event::FIELD_INTERACT_PLANT_HARVEST:
+	{
+		if (m_current == nullptr) return;
+		
+		if (m_current->IsFull())
+		{
+			Stack(m_current);
+			m_current = Spawn(m_spawnPoint);
+		}
+		
+		if (m_current == nullptr) return;
+		m_current->Increase(1);
+		m_current->MoveNearObject(reinterpret_cast<GameObject*>(object));
+
+		return;
+	}
+	}
+}
+
+void CrateManager::Stack(HarvestCrate* target)
+{
+	int row = 5;
+
+	Transform t = Transform{ 
+		{-3.5f + m_spawnCount / row * 2.5f, 0.0f, 2.0f - m_spawnCount % row * 2.5f},
+		{0.0f, Random::Range(-0.1f, 0.1f), 0.0f},
+		{1.0f, 1.0f, 1.0f} };
+
+	target->SetTransform(t);
+}
+
+HarvestCrate* CrateManager::Spawn(Transform transform)
+{
+	if (m_pool.empty()) return nullptr;
+	
+	auto front = m_pool.front();
+	m_pool.pop();
+	front->SetTransform(transform);
+	front->SetActive(true);
+
+	++m_spawnCount;
+
+	return reinterpret_cast<HarvestCrate*>(front);
 }
