@@ -74,12 +74,18 @@ public:
 	Object* GetParentObject() { return m_parent; }
 	std::vector<Object*> GetChildren() const { return m_children; }
 
+
+	int GetLayer() { return m_layer; }
+	void SetLayer(int value) { m_layer = value; }
+
 private:
 	Object* m_parent;
 	std::vector<Object*> m_children;
 	bool m_active = true;
 	UINT m_bufferId = -1;
 	bool m_dirty = true;
+
+	int m_layer;
 };
 
 class Component 
@@ -291,7 +297,6 @@ public:
 	std::string GetName() { return m_name; }
 	std::string GetTag() { return m_tag; }
 	Transform GetTransform() { return m_transform; }
-	int GetLayer() { return m_layer; }
 	UINT GetInstanceID() { return m_instanceID; }
 
 	void SetName(const std::string& value) { m_name = value; }
@@ -301,7 +306,7 @@ public:
 		m_transform = value; 
 		SetDirty(true);
 	}
-	void SetLayer(int value) { m_layer = value; }
+
 	void SetInstanceID(UINT value) { m_instanceID = value; }
 
 	MeshRenderer* GetRenderer() const { return m_pRenderer.get(); }
@@ -322,7 +327,6 @@ private:
 	std::string m_name;
 	std::string m_tag;
 
-	int m_layer;
 	UINT m_instanceID;
 
 	bool m_culledNextFrame;

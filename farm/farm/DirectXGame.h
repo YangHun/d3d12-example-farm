@@ -22,26 +22,24 @@ public:
 	void Update(float dt);
 
 	template<typename T>
-	GameObject* Instantiate(E_RenderLayer layer)
+	Object* Instantiate()
 	{
 		auto obj = std::make_unique<T>();
-		int layerID = static_cast<int>(layer);
-		int id = -1;
-		obj->SetLayer(layerID);
-		obj->SetBufferId(id);
-		obj->SetDirty();
+		obj->SetLayer(-1);
+		obj->SetBufferId(-1);
 
-		m_objQueue[layerID].push(std::move(obj));
-		return m_objQueue[layerID].back().get();
+		m_queue.push(std::move(obj));
+		return reinterpret_cast<Object*>(m_queue.back().get());
 	}
 
 	template<typename T>
 	GameObject* Instantiate(std::string name, Transform transform, bool active, E_RenderLayer layer)
 	{
-		auto obj = Instantiate<T>(layer);
-		obj->SetName(name);
+		auto obj = reinterpret_cast<GameObject*>(Instantiate<T>());
+		obj->SetLayer(static_cast<int>(layer));
 		obj->SetActive(active);
 		obj->SetTransform(transform);
+		obj->SetName(name);
 
 		return obj;
 	}
@@ -49,21 +47,19 @@ public:
 	template<typename T>
 	UIObject* Instantiate(std::string name)
 	{
-		auto obj = std::make_unique<T>();
+		auto obj = reinterpret_cast<UIObject*>(Instantiate<T>());
+		obj->SetLayer(static_cast<int>(E_RenderLayer::Count));
+		obj->SetName(name);
 
-		int id = -1;
-		obj->SetBufferId(id);
-		obj->SetDirty();
-
-		m_uiQueue.push(std::move(obj));
-		return m_uiQueue.back().get();
+		return obj;
 	}
 
-	std::vector<UIObject*> GetAllUIObjects();
+	std::vector<UIObject*> GetAllUIObjects() const { return m_UIObjects; };
 	std::vector<GameObject*> GetObjectsByLayer(E_RenderLayer layer)
 	{
-		return m_layeredObjects[static_cast<int>(layer)];
+		return m_GameObjects[static_cast<int>(layer)];
 	}
+	std::vector<GameObject*> GetAllGameObjects();
 
 	Camera* GetCamera() { return &m_camera; }
 
@@ -78,15 +74,13 @@ private:
 	// 이번 프레임에 Instantiate 된 오브젝트는 waiting queue에 미리 등록했다가 
 	// 다음 프레임의 Update()가 호출되는 시점에서 m_allObjects에 등록하여
 	// m_allObjects를 순회하는 도중에는 값이 바뀌지 않게 한다.
-	std::unordered_map<int, std::queue<std::unique_ptr<GameObject>>> m_objQueue;
-	std::queue<std::unique_ptr<UIObject>> m_uiQueue;
+	std::queue<std::unique_ptr<Object>> m_queue;
+	
+	// scene에 존재하는 모든 Objects
+	std::vector<std::unique_ptr<Object>> m_objects;
 
-	// scene에 존재하는 모든 Game objects
-	std::vector<std::unique_ptr<GameObject>> m_allObjects;
-	std::unordered_map <int, std::vector<GameObject*>> m_layeredObjects;
-
-	// scene에 존재하는 모든 UI Objects
-	std::vector<std::unique_ptr<UIObject>> m_allUIs;
+	std::unordered_map <int, std::vector<GameObject*>> m_GameObjects;
+	std::vector<UIObject*> m_UIObjects;
 
 	Camera m_camera;
 };

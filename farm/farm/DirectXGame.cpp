@@ -413,74 +413,74 @@ void Scene::Update(float dt)
 
 	// update all objects.
 	DirectXGame::GetPlayer()->Update(dt);
-	for (auto& obj : m_allObjects)
+	for (auto& obj : m_objects)
 	{
 		if (obj->IsActive()) obj->Update(dt);
 	}
 
 	m_camera.Update(dt);
-
-	for (auto& obj : m_allUIs)
-	{
-		if (obj->IsActive()) obj->Update(dt);
-	}
-
+	
 	// update instance buffers.
 	UpdateInstanceData();
 }
 
 void Scene::AssignInstantiatedObjects()
 {
-	int count = static_cast<int>(E_RenderLayer::Count);
-
-	for (int i = 0; i < count; ++i)
+	while (!m_queue.empty())
 	{
-		int _layer = i;
-		if (m_objQueue.find(_layer) == m_objQueue.end()) continue;
+		auto front = std::move(m_queue.front());
+		m_queue.pop();
 
-		while (!m_objQueue[_layer].empty())
+		front->SetBufferId((UINT)m_objects.size());
+		front->SetDirty();
+
+		int layer = front->GetLayer();
+		
+
+		if (layer >= 0)
 		{
-			auto front = std::move(m_objQueue[_layer].front());
-			m_objQueue[_layer].pop();
-
-
-			front->SetBufferId((UINT)m_allObjects.size());
-			front->SetDirty(true);
-			
-			m_layeredObjects[i].push_back(front.get());
-			m_allObjects.push_back(std::move(front));
-
+			if (layer < static_cast<int>(E_RenderLayer::Count)) m_GameObjects[layer].push_back(reinterpret_cast<GameObject*>(front.get()));
+			else m_UIObjects.push_back(reinterpret_cast<UIObject*>(front.get()));
 		}
-	}	
 
-	while (!m_uiQueue.empty())
-	{
-		auto front = std::move(m_uiQueue.front());
-		m_uiQueue.pop();
+		m_objects.push_back(std::move(front));
 
-		front->SetBufferId((UINT)m_allUIs.size());
-		front->SetDirty(true);
-
-		m_allUIs.push_back(std::move(front));
 	}
+}
+
+std::vector<GameObject*> Scene::GetAllGameObjects()
+{
+	std::vector<GameObject*> result;
+
+	for (auto layer : m_GameObjects)
+	{
+		for (auto& obj : layer.second)
+		{
+			result.push_back(obj);
+		}
+	}
+
+	return result;
 }
 
 void Scene::UpdateInstanceData()
 {
+	auto gameObjects = GetAllGameObjects();
+
 	// cull test
-	for (auto& obj : m_allObjects)
+	for (auto& obj : gameObjects)
 	{
 		// root object만 테스트
 		if (obj->GetParentObject() != nullptr) continue;
 		
 		// active object 대상으로 cull test
 		if (!obj->IsActive()) continue;
-		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj.get()) : true;
+		bool culltest = obj->IsCullingEnabled() ? m_camera.FrustumCullTest(obj) : true;
 		obj->SetCullTested(culltest);
 	}
 
 
-	for (auto& obj : m_allObjects)
+	for (auto& obj : gameObjects)
 	{
 		// cull test 결과가 동일하고, dirty flag도 없다면 업데이트 하지 않는다.
 		if (!obj->IsDirty() && (obj->IsCulledLastFrame() == obj->IsCulledNextFrame())) continue;
@@ -496,16 +496,6 @@ void Scene::UpdateInstanceData()
 	}
 }
 
-std::vector<UIObject*> Scene::GetAllUIObjects()
-{
-	std::vector<UIObject*> vector;
-
-	for (auto& i : m_allUIs)
-	{
-		vector.push_back(i.get());
-	}
-	return vector;
-}
 
 Assets::Assets()
 {
