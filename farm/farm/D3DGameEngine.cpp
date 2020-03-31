@@ -880,7 +880,7 @@ void D3DGameEngine::Update()
 
 		cBuffer.eye = XMFLOAT4(e.x, e.y, e.z, 1.0f);
 
-		cBuffer.fogColor = XMFLOAT4(62.0f / 255.0f, 79.0f / 255.0f, 66.0f / 255.0f, 1.0f);
+		cBuffer.fogColor = XMFLOAT4(52.0f / 255.0f, 69.0f / 255.0f, 56.0f / 255.0f, 1.0f);
 		cBuffer.fogStart = 5.0f;
 		cBuffer.fogRange = 50.0f;
 
@@ -1146,7 +1146,6 @@ void D3DGameEngine::DrawCurrentUI()
 
 	m_d2dDeviceContext->DrawTextW(
 		info.c_str(),
-		//_countof(text) - 1,
 		info.size(),
 		m_textFormat.Get(),
 		&textRect,
@@ -1164,15 +1163,4 @@ void D3DGameEngine::DrawCurrentUI()
 		&textRect2,
 		m_textBrush.Get()
 	);
-
-
-	//m_d2dDeviceContext->DrawBitmap(
-	//	Assets::m_sprites["example"]->bitmap.Get(),
-	//	&textRect,
-	//	1.0f,
-	//	D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-	//	NULL);
-
-
-
 }
