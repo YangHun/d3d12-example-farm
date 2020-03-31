@@ -29,7 +29,8 @@ public:
 	virtual void OnMouseLeave(UINT8 btnState, int x, int y);
 
 private:
-	enum class E_RootParam {
+	enum class E_RootParam 
+	{
 		InstanceMap,
 		MaterialMap,
 		Scene,
@@ -39,13 +40,27 @@ private:
 		Count
 	};
 
+	enum class E_PipelineState
+	{
+		Opaque,
+		Sky,
+		ShadowOpaque,
+		ShadowDebug,
+#ifdef COLLIDER_DEBUG
+		ColliderDebug,
+#endif
+		Count
+	};
+
 	void LoadPipeline();
 	void LoadAssets();
 	void WaitForPreviousFrame();
 	void PopulateCommandList();
 	void RenderUI();
-	void DrawCurrentScene(E_RenderLayer layer);
+	void DrawCurrentScene(E_PipelineState state, E_RenderLayer layer);
 	void DrawCurrentUI();
+
+	std::wstring PrintInfo();
 
 	POINT GetWindowCenter();
 
@@ -62,7 +77,7 @@ private:
 	ComPtr<ID3D12CommandQueue> m_commandQueue;
 	ComPtr<IDXGISwapChain3> m_swapChain;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
-	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_pipelineStates;		// PSO
+	std::unordered_map<int, ComPtr<ID3D12PipelineState>> m_pipelineStates;		// PSO
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
@@ -113,10 +128,6 @@ private:
 	ComPtr<IDWriteFactory> m_dWriteFactory;
 	ComPtr<ID3D11Resource> m_wrappedBackBuffers[FrameCount];
 
-	// 2d resouces.
-	ComPtr<ID2D1SolidColorBrush> m_textBrush;
-	ComPtr<IDWriteTextFormat> m_textFormat;
-
 	// 2d image.
 	ComPtr<IWICImagingFactory2> m_wicFactory;
 
@@ -131,8 +142,14 @@ private:
 
 	UINT m_4xMsaaQuality = 0;
 
+
+	// for debug.
 	bool m_debugShadowMap = false;
 	bool m_debugLog = false;
+
+	std::vector<size_t> m_layerInstanceCount;
+	std::vector<size_t> m_psoDrawCalls;
+
 #ifdef COLLIDER_DEBUG
 	bool m_debugCollider = false;
 #endif

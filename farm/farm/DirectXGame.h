@@ -63,6 +63,12 @@ public:
 
 	Camera* GetCamera() { return &m_camera; }
 
+	size_t GetObjectCount() { return m_objects.size(); }
+	size_t GetUICount() { return m_UIObjects.size(); }
+	size_t GetGameObjectCount();
+	size_t GetActiveObjectCount() { return m_activeCount; }
+	
+
 private:
 	void BuildObject();
 	void UpdateInstanceData();
@@ -83,6 +89,9 @@ private:
 	std::vector<UIObject*> m_UIObjects;
 
 	Camera m_camera;
+
+	size_t m_activeCount;
+
 };
 
 static class Assets {
@@ -100,6 +109,7 @@ public:
 	static std::vector<Sprite*> GetSprites();
 	static std::vector<TextDesc*> GetTexts();
 	static Material* GetMaterialByID(UINT id);
+	static TextDesc* GetTextDescByName(std::string name);
 
 };
 
@@ -112,7 +122,7 @@ public:
 
 	static Scene* GetCurrentScene() { return m_currentScene; }
 	static Player* GetPlayer() { return m_player.get(); }
-	UINT SceneCount() const { return m_allScenes.size(); }
+	UINT SceneCount() const { return (UINT)m_allScenes.size(); }
 	Scene* GetScene(UINT index) const { return m_allScenes[index].get(); }
 	
 	bool IsSceneChanged() const { return m_dirtyScene; }

@@ -13,7 +13,7 @@ D3DGameEngine::D3DGameEngine(UINT width, UINT height, std::wstring name) :
 {
 	CoInitialize(NULL);	//initialize COM to use Windows Imaging Component
 	m_timer.Reset();	
-	
+
 }
 
 void D3DGameEngine::Initialize()
@@ -424,7 +424,7 @@ void D3DGameEngine::LoadAssets()
 		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		psoDesc.SampleDesc.Count = 1;
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates["opaque"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStates[static_cast<int>(E_PipelineState::Opaque)])));
 
 
 		// Pipeline state object for sky.
@@ -443,7 +443,7 @@ void D3DGameEngine::LoadAssets()
 		skyDesc.VS = CD3DX12_SHADER_BYTECODE(skyVS.Get());
 		skyDesc.PS = CD3DX12_SHADER_BYTECODE(skyPS.Get());
 
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates["sky"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&skyDesc, IID_PPV_ARGS(&m_pipelineStates[static_cast<int>(E_PipelineState::Sky)])));
 
 
 
@@ -466,7 +466,7 @@ void D3DGameEngine::LoadAssets()
 		shadowDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 		shadowDesc.NumRenderTargets = 0;
 
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&shadowDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_opaque"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&shadowDesc, IID_PPV_ARGS(&m_pipelineStates[static_cast<int>(E_PipelineState::ShadowOpaque)])));
 
 		
 		// Pipeline state object for shadow debug.
@@ -487,7 +487,7 @@ void D3DGameEngine::LoadAssets()
 		debugDesc.VS = CD3DX12_SHADER_BYTECODE(debugVS.Get());
 		debugDesc.PS = CD3DX12_SHADER_BYTECODE(debugPS.Get());
 
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&debugDesc, IID_PPV_ARGS(&m_pipelineStates["shadow_debug"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&debugDesc, IID_PPV_ARGS(&m_pipelineStates[static_cast<int>(E_PipelineState::ShadowDebug)])));
 	
 
 
@@ -505,27 +505,11 @@ void D3DGameEngine::LoadAssets()
 		colliderDesc.VS = CD3DX12_SHADER_BYTECODE(debugVS.Get());	// use opaque shader
 		colliderDesc.PS = CD3DX12_SHADER_BYTECODE(debugPS.Get());
 
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&colliderDesc, IID_PPV_ARGS(&m_pipelineStates["collider_debug"])));
+		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&colliderDesc, IID_PPV_ARGS(&m_pipelineStates[static_cast<int>(E_PipelineState::ColliderDebug)])));
 	}
 
 	// Create D2D/DWrite objects for rendering text.
 	{
-		ThrowIfFailed(m_d2dDeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &m_textBrush));
-		ThrowIfFailed(m_dWriteFactory->CreateTextFormat(
-			L"Verdana",
-			NULL,
-			DWRITE_FONT_WEIGHT_NORMAL,
-			DWRITE_FONT_STYLE_NORMAL,
-			DWRITE_FONT_STRETCH_NORMAL,
-			25,
-			L"en-us",
-			&m_textFormat
-		));
-
-		ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-		ThrowIfFailed(m_textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
-	
-	
 		auto texts = Assets::GetTexts();
 		
 		for (auto& t : texts)
@@ -757,6 +741,9 @@ void D3DGameEngine::Update()
 	// update instance buffer
 	// meshdesc에 저장된 instance Buffer 데이터를 upload buffer로 올린다.
 	{
+		m_layerInstanceCount.clear();
+		m_layerInstanceCount.resize(static_cast<size_t>(E_RenderLayer::Count), 0);
+
 		auto meshes = Assets::GetMeshDesc();
 		for (auto& m : meshes)
 		{
@@ -774,6 +761,8 @@ void D3DGameEngine::Update()
 
 				m_instanceBuffers[m->id][d.layer]->CopyData(m->instanceCount[d.layer], buffer);
 				++m->instanceCount[d.layer];
+				
+				++m_layerInstanceCount[d.layer];
 			}
 		}
 	}
@@ -890,6 +879,9 @@ void D3DGameEngine::Update()
 
 void D3DGameEngine::Render()
 {
+	m_psoDrawCalls.clear();
+	m_psoDrawCalls.resize(static_cast<size_t>(E_PipelineState::Count), 0);
+
 	// 다음 frame에 실행할 command를 command list에 등록
 	PopulateCommandList();
 
@@ -1004,7 +996,7 @@ void D3DGameEngine::WaitForPreviousFrame()
 void D3DGameEngine::PopulateCommandList()
 {
 	ThrowIfFailed(m_commandAllocator->Reset());
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineStates["opaque"].Get()));
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineStates[static_cast<int>(E_PipelineState::Opaque)].Get()));
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_srvHeap.Get() };
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -1039,8 +1031,8 @@ void D3DGameEngine::PopulateCommandList()
 		// bind shadow buffer to command queue
 		m_commandList->SetGraphicsRootConstantBufferView(static_cast<int>(E_RootParam::ShadowPass), m_shadowBuffer->Resource()->GetGPUVirtualAddress());
 
-		m_commandList->SetPipelineState(m_pipelineStates["shadow_opaque"].Get());
-		DrawCurrentScene(E_RenderLayer::Opaque);
+		m_commandList->SetPipelineState(m_pipelineStates[static_cast<int>(E_PipelineState::ShadowOpaque)].Get());
+		DrawCurrentScene(E_PipelineState::ShadowOpaque, E_RenderLayer::Opaque);
 
 		// change state to generic_read so we can read the texture in a shader.
 		m_commandList->ResourceBarrier(1,
@@ -1076,25 +1068,25 @@ void D3DGameEngine::PopulateCommandList()
 	m_commandList->SetGraphicsRootDescriptorTable(static_cast<int>(E_RootParam::BufferTexture), skyTexDescriptor);
 	
 	// 현재 scene의 indexed instance를 그린다.
-	m_commandList->SetPipelineState(m_pipelineStates["opaque"].Get());
-	DrawCurrentScene(E_RenderLayer::Opaque);
+	m_commandList->SetPipelineState(m_pipelineStates[static_cast<int>(E_PipelineState::Opaque)].Get());
+	DrawCurrentScene(E_PipelineState::Opaque, E_RenderLayer::Opaque);
 
 	if (m_debugShadowMap)
 	{
-		m_commandList->SetPipelineState(m_pipelineStates["shadow_debug"].Get());
-		DrawCurrentScene(E_RenderLayer::Debug);
+		m_commandList->SetPipelineState(m_pipelineStates[static_cast<int>(E_PipelineState::ShadowDebug)].Get());
+		DrawCurrentScene(E_PipelineState::ShadowDebug, E_RenderLayer::Debug);
 	}
 
 #ifdef COLLIDER_DEBUG	
 	if (m_debugCollider)
 	{
-		m_commandList->SetPipelineState(m_pipelineStates["collider_debug"].Get());
-		DrawCurrentScene(E_RenderLayer::ColliderDebug);
+		m_commandList->SetPipelineState(m_pipelineStates[static_cast<int>(E_PipelineState::ColliderDebug)].Get());
+		DrawCurrentScene(E_PipelineState::ColliderDebug, E_RenderLayer::ColliderDebug);
 	}
 #endif
 
-	m_commandList->SetPipelineState(m_pipelineStates["sky"].Get());
-	DrawCurrentScene(E_RenderLayer::Sky);
+	m_commandList->SetPipelineState(m_pipelineStates[static_cast<int>(E_PipelineState::Sky)].Get());
+	DrawCurrentScene(E_PipelineState::Sky, E_RenderLayer::Sky);
 
 	
 
@@ -1111,11 +1103,12 @@ void D3DGameEngine::PopulateCommandList()
 }
 
 
-void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
+void D3DGameEngine::DrawCurrentScene(E_PipelineState state, E_RenderLayer layer)
 {
 	auto scene = m_game.GetCurrentScene();
 	UINT layerID = static_cast<UINT>(layer);
 	auto meshes = Assets::GetMeshDesc();
+	size_t pipeline = static_cast<size_t>(state);
 
 	for (auto mesh : meshes)
 	{
@@ -1128,7 +1121,11 @@ void D3DGameEngine::DrawCurrentScene(E_RenderLayer layer)
 #endif
 		m_commandList->SetGraphicsRootShaderResourceView(0, m_instanceBuffers[mesh->id][layerID]->Resource()->GetGPUVirtualAddress());
 
+		if (mesh->instanceCount[layerID] < 1) continue;
+
 		m_commandList->DrawIndexedInstanced(mesh->indexCount, mesh->instanceCount[layerID], mesh->startIndexLocation, mesh->baseVertexLocation, mesh->startIndexLocation);
+		
+		++m_psoDrawCalls[pipeline];
 	}
 }
 
@@ -1156,6 +1153,34 @@ void D3DGameEngine::RenderUI()
 	m_d3d11DeviceContext->Flush();
 }
 
+std::wstring D3DGameEngine::PrintInfo()
+{
+	auto scene = m_game.GetCurrentScene();
+
+	std::wostringstream oss;
+	oss << "-------object info----------\n";
+	oss << "all objects (GameObject / UI): " << (scene->GetObjectCount()) << "(" << (scene->GetGameObjectCount()) << ", " << (scene->GetUICount()) << ")\n";
+	oss << "active objects: " << (scene->GetActiveObjectCount()) << "\n";
+	oss << "-------instance info----------\n";
+
+	for (size_t i = 0; i < m_layerInstanceCount.size(); ++i)
+	{
+		oss << "layer [" << i << "]: " << m_layerInstanceCount[i] << "\n";
+	}
+	oss << "-------draw call info----------\n";
+	oss << "how many DrawIndexedInstanced() called?\n";
+
+	oss << "Opaque :" << m_psoDrawCalls[0] << "\n";
+	oss << "Sky :" << m_psoDrawCalls[1] << "\n";
+	oss << "ShadowOpaque :" << m_psoDrawCalls[2] << "\n";
+	oss << "ShadowDebug :" << m_psoDrawCalls[3] << "\n";
+#ifdef COLLIDER_DEBUG
+	oss << "ColliderDebug :" << m_psoDrawCalls[4] << "\n";
+#endif
+
+	return oss.str();
+}
+
 void D3DGameEngine::DrawCurrentUI()
 {
 	
@@ -1174,30 +1199,33 @@ void D3DGameEngine::DrawCurrentUI()
 		D2D1_SIZE_F rtSize = m_d2dRenderTargets[m_frameIndex]->GetSize();
 
 
-		std::wstring info = m_game.GetCurrentScene()->GetCamera()->PrintInformation()
-			+ m_game.GetPlayer()->PrintPlayerInfo();
+		std::wstring info = PrintInfo(); 
+		
 
-		//static const WCHAR text[] = info.c_str();
-		D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, rtSize.height);
+		D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width / 2.0f, rtSize.height);
+		TextDesc* left = Assets::GetTextDescByName("white-leading");
 
 		m_d2dDeviceContext->DrawTextW(
 			info.c_str(),
 			info.size(),
-			m_textFormat.Get(),
+			left->textFormat.Get(),
 			&textRect,
-			m_textBrush.Get()
+			left->brush.Get()
 		);
 
-		// Render text over D3D12 using D2D via the 11On12 device.
-		static const WCHAR text2[] = L"Hello ~ :)";
-		D2D1_RECT_F textRect2 = D2D1::RectF(0, 0, rtSize.width, rtSize.height / 2.0f);
+
+		info = m_game.GetCurrentScene()->GetCamera()->PrintInformation()
+			+ m_game.GetPlayer()->PrintPlayerInfo();
+		textRect = D2D1::RectF(rtSize.width / 2.0f, 0, rtSize.width, rtSize.height);
+		TextDesc* right = Assets::GetTextDescByName("white-trail");
 
 		m_d2dDeviceContext->DrawTextW(
-			text2,
-			_countof(text2) - 1,
-			m_textFormat.Get(),
-			&textRect2,
-			m_textBrush.Get()
+			info.c_str(),
+			info.size(),
+			right->textFormat.Get(),
+			&textRect,
+			right->brush.Get()
 		);
+
 	}
 }

@@ -405,9 +405,13 @@ void Scene::Update(float dt)
 
 	// update all objects.
 	DirectXGame::GetPlayer()->Update(dt);
+
+	m_activeCount = 0;
 	for (auto& obj : m_objects)
 	{
-		if (obj->IsActive()) obj->Update(dt);
+		if (!obj->IsActive()) continue;
+		obj->Update(dt);
+		++m_activeCount;
 	}
 
 	m_camera.Update(dt);
@@ -486,6 +490,13 @@ void Scene::UpdateInstanceData()
 		obj->GetRenderer()->AssignInstance(data);
 		obj->SetDirty(false);
 	}
+}
+
+size_t Scene::GetGameObjectCount()
+{
+	size_t result = 0;
+	for (auto layer : m_GameObjects) result += layer.second.size();
+	return result;
 }
 
 
@@ -650,12 +661,44 @@ Assets::Assets()
 		lead->id = m_texts.size();
 		m_texts["black-leading"] = std::move(lead);
 
+		auto trail = std::make_unique<TextDesc>();
+		trail->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		trail->textAlignment = DWRITE_TEXT_ALIGNMENT_TRAILING;
+		trail->fontSize = 20;
+		trail->id = m_texts.size();
+		m_texts["black-trail"] = std::move(trail);
+
 		auto center = std::make_unique<TextDesc>();
 		center->brushColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		center->textAlignment = DWRITE_TEXT_ALIGNMENT_CENTER;
 		center->fontSize = 20;
 		center->id = m_texts.size();
 		m_texts["black-center"] = std::move(center);
+	}
+
+	{
+		auto lead = std::make_unique<TextDesc>();
+		lead->brushColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		lead->fontSize = 20;
+		lead->paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
+		lead->id = m_texts.size();
+		m_texts["white-leading"] = std::move(lead);
+
+		auto trail = std::make_unique<TextDesc>();
+		trail->brushColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		trail->textAlignment = DWRITE_TEXT_ALIGNMENT_TRAILING;
+		trail->paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
+		trail->fontSize = 20;
+		trail->id = m_texts.size();
+		m_texts["white-trail"] = std::move(trail);
+
+		auto center = std::make_unique<TextDesc>();
+		center->brushColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		center->textAlignment = DWRITE_TEXT_ALIGNMENT_CENTER;
+		center->paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
+		center->fontSize = 20;
+		center->id = m_texts.size();
+		m_texts["white-center"] = std::move(center);
 	}
 
 	// create default triangle
@@ -949,6 +992,13 @@ Assets::Assets()
 
 		m_meshes["box"] = std::move(meshDesc);
 	}
+}
+
+TextDesc* Assets::GetTextDescByName(std::string name)
+{
+	auto lookup = m_texts.find(name);
+	if (lookup == m_texts.end()) return nullptr;
+	return lookup->second.get();
 }
 
 Material* Assets::GetMaterialByID(UINT id)
