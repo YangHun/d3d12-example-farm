@@ -6,7 +6,7 @@ class Plant : public GameObject
 public:
 	enum class E_STATE 
 	{
-		PLANT_NONE,
+		PLANT_READY_TO_SEED,
 		PLANT_READY_TO_GROW,
 		PLANT_GROWING,
 		PLANT_READY_TO_HARVEST,
@@ -41,13 +41,28 @@ private:
 class Field : public GameObject, public Subject
 {
 public:
+	enum class E_STATE
+	{
+		FIELD_IDLE,
+		FIELD_READY_TO_AUTO_GROW,
+		FIELD_OCCUPIED,
+		FIELD_READY_TO_IDLE,
+		COUNT
+	};
+
 	Field();
 	void Update(float dt);
 
 	void Interact();
 
 private:
-	Plant* m_plant = nullptr;
+	void UpdateState();
+
+private:
+	Plant* m_plant;
+	float m_timer;
+	float m_idleTime;
+	E_STATE m_state;
 };
 
 

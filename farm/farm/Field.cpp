@@ -9,7 +9,7 @@ Plant::Plant() :
 	m_finalScale(0.005f),
 	m_initTransform({ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }),
 	m_finalTransform({ {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.01f, 0.01f, 0.01f} }),
-	m_state (E_STATE::PLANT_NONE)
+	m_state (E_STATE::PLANT_READY_TO_SEED)
 {
 	GetRenderer()->SetMesh("Assets/carrot.fbx");
 	GetRenderer()->SetMaterial("carrot-mat");
@@ -30,7 +30,7 @@ Plant::Plant() :
 void Plant::Initialize()
 {
 	m_timer = 0.0f;
-	m_state = E_STATE::PLANT_NONE;
+	m_state = E_STATE::PLANT_READY_TO_SEED;
 
 
 	float random = Random::Range(0.0f, 0.5f);
@@ -87,7 +87,7 @@ void Plant::UpdateState()
 		//if (m_timer >= m_lifeTime) m_state = E_STATE::PLANT_DEAD;
 		return;
 	}
-	case E_STATE::PLANT_NONE:
+	case E_STATE::PLANT_READY_TO_SEED:
 	{
 		return;
 	}
@@ -105,11 +105,16 @@ void Plant::Seed()
 void Plant::Harvest()
 {
 	SetActive(false);
-	m_state = E_STATE::PLANT_NONE;
+	m_state = E_STATE::PLANT_READY_TO_SEED;
 
 }
 
-Field::Field() : GameObject()
+Field::Field() : 
+	GameObject(),
+	m_plant (nullptr),
+	m_timer(0.0f),
+	m_idleTime(Random::Range(3.0f, 100.0f)),
+	m_state(E_STATE::FIELD_IDLE)
 {
 	GetRenderer()->SetMesh("plane");
 
@@ -121,34 +126,96 @@ Field::Field() : GameObject()
 
 void Field::Update(float dt)
 {
-	
+	if (m_timer < m_idleTime) m_timer += dt;
+
+	UpdateState();
+}
+
+void Field::UpdateState()
+{
+	switch (m_state)
+	{
+	case E_STATE::FIELD_IDLE:
+	{	
+		if (m_timer >= m_idleTime) m_state = E_STATE::FIELD_READY_TO_AUTO_GROW;
+		return;
+	}
+	case E_STATE::FIELD_READY_TO_AUTO_GROW:
+	{
+		// idle time이 지나 자동으로 식물을 심는다
+		if (m_plant == nullptr)
+		{
+			m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>(
+				"plant",
+				Transform{},
+				false,
+				E_RenderLayer::Opaque));
+			m_plant->SetParent(this);
+		}
+
+		if (m_plant->GetCurrentState() == Plant::E_STATE::PLANT_READY_TO_SEED && !m_plant->IsActive())
+			m_plant->Seed();
+
+		m_state = E_STATE::FIELD_OCCUPIED;
+		return;
+	}
+	case E_STATE::FIELD_READY_TO_IDLE:
+	{
+		m_timer = 0.0f;
+		m_state = E_STATE::FIELD_IDLE;
+
+		return;
+	}
+	default: return;
+	}
 }
 
 void Field::Interact()
 {
-	if (m_plant == nullptr)
+	switch (m_state)
 	{
-		// 처음으로 식물을 심을 때, instantiate 한다			
-		m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>(E_RenderLayer::Opaque));
-		m_plant->SetParent(this);
-
-		m_plant->SetActive(false);
-	}
-	
-	auto state = m_plant->GetCurrentState();
-
-	if (state == Plant::E_STATE::PLANT_NONE && !m_plant->IsActive()) {
-		m_plant->Seed();
-	}
-
-	if ( (state == Plant::E_STATE::PLANT_READY_TO_HARVEST) ||
-		(state == Plant::E_STATE::PLANT_DEAD))
+	case E_STATE::FIELD_OCCUPIED:
 	{
-		if (state == Plant::E_STATE::PLANT_READY_TO_HARVEST) Notify(reinterpret_cast<Object*>(m_plant), E_Event::FIELD_INTERACT_PLANT_HARVEST);
-		m_plant->Harvest();
+		// occupied일 때 마우스 입력이 들어오면, 다 자란 식물을 수확한다
 
-	}		
-	
+		assert(m_plant != nullptr); 	// OCCUPIED 상태일 땐 반드시 plant가 있어야 함
+		auto plantState = m_plant->GetCurrentState();
+		
+		if ((plantState == Plant::E_STATE::PLANT_READY_TO_HARVEST) ||
+			(plantState == Plant::E_STATE::PLANT_DEAD))
+		{
+			// 자신의 observer에게 event Notify
+			if (plantState == Plant::E_STATE::PLANT_READY_TO_HARVEST)
+				Notify(reinterpret_cast<Object*>(m_plant), E_Event::FIELD_INTERACT_PLANT_HARVEST);
+
+			m_plant->Harvest();
+		}
+
+		m_state = E_STATE::FIELD_READY_TO_IDLE;
+		return;
+	}
+	case E_STATE::FIELD_IDLE:
+	{
+		// idle일 때 마우스 입력이 들어오면, 식물을 심는다
+		// 처음으로 식물을 심을 때, instantiate 한다	
+		if (m_plant == nullptr)
+		{		
+			m_plant = reinterpret_cast<Plant*>(DirectXGame::GetCurrentScene()->Instantiate<Plant>(
+				"plant",
+				Transform{},
+				false,
+				E_RenderLayer::Opaque));
+			m_plant->SetParent(this);
+		}
+
+		if (m_plant->GetCurrentState() == Plant::E_STATE::PLANT_READY_TO_SEED && !m_plant->IsActive())
+			m_plant->Seed();
+
+		m_state = E_STATE::FIELD_OCCUPIED;
+		return;
+	}
+	default: return;
+	}
 }
 
 Tree::Tree() : GameObject()
