@@ -1,14 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
 #include "Common.hlsl"
 
 struct VSInput
@@ -102,6 +91,7 @@ float4 PSMain(PSInput input) : SV_TARGET
     int i = 0;
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
   
+    // 0번째 light에 대해서만 shadow map을 그렸으므로, 나머지 light는 shadow factor 적용 X
     float3 shadowFactor = float3(GetShadowFactor(input.shadowPos), 1.0f, 1.0f);
 
     for (i = 0; i < 3; ++i)
